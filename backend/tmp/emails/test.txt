@@ -1,0 +1,4 @@
+Email is working
+
+Sender address: AbsoluteCare Therapy Center <no-reply@example.com>
+Sent: Oct 18, 2026, 12:41 PM

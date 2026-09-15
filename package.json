@@ -1,0 +1,22 @@
+{
+  "name": "absolutecare",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "frontend": "npm run dev --prefix frontend -- --host",
+    "backend": "npm run dev --prefix backend",
+    "dev": "concurrently \"npm run frontend\" \"npm run backend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuanieking/AbsoluteCare.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
