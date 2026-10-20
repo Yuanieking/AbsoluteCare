@@ -84,8 +84,6 @@ function DashboardLayout() {
       <div className="dashboard-main">
         <header className="dashboard-topbar">
           <div className="topbar-context">
-            <span>Patient portal</span>
-            <span className="topbar-separator">/</span>
             <strong>{breadcrumb}</strong>
           </div>
           <div className="topbar-actions">

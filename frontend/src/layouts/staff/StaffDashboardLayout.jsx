@@ -142,8 +142,6 @@ function StaffDashboardLayout({ role: routeRole }) {
       <div className="staff-dashboard-main">
         <header className="staff-dashboard-topbar">
           <div className="staff-topbar-title">
-            <span>Staff portal</span>
-            <b>/</b>
             <strong>{breadcrumbTitle}</strong>
             <span className="staff-role-badge">{roleConfig.label}</span>
           </div>
