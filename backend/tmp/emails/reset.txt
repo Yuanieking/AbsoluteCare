@@ -1,0 +1,9 @@
+Reset your password
+
+We received a request to reset the password for your AbsoluteCare account.
+
+Reset your password: http://localhost:5173/reset-password?token=preview-token
+
+This link expires in 30 minutes and can be used once.
+
+If you didn't request this, you can safely ignore this email. Your password won't change.

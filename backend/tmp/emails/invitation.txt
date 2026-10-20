@@ -1,0 +1,10 @@
+Your staff account is ready
+
+Welcome Jamie Reyes.
+Role: therapist
+Email: staff@example.com
+Temporary password: PreviewPassword123
+
+Open Staff Portal: http://localhost:5173/staff/login
+
+Change this temporary password immediately after your first login.

@@ -1,0 +1,13 @@
+Appointment cancelled
+
+Your AbsoluteCare appointment has been cancelled.
+
+Service: Manual therapy
+Date and time: Oct 14, 2026, 10:00 AM
+Therapist: Maria Santos
+Patient: Alex Dela Cruz
+Clinic: Malaybalay City, Bukidnon
+Reason: Therapist unavailable
+
+View appointment: http://localhost:5173/dashboard/appointments/appointment-preview
+Directions: https://www.google.com/maps/search/?api=1&query=Malaybalay%20City%2C%20Bukidnon
