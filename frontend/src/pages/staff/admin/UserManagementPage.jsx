@@ -189,7 +189,6 @@ function UserModal({ user, onClose, onSaved }) {
                 value={form.role}
                 onChange={(event) => update("role", event.target.value)}
               >
-                <option value="patient">Patient</option>
                 <option value="therapist">Therapist</option>
                 <option value="secretary">Secretary</option>
               </select>

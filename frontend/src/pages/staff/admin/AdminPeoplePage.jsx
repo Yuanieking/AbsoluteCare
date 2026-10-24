@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import Skeleton from "../../../components/dashboard/Skeleton";
 import StaffPageHeader from "../../../components/staff/StaffPageHeader";
@@ -23,13 +23,143 @@ import {
 import { sanitizePhone } from "../../../utils/validators";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const specializationOptions = [
+  "Speech-Language Pathologist (SLP)",
+  "Physical Therapist (PTs)",
+  "Occupational Therapist (OTs)",
+  "Special Education (SPED) Teachers",
+];
+
+function SpecializationDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [highlighted, setHighlighted] = useState(0);
+  const dropdownRef = useRef(null);
+  const options = [
+    ...specializationOptions,
+    ...value.filter((item) => !specializationOptions.includes(item)),
+  ];
+
+  useEffect(() => {
+    function closeOnOutsideClick(event) {
+      if (!dropdownRef.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, []);
+
+  function toggleOption(option) {
+    onChange(
+      value.includes(option)
+        ? value.filter((item) => item !== option)
+        : [...value, option],
+    );
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      setHighlighted((current) =>
+        event.key === "ArrowDown"
+          ? (current + 1) % options.length
+          : (current - 1 + options.length) % options.length,
+      );
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+      } else {
+        toggleOption(options[highlighted]);
+      }
+    }
+  }
+
+  return (
+    <div
+      className={`specialization-dropdown ${open ? "is-open" : ""}`}
+      ref={dropdownRef}
+    >
+      <div
+        className="specialization-trigger"
+        role="combobox"
+        tabIndex={0}
+        aria-label="Select specializations"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={handleKeyDown}
+      >
+        <span className="specialization-trigger-content">
+          {value.length === 0 && (
+            <span className="specialization-placeholder">
+              Select one or more
+            </span>
+          )}
+          {value.length > 0 && value.length <= 2
+            ? value.map((item) => (
+                <span className="specialization-chip" key={item}>
+                  {item}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${item}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleOption(item);
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            : value.length > 2 && (
+                <span className="specialization-selection-count">
+                  {value.length} selected
+                </span>
+              )}
+        </span>
+        <span className="specialization-chevron" aria-hidden="true" />
+      </div>
+      {open && (
+        <div className="specialization-options" role="listbox" aria-multiselectable="true">
+          {options.map((option, index) => (
+            <button
+              className={`specialization-option ${
+                highlighted === index ? "is-highlighted" : ""
+              }`}
+              type="button"
+              role="option"
+              aria-selected={value.includes(option)}
+              key={option}
+              onMouseEnter={() => setHighlighted(index)}
+              onClick={() => toggleOption(option)}
+            >
+              <span className="specialization-checkbox" aria-hidden="true">
+                {value.includes(option) ? "✓" : ""}
+              </span>
+              <span>{option}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PersonModal({ person, role, onClose, onSaved }) {
   const [form, setForm] = useState({
     ...person,
     specialization: Array.isArray(person.specialization)
-      ? person.specialization.join(", ")
-      : person.specialization || "",
+      ? person.specialization
+      : person.specialization
+        ? [person.specialization]
+        : [],
     workingDays: person.workingDays || [],
     workingHours: person.workingHours || { start: "08:00", end: "17:00" },
   });
@@ -60,10 +190,7 @@ function PersonModal({ person, role, onClose, onSaved }) {
         : [
             updateAdminTherapist(person._id, basic),
             updateAdminTherapistSpecialization(person._id, {
-              specialization: form.specialization
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean),
+              specialization: form.specialization,
             }),
             updateAdminTherapistAvailability(person._id, {
               workingDays: form.workingDays,
@@ -112,8 +239,7 @@ function PersonModal({ person, role, onClose, onSaved }) {
           </button>
         </div>
         <form className="admin-user-form" onSubmit={submit}>
-          <div className="form-grid-two">
-            <label>
+            <label className="modal-field">
               First name
               <input
                 value={form.firstname}
@@ -121,7 +247,7 @@ function PersonModal({ person, role, onClose, onSaved }) {
                 required
               />
             </label>
-            <label>
+            <label className="modal-field">
               Last name
               <input
                 value={form.lastname}
@@ -129,8 +255,7 @@ function PersonModal({ person, role, onClose, onSaved }) {
                 required
               />
             </label>
-          </div>
-          <label>
+          <label className="modal-field">
             Email
             <input
               type="email"
@@ -139,8 +264,7 @@ function PersonModal({ person, role, onClose, onSaved }) {
               required
             />
           </label>
-          <div className="form-grid-two">
-            <label>
+          <label className="modal-field">
               Phone
               <input
                 value={form.phone || ""}
@@ -151,50 +275,45 @@ function PersonModal({ person, role, onClose, onSaved }) {
                 inputMode="numeric"
               />
             </label>
-            {role === "patient" ? (
-              <label>
-                Date of birth
-                <input
-                  type="date"
-                  value={form.dateOfBirth || ""}
-                  onChange={(event) =>
-                    update("dateOfBirth", event.target.value)
-                  }
-                />
-              </label>
-            ) : (
-              <label>
-                Profile picture URL
-                <input
-                  value={form.profilePicture || ""}
-                  onChange={(event) =>
-                    update("profilePicture", event.target.value)
-                  }
-                />
-              </label>
-            )}
-          </div>
-          <label>
+          {role === "patient" && (
+            <label className="modal-field">
+              Date of birth
+              <input
+                type="date"
+                value={form.dateOfBirth || ""}
+                onChange={(event) => update("dateOfBirth", event.target.value)}
+              />
+            </label>
+          )}
+          <label className="modal-field modal-field-wide">
             Address
             <textarea
-              rows="2"
+              rows="3"
               value={form.address || ""}
               onChange={(event) => update("address", event.target.value)}
             />
           </label>
           {role === "therapist" && (
+            <label className="modal-field modal-field-wide">
+              Profile picture URL
+              <input
+                value={form.profilePicture || ""}
+                onChange={(event) =>
+                  update("profilePicture", event.target.value)
+                }
+              />
+            </label>
+          )}
+          {role === "therapist" && (
             <>
-              <label>
+              <label className="modal-field">
                 Specializations
-                <input
+                <SpecializationDropdown
                   value={form.specialization}
-                  onChange={(event) =>
-                    update("specialization", event.target.value)
-                  }
-                  placeholder="Sports injury, Neuro rehab"
+                  onChange={(value) => update("specialization", value)}
                 />
               </label>
-              <fieldset className="availability-fieldset">
+              <fieldset className="availability-fieldset modal-field">
                 <legend>Working days</legend>
                 <div className="day-toggle-row">
                   {days.map((day) => (
@@ -205,40 +324,39 @@ function PersonModal({ person, role, onClose, onSaved }) {
                       type="button"
                       key={day}
                       onClick={() => toggleDay(day)}
+                      aria-pressed={form.workingDays.includes(day)}
                     >
                       {day}
                     </button>
                   ))}
                 </div>
-                <div className="form-grid-two">
-                  <label>
-                    Starts
-                    <input
-                      type="time"
-                      value={form.workingHours.start}
-                      onChange={(event) =>
-                        update("workingHours", {
-                          ...form.workingHours,
-                          start: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    Ends
-                    <input
-                      type="time"
-                      value={form.workingHours.end}
-                      onChange={(event) =>
-                        update("workingHours", {
-                          ...form.workingHours,
-                          end: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                </div>
               </fieldset>
+              <label className="modal-field">
+                Starts
+                <input
+                  type="time"
+                  value={form.workingHours.start}
+                  onChange={(event) =>
+                    update("workingHours", {
+                      ...form.workingHours,
+                      start: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="modal-field">
+                Ends
+                <input
+                  type="time"
+                  value={form.workingHours.end}
+                  onChange={(event) =>
+                    update("workingHours", {
+                      ...form.workingHours,
+                      end: event.target.value,
+                    })
+                  }
+                />
+              </label>
             </>
           )}
           <div className="profile-edit-actions">

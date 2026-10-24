@@ -25,7 +25,6 @@ export function StatCard({
       <div className="stat-card-value-area">
         <strong className="stat-card-value">{value}</strong>
         {children}
-        {caption && <span className="stat-card-caption">{caption}</span>}
       </div>
       {action && (
         <span className="stat-card-footer">

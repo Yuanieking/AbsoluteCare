@@ -10,16 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oneetnwt/AbsoluteCare.git"
+    "url": "git+https://github.com/yuanieking/AbsoluteCare.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/oneetnwt/AbsoluteCare/issues"
-  },
-  "homepage": "https://github.com/oneetnwt/AbsoluteCare#readme",
   "dependencies": {
     "concurrently": "^10.0.5"
   }
