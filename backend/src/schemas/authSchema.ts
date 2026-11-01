@@ -17,14 +17,23 @@ const phone = z
     message: "Enter a valid mobile number (e.g. 09171234567)",
   });
 
+const publicRoleField = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.enum(["user", "patient", "therapist", "secretary", "admin"]))
+  .optional()
+  .default("patient");
+
 export const signupSchema = z
   .object({
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
     email,
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().min(1, "Password is required"),
     confirmPassword: z.string(),
     phone: phone.optional().default(""),
+    role: publicRoleField,
     recaptchaToken: z.string().nullable().optional(),
     acceptedTerms: z.literal(true, {
       error: "You must agree to continue.",
@@ -52,10 +61,15 @@ export const profileUpdateSchema = z.object({
 
 export const changePasswordSchema = z
   .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().min(1, "Password is required"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
+
+export type SignupInput = z.infer<typeof signupSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

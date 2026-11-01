@@ -1,5 +1,5 @@
+import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/userModel.js";
 import {
   FRONTEND_URL,
   GOOGLE_CALENDAR_REDIRECT_URI,
@@ -8,16 +8,22 @@ import {
 import {
   backfillCalendar,
   calendarAuthorizationUrl,
+  connectCalendarAccount,
+  disconnectCalendarAccount,
   exchangeCalendarCode,
-  encrypt,
+  getCalendarStatus,
 } from "../services/calendarService.js";
 import { getSettings } from "../services/settingsService.js";
 
-export async function connectCalendar(req, res) {
+export async function connectCalendar(
+  req: Request,
+  res: Response,
+): Promise<void> {
   if (!(await getSettings()).integrations.googleCalendarEnabled) {
-    return res
+    res
       .status(403)
       .json({ message: "Google Calendar sync is currently disabled." });
+    return;
   }
   const userId = req.patient?._id || req.user.userId;
   const role = req.patient ? "patient" : "therapist";
@@ -34,40 +40,31 @@ export async function connectCalendar(req, res) {
   );
 }
 
-export async function calendarCallback(req, res) {
+export async function calendarCallback(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     if (!(await getSettings()).integrations.googleCalendarEnabled) {
-      return res
+      res
         .status(403)
         .json({ message: "Google Calendar sync is currently disabled." });
+      return;
     }
-    const state = jwt.verify(req.query.state, JWT_SECRET);
+    const state = jwt.verify(
+      String(req.query.state),
+      JWT_SECRET,
+    ) as jwt.JwtPayload;
     if (state.purpose !== "calendar")
       throw new Error("Invalid calendar state.");
     const tokens = await exchangeCalendarCode(
-      req.query.code,
+      String(req.query.code),
       GOOGLE_CALENDAR_REDIRECT_URI,
     );
     if (!tokens.refresh_token)
       throw new Error("Google did not provide a refresh token.");
-    const profileResponse = await fetch(
-      "https://openidconnect.googleapis.com/v1/userinfo",
-      {
-        headers: { Authorization: `Bearer ${tokens.access_token}` },
-      },
-    );
-    const profile = profileResponse.ok ? await profileResponse.json() : null;
-    const user = await User.findByIdAndUpdate(
-      state.userId,
-      {
-        "googleCalendar.connected": true,
-        "googleCalendar.email": profile?.email || "Connected Google account",
-        "googleCalendar.refreshTokenEncrypted": encrypt(tokens.refresh_token),
-        "googleCalendar.connectedAt": new Date(),
-      },
-      { new: true },
-    );
-    await backfillCalendar(user._id, state.role);
+    const user = await connectCalendarAccount(state.userId as string, tokens);
+    await backfillCalendar(user._id, String(state.role || "patient"));
     const destination =
       state.role === "therapist" ? "/staff/therapist/profile" : "/settings";
     res.redirect(`${FRONTEND_URL}${destination}?calendar=connected`);
@@ -76,28 +73,18 @@ export async function calendarCallback(req, res) {
   }
 }
 
-export function calendarStatus(req, res) {
+export async function calendarStatus(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const userId = req.patient?._id || req.user.userId;
-  User.findById(userId)
-    .select("googleCalendar")
-    .then((user) => {
-      const calendar = user?.googleCalendar || {};
-      res.json({
-        connected: Boolean(calendar.connected),
-        email: calendar.email || "",
-        connectedAt: calendar.connectedAt || null,
-      });
-    });
+  res.json(await getCalendarStatus(userId));
 }
 
-export async function disconnectCalendar(req, res) {
-  await User.updateOne(
-    { _id: req.patient?._id || req.user.userId },
-    {
-      "googleCalendar.connected": false,
-      "googleCalendar.email": "",
-      "googleCalendar.refreshTokenEncrypted": "",
-    },
-  );
+export async function disconnectCalendar(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  await disconnectCalendarAccount(req.patient?._id || req.user.userId);
   res.status(204).send();
 }

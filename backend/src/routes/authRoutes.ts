@@ -13,7 +13,7 @@ import {
   resetPassword,
   updateProfile,
   updateNotificationPreferences,
-} from "../controller/authController.js";
+} from "../controllers/authController.js";
 import { protectRoute } from "../middleware/authMiddleware.js";
 import verifyRecaptcha from "../middleware/verifyRecaptcha.js";
 
@@ -29,7 +29,7 @@ router.patch("/change-password", protectRoute, changePassword);
 router.get("/google", googleStart);
 router.get("/google/callback", googleCallback);
 router.get("/google/session", googleSession);
-router.post("/google/complete", completeGoogleSignup);
+router.post("/google/complete", verifyRecaptcha, completeGoogleSignup);
 
 router.get("/me", protectRoute, checkAuth);
 router.patch("/profile", protectRoute, updateProfile);

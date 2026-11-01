@@ -4,7 +4,7 @@ import {
   calendarStatus,
   connectCalendar,
   disconnectCalendar,
-} from "../controller/calendarController.js";
+} from "../controllers/calendarController.js";
 import { protectRoute } from "../middleware/authMiddleware.js";
 import { requirePatient } from "../middleware/patientMiddleware.js";
 import { requireRole } from "../middleware/authMiddleware.js";
