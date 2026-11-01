@@ -15,7 +15,7 @@ import {
   updateSession,
   calendarStatus,
   syncCalendarAppointment,
-} from "../controller/therapistController.js";
+} from "../controllers/therapistController.js";
 
 const router = Router();
 router.use(protectRoute, requireRole("therapist"));
