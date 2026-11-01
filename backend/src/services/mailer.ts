@@ -1,24 +1,55 @@
-import nodemailer from "nodemailer";
-import {
-  GMAIL_APP_PASSWORD,
-  GMAIL_USER,
-  MAIL_FROM,
-  SMTP_HOST,
-  SMTP_PASSWORD,
-  SMTP_PORT,
-  SMTP_USER,
-} from "../config/env.js";
+import crypto from "node:crypto";
+import nodemailer, { type SendMailOptions, type Transporter } from "nodemailer";
+import { getIntegrationConfig } from "../config/runtimeConfig.js";
 import { resetPassword as renderResetPassword } from "../emails/templates/index.js";
+import { getSettings, isEmailSendingEnabled } from "./settingsService.js";
 
 const MAIL_TIMEOUT_MS = 10_000;
 const RETRY_DELAYS = [250, 750];
 const PLACEHOLDERS = ["changeme", "xxx", "replace-with", "your-"];
 
-function clean(value) {
+export interface MailConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from: string;
+  missing: string[];
+}
+
+export interface MailHealth {
+  configured: boolean;
+  missing: string[];
+  lastCheck: Date | null;
+  ok: boolean | null;
+  userMessage: string;
+}
+
+interface MailFailure {
+  code: string;
+  retryable: boolean;
+  userMessage: string;
+}
+
+interface SendEmailOptions {
+  to: SendMailOptions["to"];
+  subject: SendMailOptions["subject"];
+  text: SendMailOptions["text"];
+  html: string;
+  attachments?: SendMailOptions["attachments"];
+  headers?: SendMailOptions["headers"];
+}
+
+export type SendEmailResult =
+  | { sent: true }
+  | ({ sent: false; error: string } & MailFailure);
+
+function clean(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function usable(value) {
+function usable(value: unknown): boolean {
   const normalized = clean(value).toLowerCase();
   return (
     Boolean(normalized) &&
@@ -26,26 +57,24 @@ function usable(value) {
   );
 }
 
-function mailConfig() {
-  const host = clean(process.env.SMTP_HOST) || clean(SMTP_HOST);
-  const smtpUser = clean(process.env.SMTP_USER);
-  const smtpPass = clean(process.env.SMTP_PASS || process.env.SMTP_PASSWORD);
-  const gmailCredentials = usable(GMAIL_USER) && usable(GMAIL_APP_PASSWORD);
+function mailConfig(): MailConfig {
+  const host = clean(getIntegrationConfig("SMTP_HOST"));
+  const smtpUser = clean(getIntegrationConfig("SMTP_USER"));
+  const smtpPass = clean(getIntegrationConfig("SMTP_PASS"));
+  const gmailUser = clean(getIntegrationConfig("GMAIL_USER"));
+  const gmailPass = clean(getIntegrationConfig("GMAIL_APP_PASSWORD"));
+  const gmailCredentials = usable(gmailUser) && usable(gmailPass);
   const useGmailCredentials =
     /(^|\.)gmail\.com$/i.test(host) && gmailCredentials;
-  const user = useGmailCredentials
-    ? clean(GMAIL_USER)
-    : smtpUser || clean(GMAIL_USER);
-  const pass = useGmailCredentials
-    ? clean(GMAIL_APP_PASSWORD)
-    : smtpPass || clean(GMAIL_APP_PASSWORD);
-  const port = Number(clean(process.env.SMTP_PORT) || SMTP_PORT || 465);
-  const secureValue = clean(process.env.SMTP_SECURE);
+  const user = useGmailCredentials ? gmailUser : smtpUser || gmailUser;
+  const pass = useGmailCredentials ? gmailPass : smtpPass || gmailPass;
+  const port = Number(clean(getIntegrationConfig("SMTP_PORT")) || 465);
+  const secureValue = clean(getIntegrationConfig("SMTP_SECURE"));
   const secure = secureValue
     ? secureValue.toLowerCase() === "true"
     : port === 465;
-  const from = clean(process.env.MAIL_FROM) || clean(MAIL_FROM);
-  const missing = [];
+  const from = clean(getIntegrationConfig("MAIL_FROM"));
+  const missing: string[] = [];
   if (!usable(host)) missing.push("SMTP_HOST");
   if (!Number.isInteger(port) || port <= 0) missing.push("SMTP_PORT");
   if (!usable(user)) missing.push("SMTP_USER");
@@ -62,11 +91,17 @@ function mailConfig() {
   };
 }
 
-export function classifyMailError(error) {
+export function classifyMailError(error: unknown): MailFailure {
+  const source = (error ?? {}) as {
+    code?: string;
+    responseCode?: number;
+    statusCode?: number;
+    missing?: string[];
+  };
   const code = String(
-    error?.code || error?.responseCode || "MAIL_ERROR",
+    source.code || source.responseCode || "MAIL_ERROR",
   ).toUpperCase();
-  const responseCode = Number(error?.responseCode || error?.statusCode || 0);
+  const responseCode = Number(source.responseCode || source.statusCode || 0);
   if (code === "EAUTH" || responseCode === 535) {
     return {
       code: "EAUTH",
@@ -87,6 +122,7 @@ export function classifyMailError(error) {
     code === "ECONNECTION" ||
     code === "ETIMEDOUT" ||
     code === "ESOCKET" ||
+    code === "EDNS" ||
     (responseCode >= 400 && responseCode < 500)
   ) {
     return {
@@ -97,8 +133,8 @@ export function classifyMailError(error) {
     };
   }
   if (code === "NOT_CONFIGURED") {
-    const missing = Array.isArray(error?.missing)
-      ? error.missing
+    const missing = Array.isArray(source.missing)
+      ? source.missing
       : ["SMTP_PASS"];
     return {
       code,
@@ -115,7 +151,9 @@ export function classifyMailError(error) {
   };
 }
 
-export function createMailTransport(config = mailConfig()) {
+export function createMailTransport(
+  config: MailConfig = mailConfig(),
+): Transporter | null {
   if (config.missing.length) return null;
   return nodemailer.createTransport({
     host: config.host,
@@ -128,23 +166,46 @@ export function createMailTransport(config = mailConfig()) {
   });
 }
 
-const config = mailConfig();
-const transport = createMailTransport(config);
-let health = {
-  configured: config.missing.length === 0,
-  missing: config.missing,
+let health: MailHealth = {
+  configured: false,
+  missing: [],
   lastCheck: null,
   ok: null,
-  userMessage: config.missing.length
-    ? `Email isn't configured. Missing: ${config.missing.map((item) => `\`${item}\``).join(", ")}.`
-    : "Email provider has not been checked yet.",
+  userMessage: "Email provider has not been checked yet.",
 };
+let cached: {
+  hash: string;
+  config: MailConfig | null;
+  transport: Transporter | null;
+} = { hash: "", config: null, transport: null };
 
-export function getMailerHealth() {
+export function getMailTransport(
+  config: MailConfig = mailConfig(),
+): typeof cached {
+  const hash = crypto
+    .createHash("sha256")
+    .update(JSON.stringify(config))
+    .digest("hex");
+  if (cached.hash !== hash) {
+    cached = { hash, config, transport: createMailTransport(config) };
+    health = {
+      ...health,
+      configured: config.missing.length === 0,
+      missing: config.missing,
+      ok: null,
+      userMessage: config.missing.length
+        ? `Email isn't configured. Missing: ${config.missing.map((item) => `\`${item}\``).join(", ")}.`
+        : "Email provider has not been checked yet.",
+    };
+  }
+  return cached;
+}
+
+export function getMailerHealth(): MailHealth {
   return { ...health };
 }
 
-function updateHealth(result) {
+function updateHealth(result: Partial<MailHealth>): void {
   health = { ...health, ...result, lastCheck: new Date() };
 }
 
@@ -155,9 +216,24 @@ export async function sendEmail({
   html,
   attachments = [],
   headers = {},
-}) {
+}: SendEmailOptions): Promise<SendEmailResult> {
+  // The admin switch is a master valve: when it is off nothing leaves the
+  // server, including password resets and invitations that bypass
+  // notification preferences.
+  if (!isEmailSendingEnabled(await getSettings())) {
+    const userMessage =
+      "Email sending is turned off in Settings, so nothing was sent.";
+    return {
+      sent: false,
+      code: "EMAIL_DISABLED",
+      retryable: false,
+      error: userMessage,
+      userMessage,
+    };
+  }
+  const { config, transport } = getMailTransport();
   if (!transport) {
-    const userMessage = `Email isn't configured. Missing: ${config.missing.map((item) => `\`${item}\``).join(", ")}.`;
+    const userMessage = `Email isn't configured. Missing: ${(config as MailConfig).missing.map((item) => `\`${item}\``).join(", ")}.`;
     updateHealth({ ok: false, userMessage });
     return {
       sent: false,
@@ -170,7 +246,7 @@ export async function sendEmail({
   const result = await sendWithRetry(() =>
     Promise.race([
       transport.sendMail({
-        from: config.from,
+        from: config?.from,
         to,
         subject,
         text,
@@ -178,7 +254,7 @@ export async function sendEmail({
         attachments,
         headers,
       }),
-      new Promise((_, reject) =>
+      new Promise<never>((_, reject) =>
         setTimeout(
           () =>
             reject(
@@ -199,7 +275,10 @@ export async function sendEmail({
   return result;
 }
 
-export async function sendWithRetry(operation, { maxAttempts = 3 } = {}) {
+export async function sendWithRetry(
+  operation: () => Promise<unknown>,
+  { maxAttempts = 3 }: { maxAttempts?: number } = {},
+): Promise<SendEmailResult> {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       await operation();
@@ -208,7 +287,7 @@ export async function sendWithRetry(operation, { maxAttempts = 3 } = {}) {
       const classified = classifyMailError(error);
       if (!classified.retryable || attempt === maxAttempts)
         return { sent: false, ...classified, error: classified.userMessage };
-      const delay = RETRY_DELAYS[attempt - 1] || RETRY_DELAYS.at(-1);
+      const delay = RETRY_DELAYS[attempt - 1] ?? 750;
       await new Promise((resolve) =>
         setTimeout(resolve, delay + Math.floor(Math.random() * 100)),
       );
@@ -218,11 +297,13 @@ export async function sendWithRetry(operation, { maxAttempts = 3 } = {}) {
     sent: false,
     code: "MAIL_ERROR",
     retryable: false,
+    error: "The email provider could not send this message.",
     userMessage: "The email provider could not send this message.",
   };
 }
 
-export async function verifyMailer() {
+export async function verifyMailer(): Promise<boolean> {
+  const { transport } = getMailTransport();
   if (!transport) {
     updateHealth({ ok: false });
     console.error(`Mailer status: not configured (${health.userMessage})`);
@@ -241,11 +322,22 @@ export async function verifyMailer() {
   }
 }
 
-export async function verifyTransport() {
+export async function verifyTransport(): Promise<{
+  ok: boolean;
+  message: string;
+}> {
   await verifyMailer();
   return { ok: health.ok === true, message: health.userMessage };
 }
 
-export async function passwordResetEmail({ email, token, staff = false }) {
+export async function passwordResetEmail({
+  email,
+  token,
+  staff = false,
+}: {
+  email: string;
+  token: string;
+  staff?: boolean;
+}) {
   return renderResetPassword({ email, token, staff });
 }

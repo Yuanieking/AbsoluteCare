@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 const boolean = z.boolean();
-const bounded = (min, max) => z.number().int().min(min).max(max);
+const bounded = (min: number, max: number) =>
+  z.number().int().min(min).max(max);
 const sectionSchemas = {
   general: z
     .object({
@@ -87,6 +88,7 @@ const sectionSchemas = {
       googleAuthEnabled: boolean,
       recaptchaEnabled: boolean,
       googleCalendarEnabled: boolean,
+      emailEnabled: boolean,
     })
     .strict(),
   system: z
@@ -103,12 +105,17 @@ const sectionSchemas = {
         .strict(),
     })
     .strict(),
-};
-
-export function validateSettingsSection(section, body) {
-  const schema = sectionSchemas[section];
-  if (!schema) throw new Error("Unknown settings section.");
-  return schema.parse(body);
-}
+} satisfies Record<string, z.ZodType>;
 
 export const settingsSections = Object.keys(sectionSchemas);
+
+export type SettingsSection = keyof typeof sectionSchemas;
+
+export function validateSettingsSection(
+  section: string,
+  body: unknown,
+): Record<string, unknown> {
+  const schema = (sectionSchemas as Record<string, z.ZodType>)[section];
+  if (!schema) throw new Error("Unknown settings section.");
+  return schema.parse(body) as Record<string, unknown>;
+}
