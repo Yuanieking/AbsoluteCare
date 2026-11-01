@@ -1,0 +1,101 @@
+
+Group,Item Id,Title,Date,Person,Status
+USER/PATIENT,7913652,"PA-007 Request Appointment: As a patient, I want to request a physical therapy appointment so that I can schedule a therapy session.",,Julia Rica Soson,Done
+USER/PATIENT,7515310,"PA-001 Register	As a patient, I want to create an account so that I can access the system and request physical therapy appointments.",17/09/2026,Julia Rica Soson,Done
+USER/PATIENT,7515341,"PA-002	Log In	As a patient, I want to log in to my account so that I can securely access my personal information and appointment features.",17/09/2026,Julia Rica Soson,Done
+USER/PATIENT,7515348,"PA-003	Log Out	As a patient, I want to log out of my account so that I can protect my personal information from unauthorized access.",18/09/2026,Julia Rica Soson,Done
+USER/PATIENT,7515360,"PA-004	View Profile	As a patient, I want to view my personal profile so that I can check whether my information is accurate.",,Julia Rica Soson,Done
+USER/PATIENT,7515368,"PA-005	Edit Personal Information	As a patient, I want to edit my personal information so that my records remain accurate and up to date.",,Julia Rica Soson,Done
+USER/PATIENT,7515381,"PA-006	Edit Contact Information	As a patient, I want to edit my contact information so that the clinic can reach me using my current contact details.",,Julia Rica Soson,Done
+USER/PATIENT,7515572,"PA-009	View Pending Appointment Requests	As a patient, I want to view my pending appointment requests so that I can monitor requests that have not yet been processed.",,Julia Rica Soson,Done
+USER/PATIENT,7515577,"PA-010	View Upcoming Appointments	As a patient, I want to view my upcoming appointments so that I know when I need to attend my next therapy session.",22/10/2026,Chennie Magbanua,Done
+USER/PATIENT,7515580,"PA-011	View Previous Appointments	As a patient, I want to view my previous appointments so that I can keep track of my past appointments.",,Chennie Magbanua,Done
+USER/PATIENT,7515582,"PA-012	Request Rescheduling	As a patient, I want to request a change to my appointment schedule so that I can request another suitable schedule when I am unavailable.",,Chennie Magbanua,Done
+USER/PATIENT,7515585,"PA-013	View Assigned Therapist	As a patient, I want to view my assigned therapist so that I know which therapist will provide my therapy session.",,,Backlog
+USER/PATIENT,7515592,"PA-014	View Appointment Details	As a patient, I want to view my appointment details so that I can review the service, therapist, date, and time of my appointment.",,,Backlog
+USER/PATIENT,7515601,"PA-015	View Session History	As a patient, I want to view my previous therapy sessions so that I can keep track of my completed treatments.",,,Backlog
+USER/PATIENT,7515608,"PA-016	View Session Details	As a patient, I want to view the details of a completed therapy session so that I can review the date, duration, service, and general session notes available to me.",,,Backlog
+USER/PATIENT,7515613,"PA-017	Receive Appointment Notification	As a patient, I want to receive notifications about my appointments so that I am informed about important appointment updates.",,,Backlog
+USER/PATIENT,7515615,"PA-018	Receive Rescheduling Notification	As a patient, I want to receive a notification when my appointment is rescheduled so that I know about changes to my schedule.",,,Backlog
+USER/PATIENT,7515616,"PA-019	Receive Cancellation Notification	As a patient, I want to receive a notification when my appointment is cancelled so that I am aware that the appointment will no longer take place.",,,Backlog
+USER/PATIENT,7515617,"PA-020	Receive Upcoming Appointment Notification	As a patient, I want to receive reminders about upcoming appointments so that I do not forget my scheduled therapy session.",,,Backlog
+USER/PATIENT,7515620,"PA-021	Integrate Google Calendar	As a patient, I want my confirmed appointments to be integrated with Google Calendar so that I can easily view and manage my therapy schedule alongside my other activities.",,,Backlog
+THERAPIST,7515546,"TH-001	Log In	As a therapist, I want to log in to my account so that I can securely access my assigned functions.",17/09/2026,Chennie Magbanua,Done
+THERAPIST,7515550,"TH-002	Log Out	As a therapist, I want to log out of my account so that I can protect my account from unauthorized access.",18/09/2026,Chennie Magbanua,Done
+THERAPIST,7515558,"TH-003	View Profile	As a therapist, I want to view my professional profile so that I can check whether my information is accurate.",,Chennie Magbanua,Done
+THERAPIST,7515566,"TH-004	Edit Profile	As a therapist, I want to edit my professional information so that my profile remains accurate and up to date.",,Chennie Magbanua,Done
+THERAPIST,7515576,"TH-005	View Specialization	As a therapist, I want to view my recorded specialization so that I can verify the type of therapy services associated with my profile.",,Julia Rica Soson,Done
+THERAPIST,7515584,"TH-006	Set Working Days	As a therapist, I want to set my available working days so that the admin can assign appointments based on my schedule.",,,Backlog
+THERAPIST,7515589,"TH-007	Set Working Hours	As a therapist, I want to set my available working hours so that the admin can avoid scheduling appointments outside my availability.",,,Backlog
+THERAPIST,7515595,"TH-008	View Assigned Appointments	As a therapist, I want to view my assigned appointments so that I know which patients I need to attend to.",,,Backlog
+THERAPIST,7515607,"TH-009	View Upcoming Appointments	As a therapist, I want to view my upcoming appointments so that I can prepare for my scheduled therapy sessions.",,,Backlog
+THERAPIST,7515611,"TH-010	View Previous Appointments	As a therapist, I want to view my previous appointments so that I can keep track of patients I have previously attended to.",,,Backlog
+THERAPIST,7515621,"TH-011	View Assigned Patients	As a therapist, I want to view my assigned patients so that I can prepare for their therapy sessions.",,,Backlog
+THERAPIST,7515624,"TH-012	View Patient Appointment Details	As a therapist, I want to view the appointment details of my assigned patients so that I know their scheduled service, date, and time.",,,Backlog
+THERAPIST,7515628,"TH-013	Request Rescheduling	As a therapist, I want to request an appointment reschedule when I am unavailable so that the admin can arrange a suitable alternative schedule.",,,Backlog
+THERAPIST,7515631,"TH-014	View Appointment Status	As a therapist, I want to view the status of my appointments so that I know whether they are pending, confirmed, rescheduled, completed, cancelled, or marked as no-show.",,,Backlog
+THERAPIST,7515635,"TH-015	Record Therapy Session	As a therapist, I want to record a completed therapy session so that the patient’s treatment activity is properly documented.",,,Backlog
+THERAPIST,7515640,"TH-016	Record Session Date	As a therapist, I want to record the date of a therapy session so that the patient’s treatment history contains the correct session date.",,,Backlog
+THERAPIST,7515642,"TH-017	Record Session Duration	As a therapist, I want to record the duration of a therapy session so that the patient’s session record accurately reflects the treatment time.",,,Backlog
+THERAPIST,7515644,"TH-018	Record Session Notes	As a therapist, I want to record general notes about a therapy session so that relevant treatment information is documented.",,,Backlog
+THERAPIST,7515646,"TH-019	Update Session Record	As a therapist, I want to update an existing session record so that incorrect or incomplete information can be corrected.",,,Backlog
+THERAPIST,7515651,"TH-020	View Session History	As a therapist, I want to view authorized previous session records so that I can review a patient’s therapy history.",,,Backlog
+THERAPIST,7515655,"TH-021	Integrate Google Calendar	As a therapist, I want my confirmed appointments to be integrated with Google Calendar so that I can manage my work schedule more conveniently.",,,Backlog
+THERAPIST,7515658,"TH-022	Mark Appointment as No-Show	As an therapist, I want to mark an appointment as no-show so that appointments that were not attended can be properly documented.",,,Backlog
+ADMIN,7515629,"A-001	Admin Log In	As an admin, I want to log in to the system so that I can securely access administrative functions.",17/09/2026,Danziel Jean Lumactod,Done
+ADMIN,7515634,"A-002	Admin Log Out	As an admin, I want to log out of the system so that I can protect the system from unauthorized access.",18/09/2026,Danziel Jean Lumactod,Done
+ADMIN,7515638,"A-003	Add User	As an admin, I want to add a user account so that authorized patients, therapists, and secretaries can access the system.",19/09/2026,Danziel Jean Lumactod,Done
+ADMIN,7515641,"A-004	View User	As an admin, I want to view user account information so that I can monitor registered users.",,Danziel Jean Lumactod,Done
+ADMIN,7515643,"A-005	Edit User	As an admin, I want to edit user account information so that user records remain accurate and up to date.",,Danziel Jean Lumactod,Done
+ADMIN,7515648,"A-006	Archive User	As an admin, I want to archive a user account so that inactive accounts can be retained without allowing them to appear as active users.",,Danziel Jean Lumactod,Done
+ADMIN,7515659,"A-008	Activate User	As an admin, I want to activate a user account so that an authorized user can access the system.",,Chennie Magbanua,Done
+ADMIN,7515669,"A-009	Deactivate User	As an admin, I want to deactivate a user account so that a user can temporarily be prevented from accessing the system.",,Chennie Magbanua,Done
+ADMIN,7515673,"A-010	Manage Patient Information	As an admin, I want to manage patient information so that patient records remain accurate and complete.",,,Backlog
+ADMIN,7515677,"A-011	Manage Therapist Information	As an admin, I want to manage therapist information so that therapist records remain accurate and complete.",,Chennie Magbanua,Done
+ADMIN,7515681,"A-012	Manage Therapist Specialization	As an admin, I want to record and update therapist specializations so that patients can be assigned to appropriate therapists.",,Julia Rica Soson,Done
+ADMIN,7515685,"A-013	Manage Therapist Working Days	As an admin, I want to manage therapist working days so that appointments can be scheduled according to therapist availability.",,,Backlog
+ADMIN,7515690,"A-014	Manage Therapist Working Hours	As an admin, I want to manage therapist working hours so that appointment schedules do not conflict with therapist availability.",,,Backlog
+ADMIN,7515698,"A-015	Add Therapy Service	As an admin, I want to add a therapy service so that patients can request available physical therapy services.",,Julia Rica Soson,Done
+ADMIN,7515700,"A-016	Edit Therapy Service	As an admin, I want to edit therapy service information so that service details remain accurate.",,Danziel Jean Lumactod,Done
+ADMIN,7515703,"A-017	Archive Therapy Service	As an admin, I want to remove a therapy service so that unavailable services are no longer offered to patients.",,Danziel Jean Lumactod,Done
+ADMIN,7515704,"A-018	Set Service Duration	As an admin, I want to set the duration of a therapy service so that appointments can be scheduled with the correct treatment duration.",,Danziel Jean Lumactod,Backlog
+ADMIN,7515708,"A-019	Set Service Fee	As an admin, I want to set the fee of a therapy service so that the correct payment amount can be recorded.",,Danziel Jean Lumactod,Backlog
+ADMIN,7515709,"A-020	Receive Appointment Request	As an admin, I want to receive appointment requests so that I can review and process patient requests.",,Danziel Jean Lumactod,Done
+ADMIN,7515710,"A-021	Review Appointment Request	As an admin, I want to review an appointment request so that I can determine whether an appropriate schedule and therapist are available.",,Danziel Jean Lumactod,Done
+ADMIN,7515711,"A-022	Assign Therapist	As an admin, I want to assign a therapist to an appointment so that the patient can be attended to by an appropriate therapist.",,Danziel Jean Lumactod,Done
+ADMIN,7515713,"A-023	Confirm Appointment	As an admin, I want to confirm an appointment so that the patient and therapist have an official appointment schedule.",,Danziel Jean Lumactod,Done
+ADMIN,7515714,"A-024	Reschedule Appointment	As an admin, I want to reschedule an appointment so that a suitable alternative schedule can be provided when necessary.",,Chennie Magbanua,Done
+ADMIN,7515717,"A-025	Cancel Appointment	As an admin, I want to cancel an appointment so that the appointment record accurately reflects that the session will not proceed.",,,Backlog
+ADMIN,7515719,"A-026	Mark Appointment as Completed	As an admin, I want to mark an appointment as completed so that completed appointments are properly recorded.",,,Backlog
+ADMIN,7515720,"A-027	Mark Appointment as No-Show	As an admin, I want to mark an appointment as no-show so that appointments that were not attended can be properly documented.",,,Backlog
+ADMIN,7515722,"A-028	View Upcoming Appointments	As an admin, I want to view upcoming appointments so that I can monitor the clinic’s schedule.",,,Backlog
+ADMIN,7515724,"A-029	View Previous Appointments	As an admin, I want to view previous appointments so that I can review completed or past appointment records.",,,Backlog
+ADMIN,7515725,"A-030	View Appointment History	As an admin, I want to view appointment history so that I can monitor the clinic’s appointment records.",,,Backlog
+ADMIN,7515726,"A-031	View Session History	As an admin, I want to view session history so that I can monitor patient therapy records.",,,Backlog
+ADMIN,7515728,"A-032	Manage Payment Status	As an admin, I want to manage the payment status of an appointment so that the system accurately reflects whether a service has been paid.",,,Backlog
+ADMIN,7515729,"A-033	Mark Payment as Paid	As an admin, I want to mark an appointment payment as paid so that completed payments are properly recorded.",,,Backlog
+ADMIN,7515730,"A-034	Mark Payment as Unpaid	As an admin, I want to mark an appointment payment as unpaid so that outstanding payments can be identified.",,,Backlog
+ADMIN,7515731,"A-035	View Payment Status	As an admin, I want to view payment statuses so that I can monitor paid and unpaid appointments.",,,Backlog
+ADMIN,7515732,"A-036	Search Patient Records	As an admin, I want to search patient records so that I can quickly find a specific patient.",,,Backlog
+ADMIN,7515734,"A-037	Search Therapist Records	As an admin, I want to search therapist records so that I can quickly find a specific therapist.",,,Backlog
+ADMIN,7515736,"A-038	Search Appointment Records	As an admin, I want to search appointment records so that I can quickly find specific appointments.",,,Backlog
+ADMIN,7515738,"A-039	Filter Records	As an admin, I want to filter records so that I can quickly identify information based on specific criteria.",,,Backlog
+ADMIN,7515740,"A-040	View Patient Count Report	As an admin, I want to view the number of registered patients so that I can monitor the clinic’s patient population.",,,Backlog
+ADMIN,7515741,"A-041	View Completed Session Report	As an admin, I want to view the number of patients who completed therapy sessions within a selected period so that I can monitor completed treatments.",,,Backlog
+ADMIN,7515742,"A-042	View Appointment Report	As an admin, I want to view appointment statistics so that I can monitor the number and status of appointments within a selected period.",,,Backlog
+ADMIN,7515743,"A-043	View Therapist Workload Report	As an admin, I want to view the number of appointments assigned to each therapist so that I can monitor therapist workload and scheduling.",,,Backlog
+ADMIN,7515744,"A-044	View Payment Report	As an admin, I want to view payment reports so that I can monitor paid and unpaid therapy services.",,,Backlog
+ADMIN,7515746,"A-045	View Clinic Summary Report	As an admin, I want to view a summary of clinic activities so that I can monitor overall clinic operations.",,,Backlog
+ADMIN,7515747,"A-046	Send Appointment Notification	As an admin, I want the system to send appointment notifications so that patients and therapists are informed about appointment updates.",,,Backlog
+ADMIN,7914891,"A-047 Review Therapist Request reschedule and Approve, I want the system to allow the admin to view and approve reschedules of appointments.",,Danziel Jean Lumactod,Done
+SECRETARY,7515662,"SE-001	Secretary Log In	As a secretary, I want to log in to the system so that I can securely access my assigned functions.",17/09/2026,Chennie Magbanua,Done
+SECRETARY,7515663,"SE-002	Secretary Log Out	As a secretary, I want to log out of the system so that I can protect the system from unauthorized access.",18/09/2026,Chennie Magbanua,Done
+SECRETARY,7515666,"SE-003	View Profile	As a secretary, I want to view my profile so that I can verify my account information.",,Julia Rica Soson,Done
+SECRETARY,7515671,"SE-004	Edit Profile	As a secretary, I want to edit my profile information so that my account details remain accurate.",,Danziel Jean Lumactod,Done
+SECRETARY,7515676,"SE-005	View Upcoming Schedule	As a secretary, I want to view the clinic’s upcoming appointment schedule so that I can assist with daily clinic operations.",,,Backlog
+SECRETARY,7515679,"SE-006	View Appointment Details	As a secretary, I want to view appointment details so that I can provide accurate scheduling information when assisting patients and staff.",,,Backlog
+SECRETARY,7515683,"SE-007	Search Appointment Schedule	As a secretary, I want to search the appointment schedule so that I can quickly find a patient’s upcoming appointment.",,,Backlog
+SECRETARY,7515689,"SE-008	Record Payment	As a secretary, I want to record a patient’s payment so that the patient’s payment transaction is properly documented.",,,Backlog
+SECRETARY,7515693,"SE-009	Update Payment Status	As a secretary, I want to update the payment status after receiving payment so that the system accurately reflects the patient’s payment record.",,,Backlog
+SECRETARY,7515696,"SE-010	View Payment Status	As a secretary, I want to view payment status so that I can determine whether an appointment has been paid or remains unpaid.",,,Backlog
+SECRETARY,7515699,"SE-011	View Patient Appointment Information	As a secretary, I want to view relevant appointment information so that I can assist patients with their scheduled appointments.",,,Backlog
