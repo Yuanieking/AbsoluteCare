@@ -13,3 +13,6 @@ const dependentFields = {
 
 export const dependentSchema = z.object(dependentFields);
 export const dependentUpdateSchema = z.object(dependentFields).partial();
+
+export type DependentInput = z.infer<typeof dependentSchema>;
+export type DependentUpdateInput = z.infer<typeof dependentUpdateSchema>;

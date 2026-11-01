@@ -16,3 +16,15 @@ export const rescheduleRequestSchema = z.object({
   proposedTime: z.string().regex(timePattern, "Choose a valid time."),
   reason: z.string().trim().max(500).optional().default(""),
 });
+
+export const adminNotificationSchema = z.object({
+  message: z
+    .string()
+    .trim()
+    .min(1, "Write a message.")
+    .max(500, "Keep the message under 500 characters."),
+});
+
+export type AppointmentRequestInput = z.infer<typeof appointmentRequestSchema>;
+export type RescheduleRequestInput = z.infer<typeof rescheduleRequestSchema>;
+export type AdminNotificationInput = z.infer<typeof adminNotificationSchema>;

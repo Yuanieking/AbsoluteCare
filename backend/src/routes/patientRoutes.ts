@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import {
   cancelAppointment,
   createDependent,
@@ -18,12 +18,12 @@ import {
   syncAppointmentCalendar,
   updateDependent,
   unreadNotificationCount,
-} from "../controller/patientController.js";
+} from "../controllers/patientController.js";
 import { protectRoute } from "../middleware/authMiddleware.js";
 import { requirePatient } from "../middleware/patientMiddleware.js";
 
 const router = Router();
-const patientOnly = [protectRoute, requirePatient];
+const patientOnly: RequestHandler[] = [protectRoute, requirePatient];
 
 router.get("/services", patientOnly, listServices);
 router.get("/dependents", patientOnly, listDependents);
