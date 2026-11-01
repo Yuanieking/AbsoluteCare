@@ -29,7 +29,10 @@ import { getSettings } from "./services/settingsService.js";
 import { getIntegrationStatus } from "./config/integrations.js";
 import { validateEmailAssets } from "./emails/layout.js";
 import { refreshRuntimeConfig } from "./config/runtimeConfig.js";
-import { markRestartApplied } from "./services/integrationCredentialService.js";
+import {
+  markRestartApplied,
+  pruneRetiredCredentials,
+} from "./services/integrationCredentialService.js";
 import { syncBootstrapAdmins } from "./services/adminBootstrapService.js";
 import { setHttpServer } from "./services/restartService.js";
 import { AppError } from "./errors/AppError.js";
@@ -106,6 +109,7 @@ const server = app.listen(PORT, () => {
       await refreshRuntimeConfig();
       await syncBootstrapAdmins();
       await markRestartApplied();
+      await pruneRetiredCredentials();
       const settings = await getSettings();
       const status = Object.entries(
         getIntegrationStatus() as unknown as Record<

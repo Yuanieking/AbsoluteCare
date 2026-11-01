@@ -127,30 +127,12 @@ async function checkRecaptcha(
 export function candidateMailConfig(
   values: Record<string, string>,
 ): MailConfig {
-  const host = (values.SMTP_HOST || "").trim();
-  const port = Number((values.SMTP_PORT || "465").trim());
-  const secureValue = (values.SMTP_SECURE || "").trim().toLowerCase();
-  const user = (values.SMTP_USER || values.GMAIL_USER || "").trim();
-  const pass = (values.SMTP_PASS || values.GMAIL_APP_PASSWORD || "").replaceAll(
-    " ",
-    "",
-  );
+  const apiKey = (values.BREVO_API_KEY || "").trim();
   const from = (values.MAIL_FROM || "").trim();
   const missing: string[] = [];
-  if (!host) missing.push("SMTP_HOST");
-  if (!Number.isInteger(port) || port <= 0) missing.push("SMTP_PORT");
-  if (!user) missing.push("SMTP_USER");
-  if (!pass) missing.push("SMTP_PASS");
+  if (!apiKey) missing.push("BREVO_API_KEY");
   if (!from) missing.push("MAIL_FROM");
-  return {
-    host,
-    port,
-    secure: secureValue ? secureValue === "true" : port === 465,
-    user,
-    pass,
-    from,
-    missing,
-  };
+  return { apiKey, from, missing };
 }
 
 async function checkEmail(
@@ -165,7 +147,7 @@ async function checkEmail(
       message: `Email settings are incomplete: ${config.missing.join(", ")}.`,
     };
   }
-  const transport = createMailTransport(config);
+  const transport = createMailTransport(config, TIMEOUT_MS);
   if (!transport) {
     return { fields: {}, message: "Email settings are incomplete." };
   }
@@ -173,10 +155,14 @@ async function checkEmail(
     await transport.verify();
     return null;
   } catch (error) {
-    return {
-      fields: { SMTP_PASS: classifyMailError(error).userMessage },
-      message: classifyMailError(error).userMessage,
-    };
+    if (Number((error as { status?: number }).status || 0) === 429) {
+      return {
+        fields: {},
+        message: "Brevo is rate limiting the check. Try again in a minute.",
+      };
+    }
+    const message = classifyMailError(error).userMessage;
+    return { fields: { BREVO_API_KEY: message }, message };
   }
 }
 

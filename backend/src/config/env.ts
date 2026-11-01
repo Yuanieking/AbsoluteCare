@@ -65,15 +65,7 @@ export const CLINIC_ADDRESS = getEnv(
 export const FRONTEND_URL = getEnv("FRONTEND_URL", "http://localhost:5173");
 export const ASSETS_BASE_URL = getEnv("ASSETS_BASE_URL", "");
 export const JWT_SECRET = getEnv("JWT_SECRET", "absolutecare-secret-key");
-export const SMTP_HOST = getEnv("SMTP_HOST", "smtp.gmail.com");
-export const SMTP_PORT = getEnv("SMTP_PORT", "465");
-export const SMTP_USER = getEnv("SMTP_USER", "");
-export const SMTP_PASSWORD = getEnv("SMTP_PASSWORD", "");
-export const GMAIL_USER = getEnv("GMAIL_USER", SMTP_USER);
-export const GMAIL_APP_PASSWORD = getEnv("GMAIL_APP_PASSWORD", SMTP_PASSWORD);
-export const GMAIL_CLIENT_ID = getEnv("GMAIL_CLIENT_ID", "");
-export const GMAIL_CLIENT_SECRET = getEnv("GMAIL_CLIENT_SECRET", "");
-export const GMAIL_REFRESH_TOKEN = getEnv("GMAIL_REFRESH_TOKEN", "");
+export const BREVO_API_KEY = getEnv("BREVO_API_KEY", "");
 export const CREDENTIAL_ENCRYPTION_KEY = getEnv(
   "CREDENTIAL_ENCRYPTION_KEY",
   "",
@@ -88,7 +80,7 @@ export const ADMIN_EMAILS = getEnv("ADMIN_EMAILS", "")
   .filter(Boolean);
 export const MAIL_FROM = getEnv(
   "MAIL_FROM",
-  GMAIL_USER
-    ? `AbsoluteCare Therapy Center <${GMAIL_USER}>`
-    : "AbsoluteCare Therapy Center <no-reply@absolutecare.local>",
+  "AbsoluteCare Therapy Center <no-reply@absolutecare.local>",
 );
+// Where "Send test email" delivers. Blank falls back to the signed-in admin.
+export const TEST_EMAIL_RECIPIENT = getEnv("TEST_EMAIL_RECIPIENT", "").trim();

@@ -12,8 +12,21 @@ import { isPrimaryInstance } from "./restartService.js";
 
 const BACKUP_PATH = path.join(PACKAGE_ROOT, ".env.bak");
 
-// Legacy alias that must never be written: canonical SMTP_PASS wins.
-const DROP_KEYS = new Set(["SMTP_PASSWORD"]);
+// Keys from the retired SMTP/Gmail mail path. They are stripped on the next
+// rewrite so old installs do not keep dead credentials in .env.
+const RETIRED_KEYS = new Set([
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_SECURE",
+  "SMTP_USER",
+  "SMTP_PASS",
+  "SMTP_PASSWORD",
+  "GMAIL_USER",
+  "GMAIL_APP_PASSWORD",
+  "GMAIL_CLIENT_ID",
+  "GMAIL_CLIENT_SECRET",
+  "GMAIL_REFRESH_TOKEN",
+]);
 
 const GROUP_TITLES = new Map<string, string>(
   INTEGRATION_GROUPS.map((group) => [group.id, group.title] as const),
@@ -119,15 +132,6 @@ export async function rewriteEnvFile(
       const kept = (existing[key] ?? "").trim();
       if (kept) merged.set(key, kept);
     }
-    // Canonical-name migration: an old SMTP_PASSWORD-only install carries
-    // its value over to SMTP_PASS, then SMTP_PASSWORD is dropped.
-    if (!merged.has("SMTP_PASS")) {
-      const legacy =
-        (overrides.get("SMTP_PASSWORD") ?? "").trim() ||
-        (existing.SMTP_PASSWORD ?? "").trim();
-      if (legacy) merged.set("SMTP_PASS", legacy);
-    }
-
     // Validate before touching disk: newlines are rejected per spec.
     for (const [key, value] of merged) {
       if (/[\r\n]/.test(value)) {
@@ -179,14 +183,15 @@ export async function rewriteEnvFile(
     }
 
     const unmanagedInOrder = originalOrder.filter(
-      (key) => !MANAGED_KEYS.has(key) && !DROP_KEYS.has(key) && key in existing,
+      (key) =>
+        !MANAGED_KEYS.has(key) && !RETIRED_KEYS.has(key) && key in existing,
     );
     // Include unmanaged keys that dotenv parsed but whose line shape the
     // order scanner missed (defensive; keeps values untouched).
     for (const key of Object.keys(existing)) {
       if (
         !MANAGED_KEYS.has(key) &&
-        !DROP_KEYS.has(key) &&
+        !RETIRED_KEYS.has(key) &&
         !unmanagedInOrder.includes(key)
       ) {
         unmanagedInOrder.push(key);
@@ -200,24 +205,12 @@ export async function rewriteEnvFile(
       lines.push("");
     }
 
-    const previousManagedCount = [...MANAGED_KEYS].filter(
-      (key) => (existing[key] ?? "").trim() !== "",
-    ).length;
     let changed = 0;
     for (const key of MANAGED_KEYS) {
       const before = (existing[key] ?? "").trim();
       const after = merged.has(key) ? merged.get(key) : "";
       if (before !== after) changed += 1;
     }
-    // Canonical migration counts as a change when SMTP_PASS appears fresh.
-    if (
-      !(existing.SMTP_PASS ?? "").trim() &&
-      merged.has("SMTP_PASS") &&
-      (existing.SMTP_PASSWORD ?? "").trim()
-    ) {
-      changed += 1;
-    }
-    void previousManagedCount;
 
     const tmpPath = path.join(PACKAGE_ROOT, `.env.tmp-${process.pid}`);
     try {

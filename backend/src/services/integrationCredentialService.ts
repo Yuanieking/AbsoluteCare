@@ -4,6 +4,7 @@ import { API_BASE_URL } from "../config/env.js";
 import {
   INTEGRATION_GROUPS,
   LOAD_BEARING_KEYS,
+  MANAGED_KEYS,
   groupById,
   groupKeys,
   keyDefinition,
@@ -510,27 +511,6 @@ export async function saveCredentials({
       },
       { upsert: true, setDefaultsOnInsert: true },
     );
-    if (change.key === "SMTP_PASS") {
-      const alias = (await IntegrationCredential.findOne({
-        key: "SMTP_PASSWORD",
-      }).lean()) as unknown as CredentialDoc | null;
-      await IntegrationCredential.findOneAndUpdate(
-        { key: "SMTP_PASSWORD" },
-        {
-          $set: {
-            group: "email",
-            valueEncrypted: encrypted,
-            valueHash: change.hash,
-            previousEncrypted: alias?.valueEncrypted || null,
-            fingerprint: maskValue(change.value, "secret"),
-            updatedBy: objectId(adminId),
-            clearedAt: null,
-            verifiedAt: bootstrap ? null : now,
-          },
-        },
-        { upsert: true, setDefaultsOnInsert: true },
-      );
-    }
     if (change.key === "GOOGLE_SECRET_KEY" && !values.GOOGLE_CLIENT_SECRET) {
       await IntegrationCredential.findOneAndUpdate(
         { key: "GOOGLE_CLIENT_SECRET" },
@@ -754,6 +734,35 @@ export async function testGroup(
   );
   invalidateSettingsCache();
   return { ...lastTest, fields: result.fields, warnings: result.warnings };
+}
+
+/**
+ * Deletes encrypted rows for keys that are no longer in the registry, so the
+ * retired SMTP/Gmail credentials do not linger in the database.
+ */
+export async function pruneRetiredCredentials(): Promise<void> {
+  try {
+    const stale = (await IntegrationCredential.find({
+      key: { $nin: [...MANAGED_KEYS] },
+    } as QueryFilter<IntegrationCredentialData>
+      ).select("key")
+      .lean()) as unknown as Array<{ key: string }> | null;
+    const keys = (stale ?? [])
+      .map((doc) => String(doc.key || ""))
+      .filter(Boolean);
+    if (!keys.length) return;
+    await IntegrationCredential.deleteMany({
+      key: { $in: keys },
+    } as QueryFilter<IntegrationCredentialData>);
+    console.log(
+      `credential: pruned ${keys.length} retired keys (${keys.join(", ")})`,
+    );
+  } catch (error) {
+    console.error(
+      "credential: prune failed:",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
 }
 
 export async function markRestartApplied(): Promise<void> {

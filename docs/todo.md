@@ -14,7 +14,7 @@ Username: shenyyeah
 
 Danziel Jean Lumactod
 GitHub Name: Danziel Jean
-Email: 2301112832@student.buksu.edu.ph or dahnzel.j@gmail.com
+Email: 2301112832@student.buksu.edu.ph
 Username: Danzie0
 
 Carlitos Mari Simene

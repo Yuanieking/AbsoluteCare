@@ -10,10 +10,6 @@ import {
   GOOGLE_CLIENT_SECRET,
   GOOGLE_SECRET_KEY,
   RECAPTCHA_SECRET_KEY,
-  SMTP_PASSWORD,
-  SMTP_USER,
-  GMAIL_APP_PASSWORD,
-  GMAIL_USER,
   RECAPTCHA_SITE_KEY,
 } from "../config/env.js";
 import { getIntegrationStatus } from "../config/integrations.js";

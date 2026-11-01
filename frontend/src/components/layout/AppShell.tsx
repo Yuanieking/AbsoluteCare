@@ -68,7 +68,7 @@ export function AppShell({ role, context, actions, badges, children }: AppShellP
     <div
       data-surface="portal"
       style={{ '--rail': collapsed ? '60px' : '228px' } as CSSProperties}
-      className="relative grid h-dvh grid-cols-1 overflow-hidden bg-canvas text-ink min-[940px]:grid-cols-[var(--rail)_minmax(0,1fr)] max-[939px]:h-auto max-[939px]:min-h-dvh max-[939px]:overflow-visible"
+      className="relative grid h-dvh grid-cols-1 overflow-hidden bg-canvas text-ink transition-[grid-template-columns] duration-200 ease-snap min-[940px]:grid-cols-[var(--rail)_minmax(0,1fr)] max-[939px]:h-auto max-[939px]:min-h-dvh max-[939px]:overflow-visible"
     >
       <a
         href="#main-content"

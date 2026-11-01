@@ -50,11 +50,6 @@ function missingVariables(values: Record<string, string>): string[] {
 }
 
 function integrationValues(): Record<string, Record<string, string>> {
-  const smtpUser =
-    getIntegrationConfig("SMTP_USER") || getIntegrationConfig("GMAIL_USER");
-  const smtpPass =
-    getIntegrationConfig("SMTP_PASS") ||
-    getIntegrationConfig("GMAIL_APP_PASSWORD");
   return {
     googleAuth: {
       GOOGLE_CLIENT_ID: getIntegrationConfig("GOOGLE_CLIENT_ID"),
@@ -75,9 +70,8 @@ function integrationValues(): Record<string, Record<string, string>> {
       ),
     },
     email: {
-      SMTP_HOST: getIntegrationConfig("SMTP_HOST"),
-      SMTP_USER: smtpUser,
-      SMTP_PASSWORD: smtpPass,
+      BREVO_API_KEY: getIntegrationConfig("BREVO_API_KEY"),
+      MAIL_FROM: getIntegrationConfig("MAIL_FROM"),
     },
   };
 }
@@ -88,14 +82,7 @@ export function getIntegrationStatus(): IntegrationStatusMap {
   const recaptcha = values.recaptcha ?? {};
   const googleCalendar = values.googleCalendar ?? {};
   const email = values.email ?? {};
-  const emailOAuthMissing = missingVariables({
-    GMAIL_USER: getIntegrationConfig("GMAIL_USER"),
-    GMAIL_CLIENT_ID: getIntegrationConfig("GMAIL_CLIENT_ID"),
-    GMAIL_CLIENT_SECRET: getIntegrationConfig("GMAIL_CLIENT_SECRET"),
-    GMAIL_REFRESH_TOKEN: getIntegrationConfig("GMAIL_REFRESH_TOKEN"),
-  });
-  const emailSmtpMissing = missingVariables(email);
-  const emailMissing = emailOAuthMissing.length === 0 ? [] : emailSmtpMissing;
+  const emailMissing = missingVariables(email);
   return {
     googleAuth: {
       configured: missingVariables(googleAuth).length === 0,
@@ -119,11 +106,7 @@ export function getIntegrationDetails(): IntegrationDetailsMap {
   const calendarRedirect =
     getIntegrationConfig("GOOGLE_CALENDAR_REDIRECT_URI") ||
     `${API_BASE_URL}/integrations/google-calendar/callback`;
-  const sender =
-    getIntegrationConfig("MAIL_FROM") ||
-    getIntegrationConfig("GMAIL_USER") ||
-    getIntegrationConfig("SMTP_USER") ||
-    null;
+  const sender = getIntegrationConfig("MAIL_FROM") || null;
   return {
     googleAuth: {
       clientIdMasked: maskValue(clientId, "identifier"),
@@ -153,7 +136,7 @@ export function getIntegrationDetails(): IntegrationDetailsMap {
       googleAuth: getIntegrationSource("GOOGLE_CLIENT_ID"),
       recaptcha: getIntegrationSource("RECAPTCHA_SECRET_KEY"),
       googleCalendar: getIntegrationSource("GOOGLE_CALENDAR_ENCRYPTION_KEY"),
-      email: getIntegrationSource("SMTP_PASS"),
+      email: getIntegrationSource("BREVO_API_KEY"),
     },
   };
 }

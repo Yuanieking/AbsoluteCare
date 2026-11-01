@@ -1,18 +1,16 @@
-import fs from "node:fs";
-import path from "node:path";
 import AppSetting from "../models/appSettingModel.js";
-import { ASSETS_DIR } from "../config/paths.js";
 import { FRONTEND_URL, MAIL_FROM } from "../config/env.js";
 import { escapeHtml } from "./components.js";
-
-const devLogoPath = path.join(ASSETS_DIR, "email/logo.png");
 
 let assetsWarningLogged = false;
 let settingsWarningLogged = false;
 
-export type EmailAttachment =
-  | { filename: string; path: string; cid: string }
-  | { filename: string; content: string; contentType: string };
+// Brevo's v3 API has no inline CID support, so attachments are always content.
+export type EmailAttachment = {
+  filename: string;
+  content: string;
+  contentType: string;
+};
 
 export interface EmailBranding {
   clinicName: string;
@@ -48,7 +46,7 @@ export function validateEmailAssets(): void {
       /localhost|127\.0\.0\.1/i.test(assetsBase))
   ) {
     console.warn(
-      "Email assets: ASSETS_BASE_URL is missing or not a public HTTPS URL; using a CID logo attachment.",
+      "Email assets: ASSETS_BASE_URL is missing or not a public HTTPS URL; the logo falls back to the text wordmark.",
     );
     assetsWarningLogged = true;
   }
@@ -96,18 +94,7 @@ export async function getEmailBranding(): Promise<EmailBranding> {
     email: emailAddress(general.email || MAIL_FROM),
     logo: hostedLogo
       ? { src: hostedLogo, attachments: [] }
-      : fs.existsSync(devLogoPath)
-        ? {
-            src: "cid:logo@absolutecare",
-            attachments: [
-              {
-                filename: "logo.png",
-                path: devLogoPath,
-                cid: "logo@absolutecare",
-              },
-            ],
-          }
-        : { src: null, attachments: [] },
+      : { src: null, attachments: [] },
   };
 }
 

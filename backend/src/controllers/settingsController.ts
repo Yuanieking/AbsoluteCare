@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
-import { JWT_SECRET } from "../config/env.js";
+import { JWT_SECRET, TEST_EMAIL_RECIPIENT } from "../config/env.js";
 import {
   getMailerHealth,
   sendEmail,
@@ -56,6 +56,7 @@ import {
   triggerRestart,
 } from "../services/restartService.js";
 import { parseAction, trimValues } from "../services/verificationActions.js";
+import { isValidEmail } from "../utils/validators.js";
 
 interface HealthEntry {
   lastSuccessfulTest: Date | null;
@@ -305,7 +306,17 @@ export async function getAudit(req: Request, res: Response): Promise<void> {
 
 export async function testEmail(req: Request, res: Response): Promise<void> {
   const admin = await getAdminContact(req.user.userId);
-  if (!admin?.email) {
+  // A configured test recipient lets you prove delivery to a mailbox you can
+  // actually open, even when that is not the admin's own address.
+  if (TEST_EMAIL_RECIPIENT && !isValidEmail(TEST_EMAIL_RECIPIENT)) {
+    res.status(400).json({
+      message:
+        "TEST_EMAIL_RECIPIENT in backend/.env is not a valid email address.",
+    });
+    return;
+  }
+  const recipient = TEST_EMAIL_RECIPIENT || admin?.email || "";
+  if (!recipient) {
     res.status(400).json({ message: "Your account has no email address." });
     return;
   }
@@ -324,12 +335,13 @@ export async function testEmail(req: Request, res: Response): Promise<void> {
   const sender = detailsMap().email as { senderAddress?: string | null };
   const result = await sendEmail(
     await renderTestEmail({
-      email: admin.email,
+      email: recipient,
       senderAddress: sender.senderAddress ?? "",
     }),
   );
+  const sentMessage = `Test email sent to ${recipient}.`;
   const lastTest = result.sent
-    ? { ok: true, message: "Test email sent.", checkedAt: new Date() }
+    ? { ok: true, message: sentMessage, checkedAt: new Date() }
     : { ok: false, message: result.userMessage, checkedAt: new Date() };
   await saveIntegrationTestResult("emailLastTest", lastTest);
   recordHealth("email", lastTest.ok, lastTest.message);
@@ -337,7 +349,7 @@ export async function testEmail(req: Request, res: Response): Promise<void> {
     res.status(502).json({ ok: false, message: lastTest.message });
     return;
   }
-  res.json({ ok: true, message: "Test email sent." });
+  res.json({ ok: true, message: sentMessage, recipient });
 }
 
 export async function getImpact(req: Request, res: Response): Promise<void> {

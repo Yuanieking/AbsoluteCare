@@ -208,7 +208,7 @@ export function IntegrationsSection({
     setResult('email', '')
     try {
       await onTestEmail()
-      setResult('email', 'Test email sent to your admin email address.')
+      setResult('email', 'Test email sent.')
     } catch (error) {
       setResult('email', getToastError(error, 'Test email could not be sent. Try again.'))
     } finally {

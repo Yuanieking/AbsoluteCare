@@ -63,8 +63,9 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
     id: "email",
     apiKey: "email",
     title: "Email provider",
-    purpose: "Sends password resets, invitations, and appointment emails.",
-    helpUrl: "https://support.google.com/accounts/answer/185833",
+    purpose:
+      "Sends password resets, invitations, and appointment emails through Brevo.",
+    helpUrl: "https://app.brevo.com/settings/keys/api",
   },
 ];
 
@@ -171,64 +172,23 @@ export const INTEGRATION_KEYS: IntegrationKeyDefinition[] = [
         : null,
   },
   {
-    key: "SMTP_HOST",
-    group: "email",
-    kind: "config",
-    label: "SMTP host",
-    required: false,
-    helpUrl: "https://support.google.com/accounts/answer/185833",
-    helper: "smtp.gmail.com for Gmail.",
-  },
-  {
-    key: "SMTP_PORT",
-    group: "email",
-    kind: "config",
-    label: "SMTP port",
-    required: false,
-    helpUrl: null,
-    helper: "465 for secure SMTP, 587 for STARTTLS.",
-    validate: (value) => {
-      const port = Number(clean(value));
-      if (!Number.isInteger(port) || port < 1 || port > 65535)
-        return "Enter a port between 1 and 65535.";
-      return null;
-    },
-  },
-  {
-    key: "SMTP_SECURE",
-    group: "email",
-    kind: "config",
-    label: "Secure connection",
-    required: false,
-    helpUrl: null,
-    helper: "true or false. Leave blank to derive it from the port.",
-    validate: (value) =>
-      ["true", "false"].includes(clean(value).toLowerCase())
-        ? null
-        : "Enter true or false.",
-  },
-  {
-    key: "SMTP_USER",
-    group: "email",
-    kind: "identifier",
-    label: "SMTP user",
-    required: false,
-    helpUrl: null,
-    helper: "Usually the full email address of the sending account.",
-    validate: (value) =>
-      EMAIL.test(clean(value)) ? null : "Enter a valid email address.",
-  },
-  {
-    key: "SMTP_PASS",
+    key: "BREVO_API_KEY",
     group: "email",
     kind: "secret",
-    label: "SMTP password",
-    required: false,
-    helpUrl: "https://support.google.com/accounts/answer/185833",
+    label: "Brevo API key",
+    required: true,
+    helpUrl: "https://app.brevo.com/settings/keys/api",
     helper:
-      "Gmail requires a 16-character App Password, not the account password.",
-    validate: (value) =>
-      clean(value).length < 8 ? "That password looks too short." : null,
+      "Create it in Brevo → SMTP & API → API keys. The version column must say v3.",
+    validate: (value) => {
+      const key = clean(value);
+      if (key.length < 8) return "That key looks too short.";
+      if (key.length > 512) return "That key looks too long (512 characters max).";
+      if (/\s/.test(key)) return "API keys don't contain spaces or line breaks.";
+      if (PLACEHOLDER_VALUES.has(key.toLowerCase()))
+        return "Replace the placeholder with the real Brevo API key.";
+      return null;
+    },
   },
   {
     key: "MAIL_FROM",
@@ -237,58 +197,12 @@ export const INTEGRATION_KEYS: IntegrationKeyDefinition[] = [
     label: "Sender address",
     required: true,
     helpUrl: null,
-    helper: "Either name@clinic.com or AbsoluteCare <name@clinic.com>.",
+    helper:
+      "Either name@clinic.com or AbsoluteCare <name@clinic.com>. Brevo only sends from an address you have verified as a sender.",
     validate: (value) =>
       MAIL_FROM.test(clean(value))
         ? null
         : "Use name@clinic.com or AbsoluteCare <name@clinic.com>.",
-  },
-  {
-    key: "GMAIL_USER",
-    group: "email",
-    kind: "identifier",
-    label: "Gmail user (OAuth)",
-    required: false,
-    helpUrl: null,
-    helper: "Only needed for the Gmail OAuth path.",
-    validate: (value) =>
-      EMAIL.test(clean(value)) ? null : "Enter a valid email address.",
-  },
-  {
-    key: "GMAIL_CLIENT_ID",
-    group: "email",
-    kind: "identifier",
-    label: "Gmail client ID",
-    required: false,
-    helpUrl: "https://console.cloud.google.com/apis/credentials",
-    helper: "Only needed for the Gmail OAuth path.",
-  },
-  {
-    key: "GMAIL_CLIENT_SECRET",
-    group: "email",
-    kind: "secret",
-    label: "Gmail client secret",
-    required: false,
-    helpUrl: "https://console.cloud.google.com/apis/credentials",
-    helper: "Only needed for the Gmail OAuth path.",
-  },
-  {
-    key: "GMAIL_APP_PASSWORD",
-    group: "email",
-    kind: "secret",
-    label: "Gmail app password",
-    required: false,
-    helpUrl: "https://support.google.com/accounts/answer/185833",
-    helper: "Only needed for the Gmail OAuth path.",
-  },
-  {
-    key: "GMAIL_REFRESH_TOKEN",
-    group: "email",
-    kind: "secret",
-    label: "Gmail refresh token",
-    required: false,
-    helpUrl: null,
-    helper: "Issued by Google. Reconnect the account if mail stops sending.",
   },
 ];
 

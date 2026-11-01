@@ -78,7 +78,10 @@ export function NotificationsSection({
       </SettingsCard>
 
       <SettingsCard title="Test">
-        <SettingRow label="Send a test email" helper="Delivered to your admin email address.">
+        <SettingRow
+          label="Send a test email"
+          helper="Sent to TEST_EMAIL_RECIPIENT from backend/.env, or your admin email when that isn't set."
+        >
           <Button type="button" variant="outline" size="sm" onClick={onTestEmail}>
             <Mail size={15} aria-hidden="true" /> Send test email
           </Button>
