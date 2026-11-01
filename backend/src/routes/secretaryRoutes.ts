@@ -8,7 +8,7 @@ import {
   recordPayment,
   updatePayment,
   updateProfile,
-} from "../controller/secretaryController.js";
+} from "../controllers/secretaryController.js";
 
 const router = Router();
 router.use(protectRoute, requireRole("secretary"));
