@@ -1,0 +1,104 @@
+import type { Request, Response } from "express";
+import {
+  countServiceUsage,
+  createService as createServiceRecord,
+  findServiceById,
+  listServices as listServiceRecords,
+  removeService as removeServiceRecord,
+  updateService as updateServiceRecord,
+  type ServicePayload,
+} from "../services/serviceCatalogService.js";
+
+const fields = ["name", "description", "duration", "fee", "category"] as const;
+
+function servicePayload(body: Record<string, unknown>): ServicePayload {
+  return Object.fromEntries(
+    fields
+      .filter((key) => body[key] !== undefined)
+      .map((key) => [
+        key,
+        key === "name" || key === "description" || key === "category"
+          ? String(body[key]).trim()
+          : Number(body[key]),
+      ]),
+  ) as ServicePayload; // values are narrowed to the payload shape above
+}
+
+function validatePayload(payload: ServicePayload): string | null {
+  if (!payload.name?.trim()) return "Service name is required.";
+  if (
+    payload.duration === undefined ||
+    !Number.isFinite(payload.duration) ||
+    payload.duration <= 0
+  )
+    return "Duration must be greater than zero.";
+  if (
+    payload.fee === undefined ||
+    !Number.isFinite(payload.fee) ||
+    payload.fee < 0
+  )
+    return "Fee must be zero or greater.";
+  return null;
+}
+
+export async function listServices(req: Request, res: Response): Promise<void> {
+  const services = await listServiceRecords();
+  res.json({ services });
+}
+
+export async function createService(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const payload = servicePayload(req.body as Record<string, unknown>);
+  const error = validatePayload(payload);
+  if (error) {
+    res.status(400).json({ message: error });
+    return;
+  }
+  const service = await createServiceRecord(payload, req.user.userId);
+  res.status(201).json({ service, message: "Therapy service added." });
+}
+
+export async function updateService(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const service = await findServiceById(String(req.params.id));
+  if (!service) {
+    res.status(404).json({ message: "Therapy service not found." });
+    return;
+  }
+  const payload = servicePayload(req.body as Record<string, unknown>);
+  const error = validatePayload({ ...service.toObject(), ...payload });
+  if (error) {
+    res.status(400).json({ message: error });
+    return;
+  }
+  await updateServiceRecord(service, payload, req.user.userId);
+  res.json({ service, message: "Therapy service updated." });
+}
+
+export async function removeService(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const service = await findServiceById(String(req.params.id));
+  if (!service) {
+    res.status(404).json({ message: "Therapy service not found." });
+    return;
+  }
+  await removeServiceRecord(service, req.user.userId);
+  res.json({
+    service,
+    message: "Therapy service removed from new bookings.",
+  });
+}
+
+export async function getServiceUsage(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const count = await countServiceUsage(String(req.params.id));
+  res.json({ count });
+}
