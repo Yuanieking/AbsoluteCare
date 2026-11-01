@@ -1,0 +1,187 @@
+import { NavLink } from 'react-router-dom'
+import { PanelLeftClose, PanelLeftOpen, Phone } from 'lucide-react'
+import Logo from '@/components/brand/Logo'
+import { groupSections, type NavSection, type RoleNav } from '@/app/nav-config'
+import { cn } from '@/lib/utils'
+
+type Badges = Partial<Record<string, boolean>>
+
+const itemBase =
+  'relative flex h-9 items-center gap-2.5 rounded-md text-[13px] transition-colors duration-150 ease-snap'
+
+type RailNavProps = {
+  sections: NavSection[]
+  collapsed: boolean
+  badges?: Badges
+  onNavigate?: () => void
+}
+
+export function RailNav({ sections, collapsed, badges, onNavigate }: RailNavProps) {
+  const groups = groupSections(sections)
+
+  return (
+    <>
+      {groups.map((group, index) => (
+        <div key={group.group || index} className="flex flex-col">
+          {group.group && !collapsed ? (
+            <p
+              className={cn(
+                'px-2.5 pb-1 text-[10.5px] font-medium text-ink-faint',
+                index === 0 ? 'pt-1' : 'pt-4',
+              )}
+            >
+              {group.group}
+            </p>
+          ) : null}
+          {group.group && collapsed && index > 0 ? (
+            <div aria-hidden="true" className="mx-2 my-2 h-px bg-hairline-in" />
+          ) : null}
+          {group.items.map((section) => {
+            const Icon = section.icon
+            const hasBadge = Boolean(badges?.[section.key])
+            return (
+              <NavLink
+                key={section.key}
+                to={section.to}
+                end={section.end}
+                title={collapsed ? section.label : undefined}
+                aria-label={collapsed ? section.label : undefined}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  cn(
+                    itemBase,
+                    collapsed ? 'mx-auto w-9 justify-center' : 'px-2.5',
+                    isActive
+                      ? 'bg-panel font-semibold text-ink shadow-[0_1px_2px_rgba(23,33,29,0.06)] ring-1 ring-hairline'
+                      : 'text-ink-soft hover:bg-panel/60 hover:text-ink',
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      className={cn(
+                        'size-[17px] shrink-0 transition-colors duration-150',
+                        isActive ? 'text-primary' : 'text-ink-faint',
+                      )}
+                      strokeWidth={1.75}
+                      aria-hidden="true"
+                    />
+                    {collapsed ? null : <span className="truncate">{section.label}</span>}
+                    {hasBadge ? (
+                      <>
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'size-1.5 shrink-0 rounded-full bg-destructive',
+                            collapsed ? 'absolute top-1.5 right-1.5' : 'ml-auto',
+                          )}
+                        />
+                        <span className="sr-only">New items</span>
+                      </>
+                    ) : null}
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
+        </div>
+      ))}
+    </>
+  )
+}
+
+type RailProps = {
+  nav: RoleNav
+  collapsed: boolean
+  onToggleCollapsed: () => void
+  badges?: Badges
+}
+
+export function Rail({ nav, collapsed, onToggleCollapsed, badges }: RailProps) {
+  return (
+    <aside
+      aria-label={`${nav.label} navigation`}
+      className="hidden min-h-0 flex-col px-3 pt-4 pb-3 min-[940px]:flex"
+    >
+      <div
+        className={cn('mb-2 flex items-center gap-2.5 px-1', collapsed && 'justify-center px-0')}
+      >
+        {collapsed ? (
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            aria-label="Expand navigation"
+            aria-expanded={false}
+            className="group relative inline-flex size-8 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 ease-snap hover:bg-panel/60 hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:outline-none"
+          >
+            <Logo
+              variant="mark"
+              tone="dark"
+              size="sm"
+              to={null}
+              className="size-7 transition-opacity duration-150 ease-snap group-hover:opacity-0 group-focus-visible:opacity-0"
+            />
+            <PanelLeftOpen
+              className="absolute size-[17px] opacity-0 transition-opacity duration-150 ease-snap group-hover:opacity-100 group-focus-visible:opacity-100"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+          </button>
+        ) : (
+          <>
+            <Logo
+              variant="mark"
+              tone="dark"
+              size="sm"
+              to={nav.sections[0]?.to ?? '/'}
+              className="size-7"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-display text-[13.5px] leading-tight font-semibold tracking-[-0.01em] text-ink">
+                AbsoluteCare
+              </p>
+              <p className="truncate text-[10.5px] text-ink-faint">{nav.subtitle}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              aria-label="Collapse navigation"
+              aria-expanded
+              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors duration-150 ease-snap hover:bg-panel/60 hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:outline-none"
+            >
+              <PanelLeftClose className="size-[17px]" strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </>
+        )}
+      </div>
+
+      <nav
+        aria-label="Sections"
+        className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto py-1"
+      >
+        <RailNav sections={nav.sections} collapsed={collapsed} badges={badges} />
+      </nav>
+
+      <div className="mt-2 flex items-center gap-1 border-t border-hairline pt-2">
+        <a
+          href={nav.helpHref}
+          title="Contact the clinic"
+          aria-label="Contact the clinic"
+          className={cn(
+            itemBase,
+            'text-ink-soft hover:bg-panel/60 hover:text-ink',
+            collapsed ? 'size-9 justify-center' : 'flex-1 px-2.5',
+          )}
+        >
+          <Phone
+            className="size-[16px] shrink-0 text-ink-faint"
+            strokeWidth={1.75}
+            aria-hidden="true"
+          />
+          {collapsed ? null : <span className="truncate text-[12.5px]">Contact clinic</span>}
+        </a>
+      </div>
+    </aside>
+  )
+}

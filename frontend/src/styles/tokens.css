@@ -1,0 +1,215 @@
+/* ---------------------------------------------------------------------------
+   AbsoluteCare design tokens — "paper & pine"
+
+   One neutral family (warm paper), one primary (deep pine), one attention
+   signal (ochre), one destructive (clay). Everything else derives from those.
+   Radii stay small so structure, not roundness, carries hierarchy.
+--------------------------------------------------------------------------- */
+
+:root,
+[data-surface='public'] {
+  /* Paper planes: canvas sits behind, panel is the working plane, card is flat
+     content on top of it, sunk is recessed (tracks, rails, wells). */
+  --ac-canvas: #f2f0e8;
+  --ac-panel: #fffefb;
+  --ac-card: #ffffff;
+  --ac-sunk: #e7e4da;
+
+  /* Ink: green-black rather than pure black, so text sits in the palette.
+     All three tiers clear 4.5:1 on panel and canvas. */
+  --ac-ink: #17211d;
+  --ac-ink-soft: #4a5751;
+  --ac-ink-faint: #5f6a64;
+
+  /* Structure: hairline separates siblings, hairline-in separates inside a card. */
+  --ac-hairline: #d9d5c9;
+  --ac-hairline-in: #ece8de;
+
+  /* Primary: the one colour we act in. */
+  --ac-primary: #14453b;
+  --ac-primary-strong: #0c2f28;
+  --ac-primary-soft: #dde8e1;
+
+  /* Eyebrow: a moss that reads as annotation, never as an action. */
+  --ac-eyebrow: #4e6428;
+
+  /* Room illustration, tuned to the same paper/pine family. */
+  --ac-room-wall: #b6cbb8;
+  --ac-room-wall-soft: #dae6d4;
+  --ac-room-sun: #f0dba6;
+  --ac-room-chair: #eaf0e3;
+  --ac-room-chair-rail: #a9c1ac;
+  --ac-room-leg: #8aa894;
+  --ac-room-pot: #a9603f;
+  --ac-room-leaf: #4f7d5f;
+}
+
+/* Signed-in surfaces: the canvas drops a shade so the panel reads as a plane
+   laid on a desk rather than a card floating on a page. */
+[data-surface='portal'] {
+  --ac-canvas: #eeebe2;
+  --ac-panel: #fffefb;
+  --ac-card: #ffffff;
+  --ac-sunk: #e4e1d6;
+  --ac-ink: #17211d;
+  --ac-ink-soft: #4a5751;
+  --ac-ink-faint: #5f6a64;
+  --ac-hairline: #d5d1c4;
+  --ac-hairline-in: #eae6dc;
+  --ac-primary: #14453b;
+  --ac-primary-strong: #0c2f28;
+  --ac-primary-soft: #dbe6df;
+  --ac-eyebrow: #4e6428;
+}
+
+:root {
+  /* Attention: things waiting on a human. Not an error, not an accent. */
+  --ac-signal: #8a5a12;
+  --ac-signal-soft: #f7efdd;
+  --ac-destructive: #8f3b2f;
+  --ac-destructive-soft: #f7e7e2;
+
+  /* Highlight: reserved for brand marks and headline emphasis. */
+  --ac-lime: #d8e37c;
+  --ac-ring: #2f6b58;
+
+  /* Appointment and payment states. */
+  --ac-status-pending: #8a5a12;
+  --ac-status-pending-bg: #f7efdd;
+  --ac-status-confirmed: #1d5a70;
+  --ac-status-confirmed-bg: #e4eff2;
+  --ac-status-completed: #2a6b45;
+  --ac-status-completed-bg: #e3efe4;
+  --ac-status-cancelled: #8f3b2f;
+  --ac-status-cancelled-bg: #f7e7e2;
+  --ac-status-no-show: #4a5450;
+  --ac-status-no-show-bg: #eceeea;
+
+  /* Charts: six distinguishable hues from the same earthy family. */
+  --ac-chart-1: #2c6e57;
+  --ac-chart-2: #3f6f8a;
+  --ac-chart-3: #a8781f;
+  --ac-chart-4: #a4553f;
+  --ac-chart-5: #5f7440;
+  --ac-chart-6: #8a8577;
+
+  /* Bklit chart tokens: the vendored charts read --chart-*, not --color-chart-*. */
+  --chart-line-primary: var(--ac-chart-1);
+  --chart-line-secondary: var(--ac-chart-2);
+  --chart-background: var(--ac-card);
+  --chart-foreground: var(--ac-ink);
+  --chart-foreground-muted: var(--ac-ink-soft);
+  --chart-label: var(--ac-ink-soft);
+  --chart-grid: var(--ac-hairline);
+  --chart-crosshair: var(--ac-ink-faint);
+}
+
+@theme inline {
+  --color-canvas: var(--ac-canvas);
+  --color-panel: var(--ac-panel);
+  --color-card: var(--ac-card);
+  --color-sunk: var(--ac-sunk);
+  --color-ink: var(--ac-ink);
+  --color-ink-soft: var(--ac-ink-soft);
+  --color-ink-faint: var(--ac-ink-faint);
+  --color-hairline: var(--ac-hairline);
+  --color-hairline-in: var(--ac-hairline-in);
+  --color-primary: var(--ac-primary);
+  --color-primary-strong: var(--ac-primary-strong);
+  --color-primary-soft: var(--ac-primary-soft);
+  --color-signal: var(--ac-signal);
+  --color-signal-soft: var(--ac-signal-soft);
+  --color-destructive: var(--ac-destructive);
+  --color-destructive-soft: var(--ac-destructive-soft);
+  --color-lime: var(--ac-lime);
+  --color-ring: var(--ac-ring);
+  --color-eyebrow: var(--ac-eyebrow);
+  --color-room-wall: var(--ac-room-wall);
+  --color-room-wall-soft: var(--ac-room-wall-soft);
+  --color-room-sun: var(--ac-room-sun);
+  --color-room-chair: var(--ac-room-chair);
+  --color-room-chair-rail: var(--ac-room-chair-rail);
+  --color-room-leg: var(--ac-room-leg);
+  --color-room-pot: var(--ac-room-pot);
+  --color-room-leaf: var(--ac-room-leaf);
+
+  --color-status-pending: var(--ac-status-pending);
+  --color-status-pending-bg: var(--ac-status-pending-bg);
+  --color-status-confirmed: var(--ac-status-confirmed);
+  --color-status-confirmed-bg: var(--ac-status-confirmed-bg);
+  --color-status-completed: var(--ac-status-completed);
+  --color-status-completed-bg: var(--ac-status-completed-bg);
+  --color-status-cancelled: var(--ac-status-cancelled);
+  --color-status-cancelled-bg: var(--ac-status-cancelled-bg);
+  --color-status-no-show: var(--ac-status-no-show);
+  --color-status-no-show-bg: var(--ac-status-no-show-bg);
+
+  --color-chart-1: var(--ac-chart-1);
+  --color-chart-2: var(--ac-chart-2);
+  --color-chart-3: var(--ac-chart-3);
+  --color-chart-4: var(--ac-chart-4);
+  --color-chart-5: var(--ac-chart-5);
+  --color-chart-6: var(--ac-chart-6);
+
+  /* Aliases kept for the shadcn-derived primitives. */
+  --color-background: var(--ac-panel);
+  --color-foreground: var(--ac-ink);
+  --color-popover: var(--ac-panel);
+  --color-popover-foreground: var(--ac-ink);
+  --color-card-foreground: var(--ac-ink);
+  --color-muted: var(--ac-sunk);
+  --color-muted-foreground: var(--ac-ink-soft);
+  --color-accent: var(--ac-sunk);
+  --color-accent-foreground: var(--ac-ink);
+  --color-secondary: var(--ac-sunk);
+  --color-secondary-foreground: var(--ac-ink);
+  --color-border: var(--ac-hairline);
+  --color-input: var(--ac-hairline);
+  --color-primary-foreground: #fffefb;
+  --color-destructive-foreground: #fffefb;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Crisp by default; one generous step reserved for the app plane. */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 9px;
+  --radius-xl: 13px;
+  --radius-2xl: 18px;
+
+  /* Elevation is a marker, not a texture. */
+  --shadow-card: 0 1px 2px rgba(23, 33, 29, 0.05);
+  --shadow-pop: 0 2px 4px -2px rgba(23, 33, 29, 0.08), 0 10px 24px -12px rgba(23, 33, 29, 0.22);
+  --shadow-modal: 0 2px 8px rgba(23, 33, 29, 0.06), 0 32px 64px -28px rgba(23, 33, 29, 0.38);
+
+  /* Motion: strong curves, short durations, exits faster than entrances. */
+  --ease-snap: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-glide: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@theme {
+  --animate-sheen: sheen 1.6s ease-in-out infinite;
+  --animate-progress: progress 1.1s ease-in-out infinite;
+}
+
+@keyframes sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
