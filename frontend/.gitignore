@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Throwaway Chrome profile used by local browser tooling
+.tmp-chrome-profile
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

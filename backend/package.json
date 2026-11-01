@@ -2,14 +2,18 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/src/app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/app.js",
-    "email:preview": "node scripts/email-preview.js",
-    "email:test": "node scripts/email-test.js",
-    "seed": "node scripts/seed.js",
-    "seed:reset": "node scripts/seed.js --reset"
+    "dev": "tsx watch src/app.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/app.js",
+    "typecheck": "tsc --noEmit",
+    "email:preview": "tsx scripts/email-preview.ts",
+    "email:test": "tsx scripts/email-test.ts",
+    "seed": "tsx seed.ts",
+    "seed:reset": "tsx seed.ts --reset",
+    "backfill:working-hours": "tsx scripts/backfillWorkingHours.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +25,6 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.3",
     "express": "^5.2.1",
-    "express-async-handler": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.10.2",
     "nodemailer": "^7.0.6",
@@ -29,6 +32,13 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.6.0",
-    "nodemon": "^3.1.14"
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.6.5",
+    "@types/nodemailer": "^8.0.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
