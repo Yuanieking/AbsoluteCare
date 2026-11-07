@@ -55,6 +55,7 @@ import {
   supervisorCommand,
   triggerRestart,
 } from "../services/restartService.js";
+import { testDriveConnection } from "../services/driveService.js";
 import { parseAction, trimValues } from "../services/verificationActions.js";
 import { isValidEmail } from "../utils/validators.js";
 
@@ -76,6 +77,7 @@ const integrationFields = {
   googleAuth: "googleAuthEnabled",
   recaptcha: "recaptchaEnabled",
   googleCalendar: "googleCalendarEnabled",
+  googleDrive: "googleDriveEnabled",
   email: "emailEnabled",
 } as const;
 
@@ -178,7 +180,8 @@ export async function getIntegrations(
   const settings = await getSettings();
   res.json(
     await Promise.all(
-      ["googleAuth", "recaptcha", "googleCalendar", "email"].map((key) =>
+      ["googleAuth", "recaptcha", "googleCalendar", "googleDrive", "email"].map(
+        (key) =>
         integrationResponse(key, settings),
       ),
     ),
@@ -205,6 +208,7 @@ export async function getAdminSettings(
       google: status.googleAuth!.configured,
       recaptcha: status.recaptcha!.configured,
       calendar: status.googleCalendar!.configured,
+      drive: status.googleDrive!.configured,
       email: status.email!.configured,
     },
   });
@@ -229,12 +233,14 @@ export async function patchSettings(
       googleAuthEnabled: configured.googleAuth!.configured,
       recaptchaEnabled: configured.recaptcha!.configured,
       googleCalendarEnabled: configured.googleCalendar!.configured,
+      googleDriveEnabled: configured.googleDrive!.configured,
       emailEnabled: configured.email!.configured,
     };
     const labels: Record<string, string> = {
       googleAuthEnabled: "Google sign-in",
       recaptchaEnabled: "reCAPTCHA",
       googleCalendarEnabled: "Google Calendar",
+      googleDriveEnabled: "Google Drive",
       emailEnabled: "Email provider",
     };
     for (const [field, canEnable] of Object.entries(requirements)) {
@@ -538,6 +544,18 @@ export async function testIntegration(
 ): Promise<void> {
   const key = String(req.params.key ?? "");
   const normalizedKey = key === "google" ? "googleAuth" : key;
+  if (normalizedKey === "googleDrive") {
+    // The Drive test proves the whole path: token, folders and an upload.
+    const result = await testDriveConnection();
+    recordHealth("drive", result.ok, result.ok ? "" : result.message);
+    res.status(result.ok ? 200 : 502).json({
+      ok: result.ok,
+      message: result.message,
+      checkedAt: new Date(),
+      ...(result.fileName ? { fileName: result.fileName } : {}),
+    });
+    return;
+  }
   const target = testableGroups[normalizedKey];
   if (!target) {
     res.status(400).json({ message: "Unknown integration." });
@@ -621,10 +639,11 @@ export async function getIntegrationHealth(
   res: Response,
 ): Promise<void> {
   const settings = await getSettings();
-  const [google, recaptcha, calendar, email] = await Promise.all([
+  const [google, recaptcha, calendar, drive, email] = await Promise.all([
     integrationResponse("googleAuth", settings),
     integrationResponse("recaptcha", settings),
     integrationResponse("googleCalendar", settings),
+    integrationResponse("googleDrive", settings),
     integrationResponse("email", settings),
   ]);
   res.set("Cache-Control", "no-store");
@@ -634,6 +653,7 @@ export async function getIntegrationHealth(
     google: { ...google, ...healthFor("google") },
     recaptcha: { ...recaptcha, ...healthFor("recaptcha") },
     calendar: { ...calendar, ...healthFor("calendar") },
+    drive: { ...drive, ...healthFor("drive") },
     email: { ...email, ...getMailerHealth() },
   });
 }

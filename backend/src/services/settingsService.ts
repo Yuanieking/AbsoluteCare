@@ -18,6 +18,7 @@ const integrationDefaults = {
   googleAuthEnabled: true,
   recaptchaEnabled: true,
   googleCalendarEnabled: true,
+  googleDriveEnabled: true,
   emailEnabled: true,
 };
 

@@ -64,10 +64,12 @@ export interface IntegrationSettings {
   googleAuthEnabled: boolean;
   recaptchaEnabled: boolean;
   googleCalendarEnabled: boolean;
+  googleDriveEnabled: boolean;
   emailEnabled: boolean;
   googleAuthLastTest: IntegrationTestResult;
   recaptchaLastTest: IntegrationTestResult;
   googleCalendarLastTest: IntegrationTestResult;
+  googleDriveLastTest: IntegrationTestResult;
   emailLastTest: IntegrationTestResult;
   restartRequired: boolean;
   restartRequestedAt: Date | null;
@@ -176,10 +178,15 @@ const appSettingSchema = new mongoose.Schema<AppSetting>(
       googleAuthEnabled: { type: Boolean, default: true },
       recaptchaEnabled: { type: Boolean, default: true },
       googleCalendarEnabled: { type: Boolean, default: true },
+      googleDriveEnabled: { type: Boolean, default: true },
       emailEnabled: { type: Boolean, default: true },
       googleAuthLastTest: { type: mongoose.Schema.Types.Mixed, default: null },
       recaptchaLastTest: { type: mongoose.Schema.Types.Mixed, default: null },
       googleCalendarLastTest: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+      googleDriveLastTest: {
         type: mongoose.Schema.Types.Mixed,
         default: null,
       },

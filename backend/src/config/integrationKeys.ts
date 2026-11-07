@@ -60,6 +60,15 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
     redirectPath: "/integrations/google-calendar/callback",
   },
   {
+    id: "googleDrive",
+    apiKey: "googleDrive",
+    title: "Google Drive",
+    purpose:
+      "Files every generated PDF into the clinic's Drive, sorted by type and month.",
+    helpUrl: "https://console.cloud.google.com/apis/credentials",
+    redirectPath: "/integrations/google-drive/callback",
+  },
+  {
     id: "email",
     apiKey: "email",
     title: "Email provider",
@@ -170,6 +179,29 @@ export const INTEGRATION_KEYS: IntegrationKeyDefinition[] = [
       clean(value).length < 16
         ? "Use at least 16 characters of random text."
         : null,
+  },
+  {
+    key: "GOOGLE_DRIVE_REDIRECT_URI",
+    group: "googleDrive",
+    kind: "config",
+    label: "Redirect URI",
+    required: true,
+    helpUrl: "https://console.cloud.google.com/apis/credentials",
+    helper: "Register this exact value in the Google Cloud console.",
+    validate: (value) =>
+      absoluteUrl(clean(value))
+        ? null
+        : "Enter the full http:// or https:// callback address.",
+  },
+  {
+    key: "GOOGLE_DRIVE_ROOT_FOLDER_ID",
+    group: "googleDrive",
+    kind: "config",
+    label: "Root folder ID",
+    required: false,
+    helpUrl: null,
+    helper:
+      "Leave blank and the app creates an AbsoluteCare Documents folder. A folder the app did not create is not visible under the drive.file scope.",
   },
   {
     key: "BREVO_API_KEY",

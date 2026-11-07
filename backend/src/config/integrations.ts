@@ -11,6 +11,7 @@ export type IntegrationStatusMap = Record<string, IntegrationStatus> & {
   googleAuth: IntegrationStatus;
   recaptcha: IntegrationStatus;
   googleCalendar: IntegrationStatus;
+  googleDrive: IntegrationStatus;
   email: IntegrationStatus;
 };
 
@@ -25,6 +26,7 @@ export interface IntegrationSources {
   googleAuth: string;
   recaptcha: string;
   googleCalendar: string;
+  googleDrive: string;
   email: string;
 }
 
@@ -32,6 +34,7 @@ export interface IntegrationDetailsMap {
   googleAuth: IntegrationDetails;
   recaptcha: IntegrationDetails;
   googleCalendar: IntegrationDetails;
+  googleDrive: IntegrationDetails;
   email: IntegrationDetails;
   sources: IntegrationSources;
   [key: string]: IntegrationDetails | IntegrationSources;
@@ -69,6 +72,13 @@ function integrationValues(): Record<string, Record<string, string>> {
         "GOOGLE_CALENDAR_ENCRYPTION_KEY",
       ),
     },
+    googleDrive: {
+      GOOGLE_CLIENT_ID: getIntegrationConfig("GOOGLE_CLIENT_ID"),
+      GOOGLE_CLIENT_SECRET: getIntegrationConfig("GOOGLE_CLIENT_SECRET"),
+      GOOGLE_DRIVE_REDIRECT_URI: getIntegrationConfig(
+        "GOOGLE_DRIVE_REDIRECT_URI",
+      ),
+    },
     email: {
       BREVO_API_KEY: getIntegrationConfig("BREVO_API_KEY"),
       MAIL_FROM: getIntegrationConfig("MAIL_FROM"),
@@ -81,6 +91,7 @@ export function getIntegrationStatus(): IntegrationStatusMap {
   const googleAuth = values.googleAuth ?? {};
   const recaptcha = values.recaptcha ?? {};
   const googleCalendar = values.googleCalendar ?? {};
+  const googleDrive = values.googleDrive ?? {};
   const email = values.email ?? {};
   const emailMissing = missingVariables(email);
   return {
@@ -95,6 +106,10 @@ export function getIntegrationStatus(): IntegrationStatusMap {
     googleCalendar: {
       configured: missingVariables(googleCalendar).length === 0,
       missing: missingVariables(googleCalendar),
+    },
+    googleDrive: {
+      configured: missingVariables(googleDrive).length === 0,
+      missing: missingVariables(googleDrive),
     },
     email: { configured: emailMissing.length === 0, missing: emailMissing },
   };
@@ -126,6 +141,14 @@ export function getIntegrationDetails(): IntegrationDetailsMap {
       redirectUri: calendarRedirect,
       senderAddress: null,
     },
+    googleDrive: {
+      clientIdMasked: maskValue(clientId, "identifier"),
+      siteKey: null,
+      redirectUri:
+        getIntegrationConfig("GOOGLE_DRIVE_REDIRECT_URI") ||
+        `${API_BASE_URL}/integrations/google-drive/callback`,
+      senderAddress: null,
+    },
     email: {
       clientIdMasked: null,
       siteKey: null,
@@ -136,6 +159,7 @@ export function getIntegrationDetails(): IntegrationDetailsMap {
       googleAuth: getIntegrationSource("GOOGLE_CLIENT_ID"),
       recaptcha: getIntegrationSource("RECAPTCHA_SECRET_KEY"),
       googleCalendar: getIntegrationSource("GOOGLE_CALENDAR_ENCRYPTION_KEY"),
+      googleDrive: getIntegrationSource("GOOGLE_DRIVE_REDIRECT_URI"),
       email: getIntegrationSource("BREVO_API_KEY"),
     },
   };

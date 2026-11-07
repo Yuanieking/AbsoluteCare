@@ -58,6 +58,14 @@ export const GOOGLE_CALENDAR_ENCRYPTION_KEY = getEnv(
   "GOOGLE_CALENDAR_ENCRYPTION_KEY",
   "absolutecare-calendar-development-key",
 );
+export const GOOGLE_DRIVE_REDIRECT_URI = getEnv(
+  "GOOGLE_DRIVE_REDIRECT_URI",
+  `${API_BASE_URL}/integrations/google-drive/callback`,
+);
+export const GOOGLE_DRIVE_ROOT_FOLDER_ID = getEnv(
+  "GOOGLE_DRIVE_ROOT_FOLDER_ID",
+  "",
+);
 export const CLINIC_ADDRESS = getEnv(
   "CLINIC_ADDRESS",
   "AbsoluteCare Physical Therapy",
