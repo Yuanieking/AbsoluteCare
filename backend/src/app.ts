@@ -13,6 +13,9 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import patientRoutes from "./routes/patientRoutes.js";
 import calendarRoutes from "./routes/calendarRoutes.js";
+import googleDriveRoutes from "./routes/googleDriveRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
+import publicVerifyRoutes from "./routes/publicVerifyRoutes.js";
 import therapistRoutes from "./routes/therapistRoutes.js";
 import secretaryRoutes from "./routes/secretaryRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
@@ -21,6 +24,8 @@ import adminServiceRoutes from "./routes/adminServiceRoutes.js";
 import adminRecordRoutes from "./routes/adminRecordRoutes.js";
 import adminMonitoringRoutes from "./routes/adminMonitoringRoutes.js";
 import { runAppointmentReminderJob } from "./jobs/appointmentReminderJob.js";
+import { runDocumentSyncJob } from "./jobs/documentSyncJob.js";
+import { isPublicVerificationUrl } from "./services/documentService.js";
 import connectDB from "./config/db.js";
 import { verifyMailer } from "./services/mailer.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
@@ -69,6 +74,9 @@ app.use(cookieParser());
 
 app.use("/auth", authRoutes);
 app.use("/integrations", calendarRoutes);
+app.use("/integrations", googleDriveRoutes);
+app.use("/verify", publicVerifyRoutes);
+app.use("/documents", documentRoutes);
 app.use("/therapist", therapistRoutes);
 app.use("/secretary", secretaryRoutes);
 app.use("/admin/users", adminUserRoutes);
@@ -137,6 +145,11 @@ const server = app.listen(PORT, () => {
         error instanceof Error ? error.message : String(error),
       ),
     );
+  if (!isPublicVerificationUrl()) {
+    console.warn(
+      "documents: FRONTEND_URL is not public, so verification QR codes will not scan off this machine.",
+    );
+  }
   runAppointmentReminderJob().catch((error: unknown) =>
     console.error(
       "Initial reminder job failed:",
@@ -152,6 +165,22 @@ const server = app.listen(PORT, () => {
         ),
       ),
     15 * 60 * 1000,
+  );
+  runDocumentSyncJob().catch((error: unknown) =>
+    console.error(
+      "Initial document sync failed:",
+      error instanceof Error ? error.message : String(error),
+    ),
+  );
+  setInterval(
+    () =>
+      runDocumentSyncJob().catch((error: unknown) =>
+        console.error(
+          "Document sync failed:",
+          error instanceof Error ? error.message : String(error),
+        ),
+      ),
+    5 * 60 * 1000,
   );
 });
 
