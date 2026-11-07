@@ -7,6 +7,7 @@ import { StatTile } from '@/components/domain/StatTile'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
+import { GenerateDocumentButton } from '@/features/documents/GenerateDocumentButton'
 import { presetRange, type DateRange } from '@/lib/format/date-range'
 import { paymentLegend } from './chart-data'
 import { PaymentMethodsDonut, ServicesBars, StatusMix, WorkloadGauges } from './charts'
@@ -317,6 +318,11 @@ export default function ReportsPage() {
         actions={
           <>
             <DateRangePicker value={range} onChange={setRange} />
+            <GenerateDocumentButton
+              input={{ type: 'clinic_report', ...toQuery(range) }}
+              label="Generate PDF"
+              variant="outline"
+            />
             <Button
               type="button"
               aria-expanded={preview}

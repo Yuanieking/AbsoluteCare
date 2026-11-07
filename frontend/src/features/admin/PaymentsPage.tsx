@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/domain/StatusBadge'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
+import { GenerateDocumentButton } from '@/features/documents/GenerateDocumentButton'
 import { showError } from '@/lib/toast'
 import * as api from './api'
 import {
@@ -143,7 +144,19 @@ export default function PaymentsPage() {
       meta: { label: 'Actions' },
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
-        <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+        <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+          <GenerateDocumentButton
+            input={{ type: 'receipt', appointmentId: row.original._id }}
+            label="Receipt"
+            variant="ghost"
+            size="xs"
+            disabled={row.original.payment?.status !== 'paid'}
+            title={
+              row.original.payment?.status === 'paid'
+                ? undefined
+                : 'Receipts are only available for paid visits'
+            }
+          />
           <Button type="button" variant="ghost" size="xs" onClick={() => setSelected(row.original)}>
             Update payment
           </Button>

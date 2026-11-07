@@ -6,6 +6,7 @@ import { FilterBar } from '@/components/domain/FilterBar'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
+import { GenerateDocumentButton } from '@/features/documents/GenerateDocumentButton'
 import {
   accountStatus,
   formatDate,
@@ -16,6 +17,13 @@ import {
 import { useAdminUsers } from './queries'
 import { PersonDialog } from './PersonDialog'
 import type { UserAccount } from './types'
+
+function monthRange() {
+  const now = new Date()
+  const from = new Date(now.getFullYear(), now.getMonth(), 1)
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+  return { from: from.toISOString(), to: to.toISOString() }
+}
 
 export default function PeoplePage({ role }: { role: 'patient' | 'therapist' }) {
   const [search, setSearch] = useState('')
@@ -113,7 +121,15 @@ export default function PeoplePage({ role }: { role: 'patient' | 'therapist' }) 
       meta: { label: 'Actions' },
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
-        <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+        <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+          {role === 'patient' ? (
+            <GenerateDocumentButton
+              input={{ type: 'patient_summary', patientId: row.original._id, ...monthRange() }}
+              label="Summary"
+              variant="ghost"
+              size="xs"
+            />
+          ) : null}
           <Button
             variant="ghost"
             size="xs"

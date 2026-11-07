@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/domain/StatusBadge'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
+import { GenerateDocumentButton } from '@/features/documents/GenerateDocumentButton'
 import { AppointmentDialogs, type AppointmentDialogType } from './AppointmentDialogs'
 import {
   appointmentStart,
@@ -236,6 +237,12 @@ export default function AppointmentsPage() {
               </Button>
             )
           })}
+          <GenerateDocumentButton
+            input={{ type: 'visit_record', appointmentId: row.original._id }}
+            label="Visit record"
+            variant="ghost"
+            size="xs"
+          />
         </div>
       ),
     },

@@ -6,6 +6,7 @@ import { FilterBar } from '@/components/domain/FilterBar'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
+import { GenerateDocumentButton } from '@/features/documents/GenerateDocumentButton'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,13 @@ import type { SessionRecord } from './types'
 
 function sessionService(session: SessionRecord) {
   return session.service?.name || 'Therapy session'
+}
+
+function monthRange(value?: string) {
+  const date = value ? new Date(value) : new Date()
+  const from = new Date(date.getFullYear(), date.getMonth(), 1)
+  const to = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
+  return { from: from.toISOString(), to: to.toISOString() }
 }
 
 export default function SessionsPage() {
@@ -104,7 +112,18 @@ export default function SessionsPage() {
       meta: { label: 'View' },
       header: () => <span className="sr-only">View</span>,
       cell: ({ row }) => (
-        <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+        <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+          <GenerateDocumentButton
+            input={{
+              type: 'patient_summary',
+              patientId: (row.original.patient as { _id?: string })?._id || '',
+              ...monthRange(row.original.sessionDate),
+            }}
+            label="Summary"
+            variant="ghost"
+            size="xs"
+            disabled={!((row.original.patient as { _id?: string })?._id)}
+          />
           <Button
             type="button"
             variant="ghost"
