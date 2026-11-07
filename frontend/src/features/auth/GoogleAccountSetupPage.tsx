@@ -15,19 +15,12 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useAuth } from '@/features/auth/session'
 import { useSettings } from '@/features/settings/provider'
 import { useRecaptcha } from '@/hooks/useRecaptcha'
 import { completeGoogleSignup, getApiErrorMessage } from '@/lib/api/auth'
 import { consumePostAuthRedirect, getDashboardPath } from '@/lib/dashboard-path'
-import { AuthAlert, AuthHeading, AuthShell, AuthSuccess } from './AuthShell'
+import { AuthAlert, AuthHeading, AuthShell } from './AuthShell'
 import { googleSetupSchema, type GoogleSetupValues } from './schemas'
 
 type GoogleProfile = {
@@ -47,13 +40,6 @@ function decodeToken(token: string): GoogleProfile | null {
   }
 }
 
-const roleOptions = [
-  { value: 'patient', label: 'Patient' },
-  { value: 'therapist', label: 'Therapist' },
-  { value: 'secretary', label: 'Secretary' },
-  { value: 'admin', label: 'Admin' },
-]
-
 export default function GoogleAccountSetupPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -68,7 +54,6 @@ export default function GoogleAccountSetupPage() {
   const token = searchParams.get('token') || ''
   const profile = useMemo(() => decodeToken(token), [token])
   const [loading, setLoading] = useState(false)
-  const [pending, setPending] = useState(false)
   const [error, setError] = useState(profile ? '' : 'This Google setup link is invalid or expired.')
 
   const form = useForm<GoogleSetupValues>({
@@ -76,13 +61,11 @@ export default function GoogleAccountSetupPage() {
     defaultValues: {
       firstName: profile?.firstname || '',
       lastName: profile?.lastname || '',
-      role: 'patient',
       terms: false,
     },
   })
 
   const terms = useWatch({ control: form.control, name: 'terms' })
-  const role = useWatch({ control: form.control, name: 'role' })
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError('')
@@ -96,14 +79,9 @@ export default function GoogleAccountSetupPage() {
         token,
         firstName: values.firstName,
         lastName: values.lastName,
-        role: values.role,
         terms: values.terms,
         ...(recaptcha.enabled && recaptcha.token ? { recaptchaToken: recaptcha.token } : {}),
       })
-      if (response.data?.pending) {
-        setPending(true)
-        return
-      }
       const nextUser = response.data?.user || null
       setUser(nextUser)
       const from = consumePostAuthRedirect()
@@ -115,22 +93,6 @@ export default function GoogleAccountSetupPage() {
       setLoading(false)
     }
   })
-
-  if (pending) {
-    return (
-      <AuthShell>
-        <AuthSuccess
-          title="Pending approval"
-          description="Your staff account is pending admin approval. You will be able to sign in once an administrator activates it."
-          action={
-            <Button asChild size="lg" className="h-10">
-              <Link to="/login">Back to log in</Link>
-            </Button>
-          }
-        />
-      </AuthShell>
-    )
-  }
 
   return (
     <AuthShell>
@@ -206,35 +168,6 @@ export default function GoogleAccountSetupPage() {
               className="h-10 border-hairline bg-sunk/60"
             />
           </div>
-          <FormField
-            control={form.control}
-            name="role"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Account type</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="h-10 w-full border-hairline bg-transparent">
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {roleOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {role !== 'patient' ? (
-                  <p className="mt-1 text-[11.5px] leading-relaxed text-ink-soft">
-                    Staff accounts require admin approval before you can sign in.
-                  </p>
-                ) : null}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           {recaptcha.enabled ? (
             <RecaptchaField
               enabled={recaptcha.enabled}

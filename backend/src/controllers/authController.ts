@@ -64,11 +64,6 @@ function passwordMinLength(
   return settings?.auth?.passwordMinLength || 8;
 }
 
-function normalizePublicRole(role: string | undefined | null): UserRole {
-  if (role === "patient") return "user";
-  return (role || "user") as UserRole;
-}
-
 function isPendingApproval(user: UserDoc | null | undefined): boolean {
   if (
     !user ||
@@ -349,17 +344,6 @@ export async function completeGoogleSignup(
       res.status(400).json({ message: "First and last name are required." });
       return;
     }
-    const rawRole = String(req.body.role || "patient")
-      .trim()
-      .toLowerCase();
-    const allowedRoles = ["user", "patient", "therapist", "secretary", "admin"];
-    if (!allowedRoles.includes(rawRole)) {
-      res.status(400).json({ message: "Choose a valid account role." });
-      return;
-    }
-    const role = normalizePublicRole(rawRole);
-    // Server-side force-pending: public endpoint never yields an active staff/admin.
-    const isActive = role === "user";
     const suppliedPassword = String(req.body.password || "");
     let hashedPassword: string;
     if (suppliedPassword) {
@@ -404,24 +388,17 @@ export async function completeGoogleSignup(
       password: hashedPassword,
       profilePicture: payload.profilePicture || "",
       authProvider: "google",
-      role,
-      isActive,
+      // Public signup is always a patient; only admins change roles.
+      role: "user",
+      isActive: true,
       acceptedTerms: true,
       termsAcceptedAt: new Date(),
       accountAudit: [{ action: "created" }],
     });
-    if (isActive) {
-      generateToken(user._id.toString(), res);
-      res
-        .status(201)
-        .json({ user: user.omitPassword(), token: signAuthToken(user) });
-      return;
-    }
-    res.status(201).json({
-      user: user.omitPassword(),
-      pending: true,
-      message: PENDING_APPROVAL_MESSAGE,
-    });
+    generateToken(user._id.toString(), res);
+    res
+      .status(201)
+      .json({ user: user.omitPassword(), token: signAuthToken(user) });
   } catch (error) {
     res.status(400).json({
       message: errorMessage(error) || "Unable to finish Google signup.",
@@ -442,9 +419,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    const role = normalizePublicRole(body.role || "patient");
-    const isStaffRole = role !== "user";
-    if (!isStaffRole && !settings.auth.patientRegistrationEnabled) {
+    if (!settings.auth.patientRegistrationEnabled) {
       res.status(403).json({
         message: "Registration is currently closed. Please contact the clinic.",
       });
@@ -478,22 +453,14 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       password: hashPassword,
       authProvider: "local",
       phone: body.phone,
-      role,
-      // Server-side force-pending: staff/admin signups wait for admin activation.
-      isActive: !isStaffRole,
+      // Public signup is always a patient; only admins change roles.
+      role: "user",
+      isActive: true,
       acceptedTerms: true,
       termsAcceptedAt: new Date(),
       accountAudit: [{ action: "created" }],
     });
 
-    if (isStaffRole) {
-      res.status(201).json({
-        message: PENDING_APPROVAL_MESSAGE,
-        pending: true,
-        user: newUser.omitPassword(),
-      });
-      return;
-    }
     res.status(201).json({
       message: "Account created successfully.",
       user: newUser.omitPassword(),

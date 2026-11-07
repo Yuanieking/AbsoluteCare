@@ -15,13 +15,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useSettings } from '@/features/settings/provider'
 import { useRecaptcha } from '@/hooks/useRecaptcha'
 import { authenticate, getApiErrorDetails, type AuthPayload } from '@/lib/api/auth'
@@ -35,13 +28,6 @@ import { signupSchema, type SignupValues } from './schemas'
 type SignupFormProps = {
   isStaffAlias: boolean
 }
-
-const roleOptions = [
-  { value: 'patient', label: 'Patient' },
-  { value: 'therapist', label: 'Therapist' },
-  { value: 'secretary', label: 'Secretary' },
-  { value: 'admin', label: 'Admin' },
-]
 
 export function SignupForm({ isStaffAlias }: SignupFormProps) {
   const navigate = useNavigate()
@@ -61,7 +47,6 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
   const [error, setError] = useState('')
   const [networkError, setNetworkError] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [pendingSignup, setPendingSignup] = useState(false)
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema(minLength)),
@@ -69,7 +54,6 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
       firstName: '',
       lastName: '',
       phone: '',
-      role: 'patient',
       email: '',
       password: '',
       confirmPassword: '',
@@ -80,7 +64,6 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
   const password = useWatch({ control: form.control, name: 'password' })
   const confirmPassword = useWatch({ control: form.control, name: 'confirmPassword' })
   const terms = useWatch({ control: form.control, name: 'terms' })
-  const role = useWatch({ control: form.control, name: 'role' })
   const strength = [
     password.length >= minLength,
     /[A-Z]/.test(password),
@@ -91,7 +74,6 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
   const onSubmit = form.handleSubmit(async (values) => {
     setError('')
     setNetworkError('')
-    setPendingSignup(false)
     if (recaptcha.enabled && !recaptcha.token) {
       setError('Verify reCAPTCHA before continuing.')
       return
@@ -105,14 +87,10 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
         lastName: values.lastName,
         confirmPassword: values.confirmPassword,
         phone: values.phone,
-        role: values.role,
         acceptedTerms: values.terms,
       }
       if (recaptcha.enabled && recaptcha.token) payload.recaptchaToken = recaptcha.token
-      const response = await authenticate('signup', payload)
-      if (response.data?.pending) {
-        setPendingSignup(true)
-      }
+      await authenticate('signup', payload)
       setSubmitted(true)
     } catch (requestError) {
       const details = getApiErrorDetails(requestError)
@@ -127,7 +105,6 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
           'email',
           'password',
           'confirmPassword',
-          'role',
           'terms',
         ] as const
         for (const [field, message] of Object.entries(details.fieldErrors)) {
@@ -149,12 +126,8 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
   if (submitted) {
     return (
       <AuthSuccess
-        title={pendingSignup ? 'Pending approval' : 'Account created'}
-        description={
-          pendingSignup
-            ? 'Your staff account is pending admin approval. You will be able to sign in once an administrator activates it.'
-            : 'Your AbsoluteCare account is ready. Log in to continue.'
-        }
+        title="Account created"
+        description="Your AbsoluteCare account is ready. Log in to continue."
         action={
           <Button asChild size="lg" className="h-10">
             <Link to="/auth?mode=login" state={returnTo ? { from: returnTo } : undefined}>
@@ -222,7 +195,7 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
             control={form.control}
             name="phone"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="sm:col-span-2">
                 <FormLabel>Mobile number</FormLabel>
                 <FormControl>
                   <Input
@@ -235,35 +208,6 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
                     onChange={(event) => field.onChange(sanitizePhone(event.target.value))}
                   />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="role"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Account type</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="h-10 w-full border-hairline bg-transparent">
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {roleOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {role !== 'patient' ? (
-                  <p className="mt-1 text-[11.5px] leading-relaxed text-ink-soft">
-                    Staff accounts require admin approval before you can sign in.
-                  </p>
-                ) : null}
                 <FormMessage />
               </FormItem>
             )}

@@ -32,7 +32,6 @@ export type AuthPayload = {
   lastName?: string
   confirmPassword?: string
   phone?: string
-  role?: UserRole
   acceptedTerms?: boolean
 }
 
@@ -46,7 +45,6 @@ export type GoogleSignupPayload = {
   token: string
   firstName?: string
   lastName?: string
-  role?: UserRole
   terms?: boolean
   recaptchaToken?: string
 }

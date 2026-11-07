@@ -1,8 +1,6 @@
 import { z } from 'zod'
 import { EMAIL_ERROR, PHONE_ERROR, isValidEmail, isValidPhone } from '@/lib/validation'
 
-export const roleSchema = z.enum(['patient', 'therapist', 'secretary', 'admin'])
-
 const emailSchema = z
   .string()
   .trim()
@@ -24,7 +22,6 @@ export const signupSchema = (minLength: number) =>
         .trim()
         .optional()
         .refine((value) => !value || isValidPhone(value), PHONE_ERROR),
-      role: roleSchema,
       email: emailSchema,
       password: z.string().min(minLength, `Password must be at least ${minLength} characters.`),
       confirmPassword: z.string().min(1, 'Confirm your password'),
@@ -51,7 +48,6 @@ export const resetPasswordSchema = (minLength: number) =>
 export const googleSetupSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required'),
   lastName: z.string().trim().min(1, 'Last name is required'),
-  role: roleSchema,
   terms: z.boolean().refine((value) => value, 'Accept the terms before creating your account.'),
 })
 

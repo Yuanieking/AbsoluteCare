@@ -17,14 +17,6 @@ const phone = z
     message: "Enter a valid mobile number (e.g. 09171234567)",
   });
 
-const publicRoleField = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .pipe(z.enum(["user", "patient", "therapist", "secretary", "admin"]))
-  .optional()
-  .default("patient");
-
 export const signupSchema = z
   .object({
     firstName: z.string().min(1, "First name is required"),
@@ -33,7 +25,6 @@ export const signupSchema = z
     password: z.string().min(1, "Password is required"),
     confirmPassword: z.string(),
     phone: phone.optional().default(""),
-    role: publicRoleField,
     recaptchaToken: z.string().nullable().optional(),
     acceptedTerms: z.literal(true, {
       error: "You must agree to continue.",

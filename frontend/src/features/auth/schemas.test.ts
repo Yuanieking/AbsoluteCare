@@ -5,7 +5,6 @@ const base = {
   firstName: 'Ana',
   lastName: 'Reyes',
   email: 'ana@gmail.com',
-  role: 'patient' as const,
   password: 'Passw0rd!',
   confirmPassword: 'Passw0rd!',
   terms: true,
