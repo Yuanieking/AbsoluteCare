@@ -3,6 +3,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  HardDrive,
   Info,
   KeyRound,
   LoaderCircle,
@@ -11,17 +12,19 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { getToastError } from '@/lib/toast'
 import { cn } from '@/lib/utils'
+import * as api from '../api'
 import { sectionMap } from '../config'
 import { InlineNote, SettingsSection } from '../fields'
 import { IntegrationSetupGuide } from '../IntegrationSetupGuide'
 import { RestartBanner, type RestartPhase } from '../RestartBanner'
 import type {
   CredentialsResponse,
+  DriveConnectionStatus,
   IntegrationFlags,
   IntegrationHealth,
   IntegrationHealthRecord,
@@ -136,6 +139,133 @@ function GhostAction({
   )
 }
 
+function DriveCard({
+  configured,
+  switchControl,
+  onEditCredentials,
+}: {
+  configured: boolean
+  switchControl: ReactNode
+  onEditCredentials: (group: string) => void
+}) {
+  const [status, setStatus] = useState<DriveConnectionStatus | null>(null)
+  const [busy, setBusy] = useState('')
+  const [result, setResult] = useState('')
+
+  useEffect(() => {
+    let active = true
+    api
+      .getDriveStatus()
+      .then((next) => {
+        if (!active) return
+        setStatus(next)
+        const outcome = new URLSearchParams(window.location.search).get('drive')
+        if (outcome === 'connected') setResult('Google Drive connected.')
+        if (outcome === 'error') setResult('The Google Drive connection did not finish.')
+      })
+      .catch(() => {
+        if (active) setResult('Drive status could not be loaded.')
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const connected = Boolean(status?.connected)
+
+  async function disconnect() {
+    const proceed = window.confirm(
+      'Disconnect the clinic Google Drive? Future uploads stop. Files already in Drive stay there.',
+    )
+    if (!proceed) return
+    setBusy('disconnect')
+    setResult('')
+    try {
+      await api.disconnectDrive()
+      setStatus(await api.getDriveStatus())
+      setResult('Disconnected. Future uploads stop; existing files stay in Drive.')
+    } catch (error) {
+      setResult(getToastError(error, 'Google Drive could not be disconnected.'))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  async function test() {
+    setBusy('test')
+    setResult('')
+    try {
+      const outcome = await api.testDriveConnection()
+      setResult(outcome.message)
+    } catch (error) {
+      setResult(getToastError(error, 'The Drive test failed.'))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <IntegrationCard
+      id="google-drive"
+      icon={HardDrive}
+      title="Google Drive"
+      description="Files every generated PDF into the clinic's Drive, sorted by type and month. Turning this off stops new uploads and retries; documents still generate and download."
+      configured={configured && connected}
+      statusLabel={
+        connected
+          ? status?.needsReconnect
+            ? 'Reconnect needed'
+            : 'Connected'
+          : 'Not connected'
+      }
+      meta={
+        connected
+          ? `Connected as ${status?.email || 'the clinic Google account'} · folder ${status?.rootFolderName || 'AbsoluteCare Documents'}`
+          : `Folder ${status?.rootFolderName || 'AbsoluteCare Documents'}`
+      }
+      setupHint={
+        connected && status?.needsReconnect
+          ? 'Google rejected the saved Drive access. Reconnect the clinic account.'
+          : undefined
+      }
+      switchControl={switchControl}
+      footer={
+        <>
+          <GhostAction icon={<ExternalLink size={13} />} href={api.driveConnectUrl()}>
+            {connected ? 'Reconnect' : 'Connect Google Drive'}
+          </GhostAction>
+          <GhostAction
+            icon={
+              busy === 'test' ? (
+                <LoaderCircle className="animate-spin" size={13} />
+              ) : (
+                <Check size={13} />
+              )
+            }
+            onClick={() => void test()}
+          >
+            {busy === 'test' ? 'Sending test file...' : 'Send test file'}
+          </GhostAction>
+          <GhostAction icon={<KeyRound size={13} />} onClick={() => onEditCredentials('googleDrive')}>
+            Edit credentials
+          </GhostAction>
+          {connected ? (
+            <GhostAction icon={<Info size={13} />} onClick={() => void disconnect()}>
+              {busy === 'disconnect' ? 'Disconnecting...' : 'Disconnect'}
+            </GhostAction>
+          ) : null}
+        </>
+      }
+    >
+      {result || status?.lastError ? (
+        <p role="status" className="mt-2 text-[11.5px] text-ink-soft">
+          {result || status?.lastError}
+        </p>
+      ) : null}
+    </IntegrationCard>
+  )
+}
+
 export function IntegrationsSection({
   value,
   integrations,
@@ -180,11 +310,13 @@ export function IntegrationsSection({
   const recaptchaRecord = health.recaptcha || {}
   const calendarRecord = health.calendar || {}
   const emailRecord = health.email || {}
+  const driveRecord = health.drive || {}
 
   const googleConfigured = googleRecord.configured ?? Boolean(integrations.google)
   const recaptchaConfigured = recaptchaRecord.configured ?? Boolean(integrations.recaptcha)
   const calendarConfigured = calendarRecord.configured ?? googleConfigured
   const emailConfigured = emailRecord.configured ?? Boolean(integrations.email)
+  const driveConfigured = driveRecord.configured ?? Boolean(integrations.drive)
 
   function setResult(key: string, message: string) {
     setResults((current) => ({ ...current, [key]: message }))
@@ -459,6 +591,16 @@ export function IntegrationsSection({
             </p>
           ) : null}
         </IntegrationCard>
+
+        <DriveCard
+          configured={driveConfigured}
+          switchControl={toggle(
+            'googleDriveEnabled',
+            'Google Drive filing',
+            value.googleDriveEnabled,
+          )}
+          onEditCredentials={onEditCredentials}
+        />
       </div>
 
       {credentials?.groups?.length ? (

@@ -25,6 +25,7 @@ const integrationKeys: Record<keyof IntegrationValues, string> = {
   googleAuthEnabled: 'googleAuth',
   recaptchaEnabled: 'recaptcha',
   googleCalendarEnabled: 'googleCalendar',
+  googleDriveEnabled: 'googleDrive',
   emailEnabled: 'email',
 }
 

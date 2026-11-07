@@ -3,6 +3,7 @@ import type {
   AdminSettings,
   AuditEntry,
   CredentialsResponse,
+  DriveConnectionStatus,
   IntegrationFlags,
   IntegrationHealth,
   SettingsSectionKey,
@@ -109,6 +110,25 @@ export async function rollbackIntegrationCredential(
     payload,
   )
   return response.data as CredentialsResponse
+}
+
+export async function getDriveStatus() {
+  return (await axiosInstance.get('/integrations/google-drive/status'))
+    .data as DriveConnectionStatus
+}
+
+/** Opening this URL starts the clinic Drive consent flow and returns here. */
+export function driveConnectUrl() {
+  return `${axiosInstance.defaults.baseURL}/integrations/google-drive/connect`
+}
+
+export async function disconnectDrive() {
+  await axiosInstance.post('/integrations/google-drive/disconnect')
+}
+
+export async function testDriveConnection() {
+  const response = await axiosInstance.post('/integrations/google-drive/test')
+  return response.data as { ok: boolean; message: string; fileName?: string }
 }
 
 export async function restartServer() {

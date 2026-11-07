@@ -57,6 +57,7 @@ export type IntegrationValues = {
   googleAuthEnabled: boolean
   recaptchaEnabled: boolean
   googleCalendarEnabled: boolean
+  googleDriveEnabled: boolean
   emailEnabled: boolean
 }
 
@@ -74,7 +75,7 @@ export type AdminSettings = {
 export type SettingsSectionKey = keyof AdminSettings
 
 export type IntegrationFlags = Partial<
-  Record<'google' | 'recaptcha' | 'email' | 'googleCalendar', boolean>
+  Record<'google' | 'recaptcha' | 'email' | 'googleCalendar' | 'drive', boolean>
 >
 
 export type IntegrationHealthRecord = {
@@ -92,7 +93,17 @@ export type IntegrationHealth = {
   google?: IntegrationHealthRecord
   recaptcha?: IntegrationHealthRecord
   calendar?: IntegrationHealthRecord
+  drive?: IntegrationHealthRecord
   email?: IntegrationHealthRecord
+}
+
+export type DriveConnectionStatus = {
+  connected: boolean
+  email: string
+  connectedAt: string | null
+  needsReconnect: boolean
+  rootFolderName: string
+  lastError: string
 }
 
 export type CredentialKeyEntry = {
