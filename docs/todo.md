@@ -37,6 +37,7 @@ created at and updated at in the collectons
 cant click signup, cant navigate to signup page
 
 in reports page, preview fist then export.. pan for comprehensive pdf or exel export, not cls
+  - server-side PDF: done (Reports -> Generate PDF, tracked + filed to Drive); Excel export still open
 
 why outside user can login? "
 Sign in with Google
