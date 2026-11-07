@@ -39,6 +39,8 @@ const AdminServicesPage = lazy(() => import('@/features/admin/ServicesPage'))
 const AdminSessionsPage = lazy(() => import('@/features/admin/SessionsPage'))
 const AdminUsersPage = lazy(() => import('@/features/admin/UsersPage'))
 const AdminSettingsPage = lazy(() => import('@/features/admin/settings/SettingsPage'))
+const StaffDocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'))
+const VerifyDocumentPage = lazy(() => import('@/features/documents/VerifyPage'))
 const AdminProfilePage = lazy(() => import('@/features/admin/AdminProfilePage'))
 const TherapistDashboardPage = lazy(() => import('@/features/therapist/TherapistDashboardPage'))
 const TherapistAppointmentsPage = lazy(
@@ -166,6 +168,7 @@ export const router = createBrowserRouter([
   { path: '/auth/callback', element: lazyRoute(<GoogleAuthCallback />) },
   { path: '/reset-password', element: lazyRoute(<ResetPasswordPage />) },
   { path: '/staff/reset-password', element: lazyRoute(<ResetPasswordPage staff />) },
+  { path: '/verify/:trackingNumber', element: lazyRoute(<VerifyDocumentPage />) },
   { path: '/terms', element: lazyRoute(<LegalPage />) },
   { path: '/privacy', element: lazyRoute(<LegalPage privacy />) },
   {
@@ -266,6 +269,12 @@ export const router = createBrowserRouter([
           { index: true, element: shellRoute(<TherapistAvailabilityPage />, 'form') },
         ]),
       },
+      {
+        path: 'documents',
+        ...createRoleRoutes(['admin', 'secretary', 'therapist'], [
+          { index: true, element: shellRoute(<StaffDocumentsPage />) },
+        ]),
+      },
       { path: 'secretary', ...createRoleRoutes('secretary', secretaryChildren) },
       {
         path: 'schedule',
@@ -297,6 +306,8 @@ const pageTitles: [string, string][] = [
   ['/staff/admin/payments', 'Payments'],
   ['/staff/admin/reports', 'Reports'],
   ['/staff/admin/settings', 'Clinic settings'],
+  ['/staff/documents', 'Documents'],
+  ['/verify', 'Verify a document'],
   ['/staff/admin/profile', 'Profile'],
   ['/staff/admin', 'Clinic today'],
   ['/dashboard/appointments', 'My appointments'],

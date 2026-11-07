@@ -6,6 +6,7 @@ import {
   CalendarPlus,
   CircleDollarSign,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Settings2,
   Stethoscope,
@@ -159,6 +160,13 @@ const adminNav: RoleNav = {
       group: 'Business',
     },
     {
+      key: 'documents',
+      label: 'Documents',
+      to: '/staff/documents',
+      icon: FileText,
+      group: 'Business',
+    },
+    {
       key: 'settings',
       label: 'Settings',
       to: '/staff/admin/settings',
@@ -232,6 +240,13 @@ const therapistNav: RoleNav = {
       group: 'Records',
       aliases: ['/staff/sessions'],
     },
+    {
+      key: 'documents',
+      label: 'Documents',
+      to: '/staff/documents',
+      icon: FileText,
+      group: 'Records',
+    },
   ],
 }
 
@@ -263,6 +278,13 @@ const secretaryNav: RoleNav = {
       icon: CircleDollarSign,
       group: 'Front desk',
       aliases: ['/staff/payments'],
+    },
+    {
+      key: 'documents',
+      label: 'Documents',
+      to: '/staff/documents',
+      icon: FileText,
+      group: 'Front desk',
     },
     {
       key: 'profile',

@@ -13,6 +13,7 @@ export const keys = {
   availability: domain('availability'),
   calendar: domain('calendar'),
   dependents: domain('dependents'),
+  documents: domain('documents'),
   notifications: domain('notifications'),
   patients: domain('patients'),
   payments: domain('payments'),
@@ -22,4 +23,5 @@ export const keys = {
   settings: domain('settings'),
   therapists: domain('therapists'),
   users: domain('users'),
+  verify: domain('verify'),
 }
