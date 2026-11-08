@@ -14,6 +14,8 @@ export interface TherapyService {
   category: string;
   isActive: boolean;
   auditLog: ServiceAuditEntry[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type TherapyServiceDoc = HydratedDocument<TherapyService>;
