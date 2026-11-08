@@ -3,11 +3,13 @@ import {
   Check,
   Copy,
   ExternalLink,
+  FileText,
   HardDrive,
   Info,
   KeyRound,
   LoaderCircle,
   Mail,
+  MapPin,
   RefreshCw,
   ShieldCheck,
   type LucideIcon,
@@ -20,6 +22,7 @@ import { cn } from '@/lib/utils'
 import * as api from '../api'
 import { sectionMap } from '../config'
 import { InlineNote, SettingsSection } from '../fields'
+import { IntegrationSetupDialog } from '../IntegrationSetupDialog'
 import { IntegrationSetupGuide } from '../IntegrationSetupGuide'
 import { RestartBanner, type RestartPhase } from '../RestartBanner'
 import type {
@@ -53,6 +56,8 @@ function IntegrationCard({
   switchControl,
   meta,
   setupHint,
+  setupGroupId,
+  onOpenSetup,
   footer,
 }: {
   id: string
@@ -65,6 +70,8 @@ function IntegrationCard({
   switchControl?: ReactNode
   meta: string
   setupHint?: string
+  setupGroupId?: string
+  onOpenSetup?: (group: string) => void
   footer: ReactNode
 }) {
   const descriptionId = `${id}-description`
@@ -95,10 +102,19 @@ function IntegrationCard({
           {setupHint ? (
             <div className="mt-2">
               <InlineNote tone="warning">
-                {setupHint}{' '}
-                <a href="#integration-setup-guide" className="underline">
-                  View setup guide
-                </a>
+                {setupHint}
+                {setupGroupId && onOpenSetup ? (
+                  <>
+                    {' '}
+                    <button
+                      type="button"
+                      className="underline"
+                      onClick={() => onOpenSetup(setupGroupId)}
+                    >
+                      View setup guide
+                    </button>
+                  </>
+                ) : null}
               </InlineNote>
             </div>
           ) : null}
@@ -108,6 +124,11 @@ function IntegrationCard({
       </div>
       <footer className="mt-3 flex flex-wrap items-center gap-3 border-t border-hairline-in pt-3">
         {footer}
+        {setupGroupId && onOpenSetup ? (
+          <GhostAction icon={<Info size={13} />} onClick={() => onOpenSetup(setupGroupId)}>
+            View setup guide
+          </GhostAction>
+        ) : null}
       </footer>
     </article>
   )
@@ -143,10 +164,12 @@ function DriveCard({
   configured,
   switchControl,
   onEditCredentials,
+  onOpenSetup,
 }: {
   configured: boolean
   switchControl: ReactNode
   onEditCredentials: (group: string) => void
+  onOpenSetup?: (group: string) => void
 }) {
   const [status, setStatus] = useState<DriveConnectionStatus | null>(null)
   const [busy, setBusy] = useState('')
@@ -207,16 +230,14 @@ function DriveCard({
   return (
     <IntegrationCard
       id="google-drive"
+      setupGroupId="googleDrive"
+      onOpenSetup={onOpenSetup}
       icon={HardDrive}
       title="Google Drive"
       description="Files every generated PDF into the clinic's Drive, sorted by type and month. Turning this off stops new uploads and retries; documents still generate and download."
       configured={configured && connected}
       statusLabel={
-        connected
-          ? status?.needsReconnect
-            ? 'Reconnect needed'
-            : 'Connected'
-          : 'Not connected'
+        connected ? (status?.needsReconnect ? 'Reconnect needed' : 'Connected') : 'Not connected'
       }
       meta={
         connected
@@ -246,7 +267,10 @@ function DriveCard({
           >
             {busy === 'test' ? 'Sending test file...' : 'Send test file'}
           </GhostAction>
-          <GhostAction icon={<KeyRound size={13} />} onClick={() => onEditCredentials('googleDrive')}>
+          <GhostAction
+            icon={<KeyRound size={13} />}
+            onClick={() => onEditCredentials('googleDrive')}
+          >
             Edit credentials
           </GhostAction>
           {connected ? (
@@ -305,18 +329,25 @@ export function IntegrationsSection({
 }) {
   const [testing, setTesting] = useState('')
   const [results, setResults] = useState<Record<string, string>>({})
+  const [setupGroupId, setSetupGroupId] = useState('')
+  const setupGroup = credentials?.groups?.find((group) => group.id === setupGroupId)
+  const openSetup = credentials?.groups?.length ? setSetupGroupId : undefined
 
   const googleRecord = health.google || {}
   const recaptchaRecord = health.recaptcha || {}
   const calendarRecord = health.calendar || {}
   const emailRecord = health.email || {}
   const driveRecord = health.drive || {}
+  const mapsRecord = health.maps || {}
+  const reportRecord = health.report || {}
+  const reportEnabled = value.reportGenerationEnabled ?? true
 
   const googleConfigured = googleRecord.configured ?? Boolean(integrations.google)
   const recaptchaConfigured = recaptchaRecord.configured ?? Boolean(integrations.recaptcha)
   const calendarConfigured = calendarRecord.configured ?? googleConfigured
   const emailConfigured = emailRecord.configured ?? Boolean(integrations.email)
   const driveConfigured = driveRecord.configured ?? Boolean(integrations.drive)
+  const mapsEnabled = mapsRecord.effectiveEnabled ?? value.googleMapsEnabled
 
   function setResult(key: string, message: string) {
     setResults((current) => ({ ...current, [key]: message }))
@@ -404,6 +435,8 @@ export function IntegrationsSection({
       <div className="grid gap-3">
         <IntegrationCard
           id="google-sign-in"
+          setupGroupId="google"
+          onOpenSetup={openSetup}
           icon={ShieldCheck}
           title="Google sign-in"
           description="Let patients log in and sign up with their Google account."
@@ -435,9 +468,6 @@ export function IntegrationsSection({
               >
                 {testing === 'google' ? 'Testing...' : 'Test configuration'}
               </GhostAction>
-              <GhostAction icon={<Info size={13} />} href="#integration-setup-guide">
-                View setup guide
-              </GhostAction>
               <GhostAction
                 icon={<Copy size={13} />}
                 onClick={() =>
@@ -458,6 +488,8 @@ export function IntegrationsSection({
 
         <IntegrationCard
           id="recaptcha"
+          setupGroupId="recaptcha"
+          onOpenSetup={openSetup}
           icon={ShieldCheck}
           title="reCAPTCHA"
           description="Protect login, sign-up, and forgot password from bots."
@@ -489,9 +521,6 @@ export function IntegrationsSection({
               >
                 {testing === 'recaptcha' ? 'Testing...' : 'Test configuration'}
               </GhostAction>
-              <GhostAction icon={<Info size={13} />} href="#integration-setup-guide">
-                View setup guide
-              </GhostAction>
             </>
           }
         >
@@ -504,6 +533,8 @@ export function IntegrationsSection({
 
         <IntegrationCard
           id="google-calendar"
+          setupGroupId="googleCalendar"
+          onOpenSetup={openSetup}
           icon={CalendarDays}
           title="Google Calendar"
           description="Sync confirmed appointments to users' Google Calendars. Turning this off pauses syncing but keeps existing connections."
@@ -523,9 +554,6 @@ export function IntegrationsSection({
               >
                 Edit credentials
               </GhostAction>
-              <GhostAction icon={<Info size={13} />} href="#integration-setup-guide">
-                View setup guide
-              </GhostAction>
               <GhostAction
                 icon={<ExternalLink size={13} />}
                 href="https://console.cloud.google.com/apis/credentials"
@@ -538,6 +566,8 @@ export function IntegrationsSection({
 
         <IntegrationCard
           id="email-provider"
+          setupGroupId="email"
+          onOpenSetup={openSetup}
           icon={Mail}
           title="Email provider"
           description="Sends password resets, invitations, and appointment emails. Turning this off stops every outbound email, including password resets and invitations."
@@ -571,9 +601,6 @@ export function IntegrationsSection({
               >
                 {testing === 'email' ? 'Sending test email...' : 'Send test email'}
               </GhostAction>
-              <GhostAction icon={<Info size={13} />} href="#integration-setup-guide">
-                View setup guide
-              </GhostAction>
             </>
           }
         >
@@ -600,6 +627,42 @@ export function IntegrationsSection({
             value.googleDriveEnabled,
           )}
           onEditCredentials={onEditCredentials}
+          onOpenSetup={openSetup}
+        />
+
+        <IntegrationCard
+          id="maps"
+          icon={MapPin}
+          title="Maps & address search"
+          description="Suggests addresses as staff and patients type, and shows a map preview, using OpenStreetMap services. No account or key is needed. Turning this off leaves plain address fields. The text being typed is sent to the public Photon search service."
+          configured
+          statusLabel={mapsEnabled ? 'On' : 'Off'}
+          meta={lastChanged(mapsRecord)}
+          switchControl={toggle('googleMapsEnabled', 'Maps & address search', mapsEnabled)}
+          footer={
+            <GhostAction
+              icon={<ExternalLink size={13} />}
+              href="https://www.openstreetmap.org/copyright"
+            >
+              Map data © OpenStreetMap contributors
+            </GhostAction>
+          }
+        />
+
+        <IntegrationCard
+          id="report-generation"
+          icon={FileText}
+          title="Report generation"
+          description="Lets staff generate PDF documents such as receipts and reports. Turning this off blocks every new PDF; documents already issued stay available to view and download."
+          configured
+          statusLabel={reportEnabled ? 'On' : 'Off'}
+          meta={lastChanged(reportRecord)}
+          switchControl={toggle('reportGenerationEnabled', 'Report generation', reportEnabled)}
+          footer={
+            <GhostAction icon={<FileText size={13} />} href="/staff/documents">
+              Open documents
+            </GhostAction>
+          }
         />
       </div>
 
@@ -609,6 +672,15 @@ export function IntegrationsSection({
           onEdit={onEditCredentials}
           onDownload={onDownloadHandover}
           downloading={downloadingHandover}
+        />
+      ) : null}
+
+      {setupGroup ? (
+        <IntegrationSetupDialog
+          key={setupGroup.id}
+          group={setupGroup}
+          onClose={() => setSetupGroupId('')}
+          onEdit={onEditCredentials}
         />
       ) : null}
     </SettingsSection>

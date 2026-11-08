@@ -78,7 +78,9 @@ const integrationFields = {
   recaptcha: "recaptchaEnabled",
   googleCalendar: "googleCalendarEnabled",
   googleDrive: "googleDriveEnabled",
+  googleMaps: "googleMapsEnabled",
   email: "emailEnabled",
+  reportGeneration: "reportGenerationEnabled",
 } as const;
 
 type IntegrationKey = keyof typeof integrationFields;
@@ -93,7 +95,11 @@ function integrationKey(key: unknown): string | null {
 }
 
 function statusMap(): Record<string, IntegrationStatus> {
-  return getIntegrationStatus() as unknown as Record<string, IntegrationStatus>;
+  return {
+    ...(getIntegrationStatus() as unknown as Record<string, IntegrationStatus>),
+    // Report generation needs no server credentials, so it is always ready.
+    reportGeneration: { configured: true, missing: [] },
+  };
 }
 
 function integrationsOf(settings: SettingsData): Record<string, unknown> {
@@ -180,10 +186,9 @@ export async function getIntegrations(
   const settings = await getSettings();
   res.json(
     await Promise.all(
-      ["googleAuth", "recaptcha", "googleCalendar", "googleDrive", "email"].map(
-        (key) =>
-        integrationResponse(key, settings),
-      ),
+      ["googleAuth", "recaptcha", "googleCalendar", "googleDrive", "googleMaps", "email"]
+        .map((key) => integrationResponse(key, settings))
+        .concat(integrationResponse("reportGeneration", settings)),
     ),
   );
 }
@@ -209,6 +214,7 @@ export async function getAdminSettings(
       recaptcha: status.recaptcha!.configured,
       calendar: status.googleCalendar!.configured,
       drive: status.googleDrive!.configured,
+      maps: status.googleMaps!.configured,
       email: status.email!.configured,
     },
   });
@@ -234,6 +240,7 @@ export async function patchSettings(
       recaptchaEnabled: configured.recaptcha!.configured,
       googleCalendarEnabled: configured.googleCalendar!.configured,
       googleDriveEnabled: configured.googleDrive!.configured,
+      googleMapsEnabled: configured.googleMaps!.configured,
       emailEnabled: configured.email!.configured,
     };
     const labels: Record<string, string> = {
@@ -241,6 +248,7 @@ export async function patchSettings(
       recaptchaEnabled: "reCAPTCHA",
       googleCalendarEnabled: "Google Calendar",
       googleDriveEnabled: "Google Drive",
+      googleMapsEnabled: "Google Maps",
       emailEnabled: "Email provider",
     };
     for (const [field, canEnable] of Object.entries(requirements)) {
@@ -643,13 +651,16 @@ export async function getIntegrationHealth(
   res: Response,
 ): Promise<void> {
   const settings = await getSettings();
-  const [google, recaptcha, calendar, drive, email] = await Promise.all([
-    integrationResponse("googleAuth", settings),
-    integrationResponse("recaptcha", settings),
-    integrationResponse("googleCalendar", settings),
-    integrationResponse("googleDrive", settings),
-    integrationResponse("email", settings),
-  ]);
+  const [google, recaptcha, calendar, drive, maps, email, report] =
+    await Promise.all([
+      integrationResponse("googleAuth", settings),
+      integrationResponse("recaptcha", settings),
+      integrationResponse("googleCalendar", settings),
+      integrationResponse("googleDrive", settings),
+      integrationResponse("googleMaps", settings),
+      integrationResponse("email", settings),
+      integrationResponse("reportGeneration", settings),
+    ]);
   res.set("Cache-Control", "no-store");
   // Same record shape the cards render, so "Re-check status" updates every
   // field instead of only the configured flag.
@@ -658,6 +669,7 @@ export async function getIntegrationHealth(
     recaptcha: { ...recaptcha, ...healthFor("recaptcha") },
     calendar: { ...calendar, ...healthFor("calendar") },
     drive: { ...drive, ...healthFor("drive") },
+    maps: { ...maps, ...healthFor("maps") },
     email: { ...email, ...getMailerHealth() },
   });
 }

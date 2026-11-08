@@ -26,7 +26,15 @@ const integrationKeys: Record<keyof IntegrationValues, string> = {
   recaptchaEnabled: 'recaptcha',
   googleCalendarEnabled: 'googleCalendar',
   googleDriveEnabled: 'googleDrive',
+  googleMapsEnabled: 'googleMaps',
   emailEnabled: 'email',
+  reportGenerationEnabled: 'reportGeneration',
+}
+
+// Turning these off needs the superuser password and an emailed code.
+const guardedDisableActions: Partial<Record<keyof IntegrationValues, string>> = {
+  googleAuthEnabled: 'disable_google_auth',
+  recaptchaEnabled: 'disable_recaptcha',
 }
 
 export default function SettingsPage() {

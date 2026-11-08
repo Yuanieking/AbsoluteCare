@@ -89,7 +89,9 @@ const sectionSchemas = {
       recaptchaEnabled: boolean,
       googleCalendarEnabled: boolean,
       googleDriveEnabled: boolean,
+      googleMapsEnabled: boolean,
       emailEnabled: boolean,
+      reportGenerationEnabled: boolean,
     })
     .strict(),
   system: z

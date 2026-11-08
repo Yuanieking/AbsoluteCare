@@ -12,6 +12,7 @@ import {
   RECAPTCHA_SECRET_KEY,
   RECAPTCHA_SITE_KEY,
 } from "../config/env.js";
+
 import { getIntegrationStatus } from "../config/integrations.js";
 import { ConflictError } from "../errors/AppError.js";
 import { freshFilter, guardFresh } from "./concurrencyService.js";
@@ -21,7 +22,9 @@ const integrationDefaults = {
   recaptchaEnabled: true,
   googleCalendarEnabled: true,
   googleDriveEnabled: true,
+  googleMapsEnabled: true,
   emailEnabled: true,
+  reportGenerationEnabled: true,
 };
 
 const configured = (value: unknown): boolean =>
@@ -94,6 +97,17 @@ export function isEmailSendingEnabled(
   return integrations?.emailEnabled !== false;
 }
 
+// Master PDF switch. It needs no credentials, so only an explicit false stops
+// generation; installs written before the switch existed keep working.
+export function isReportGenerationEnabled(
+  settings: AppSettingData | null | undefined,
+): boolean {
+  const integrations = settings?.integrations as unknown as
+    | Record<string, unknown>
+    | undefined;
+  return integrations?.reportGenerationEnabled !== false;
+}
+
 export function isRecaptchaRequired(
   settings: AppSettingData | null | undefined,
 ): boolean {
@@ -112,6 +126,7 @@ export function publicSettings(
 ): Record<string, unknown> {
   const status = getIntegrationStatus();
   const recaptchaEnabled = isRecaptchaRequired(settings);
+  const googleMapsEnabled = effectiveIntegrationEnabled(settings, "googleMaps");
   return {
     googleAuthEnabled: Boolean(
       settings.integrations.googleAuthEnabled && status.googleAuth.configured,
@@ -121,6 +136,7 @@ export function publicSettings(
     ...(recaptchaEnabled
       ? { recaptchaSiteKey: RECAPTCHA_SITE_KEY.trim() }
       : {}),
+    googleMapsEnabled,
     onlineBookingEnabled: settings.booking.onlineBookingEnabled,
     maintenanceMode: settings.system.maintenanceMode,
     maintenanceMessage: settings.system.maintenanceMessage,

@@ -7,6 +7,7 @@ export type PublicSettings = {
   patientRegistrationEnabled: boolean
   recaptchaEnabled: boolean
   recaptchaSiteKey: string
+  googleMapsEnabled: boolean
   onlineBookingEnabled: boolean
   maintenanceMode: boolean
   maintenanceMessage: string
@@ -40,6 +41,7 @@ const defaults: PublicSettings = {
   patientRegistrationEnabled: true,
   recaptchaEnabled: false,
   recaptchaSiteKey: '',
+  googleMapsEnabled: false,
   onlineBookingEnabled: true,
   maintenanceMode: false,
   maintenanceMessage: '',
@@ -65,6 +67,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         ...current,
         ...data,
         recaptchaSiteKey: data.recaptchaEnabled ? data.recaptchaSiteKey || '' : '',
+
       }))
     } catch {
       setSettings(defaults)

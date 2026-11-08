@@ -21,10 +21,7 @@ import {
   DOCUMENT_LABELS,
   verificationUrl,
 } from "./documentNumberService.js";
-import {
-  clinicIdentity,
-  renderDocumentPdf,
-} from "./documentPdfService.js";
+import { clinicIdentity, renderDocumentPdf } from "./documentPdfService.js";
 import {
   DriveError,
   markConnectionError,
@@ -34,12 +31,19 @@ import {
 import {
   effectiveIntegrationEnabled,
   getSettings,
+  isReportGenerationEnabled,
 } from "./settingsService.js";
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 const MAX_DRIVE_ATTEMPTS = 5;
 /** Retry backoff after the 1st..5th failed attempt. */
-const BACKOFF_MS = [60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000, 6 * 60 * 60_000];
+const BACKOFF_MS = [
+  60_000,
+  5 * 60_000,
+  15 * 60_000,
+  60 * 60_000,
+  6 * 60 * 60_000,
+];
 
 const ROLE_VALUES: StaffRole[] = ["admin", "secretary", "therapist"];
 
@@ -88,7 +92,9 @@ export async function resolveActor(
   if (!user) throw new AppError(403, { message: "Account not found." });
   const resolved = (role || user.role) as StaffRole;
   if (!ROLE_VALUES.includes(resolved)) {
-    throw new AppError(403, { message: "You do not have access to this workspace." });
+    throw new AppError(403, {
+      message: "You do not have access to this workspace.",
+    });
   }
   return {
     id: String(user._id),
@@ -163,13 +169,18 @@ export async function attemptDriveUpload(
         "drive.lockToken": lockToken,
         "drive.lockExpiresAt": new Date(now.getTime() + 5 * 60_000),
         ...(resetAttempts
-          ? { "drive.attempts": 0, "drive.lastError": "", "drive.status": "pending" }
+          ? {
+              "drive.attempts": 0,
+              "drive.lastError": "",
+              "drive.status": "pending",
+            }
           : {}),
       },
     },
     { returnDocument: "after" },
   );
-  if (!doc) return (await GeneratedDocument.findById(candidate._id)) ?? candidate;
+  if (!doc)
+    return (await GeneratedDocument.findById(candidate._id)) ?? candidate;
   // A worker whose lease expired cannot save over a newer worker's state.
   doc.$where = { "drive.lockToken": lockToken };
   try {
@@ -199,7 +210,8 @@ async function performDriveUpload(
       );
     }
     const withPdf = await GeneratedDocument.findById(doc._id).select("+pdf");
-    if (!withPdf?.pdf) throw new DriveError("rejected", "The stored PDF is missing.", false);
+    if (!withPdf?.pdf)
+      throw new DriveError("rejected", "The stored PDF is missing.", false);
     if (!doc.drive.fileId) {
       const fileId = await reserveDriveFileId();
       // Persist the remote ID before sending bytes: retries reuse it even if
@@ -244,10 +256,14 @@ async function performDriveUpload(
     doc.drive.attempts += 1;
     doc.drive.lastAttemptAt = now;
     doc.drive.lastError = driveError.message;
-    const hopeless = ["quota", "permission", "rejected", "folder_missing"].includes(
-      driveError.code,
-    ) && !driveError.retryable;
-    if (hopeless || (driveError.retryable && doc.drive.attempts >= MAX_DRIVE_ATTEMPTS)) {
+    const hopeless =
+      ["quota", "permission", "rejected", "folder_missing"].includes(
+        driveError.code,
+      ) && !driveError.retryable;
+    if (
+      hopeless ||
+      (driveError.retryable && doc.drive.attempts >= MAX_DRIVE_ATTEMPTS)
+    ) {
       doc.drive.status = "failed";
       doc.drive.nextAttemptAt = null;
     } else {
@@ -257,7 +273,9 @@ async function performDriveUpload(
             now.getTime() +
               (BACKOFF_MS[
                 Math.min(doc.drive.attempts - 1, BACKOFF_MS.length - 1)
-              ] ?? BACKOFF_MS[0] ?? 60_000),
+              ] ??
+                BACKOFF_MS[0] ??
+                60_000),
           )
         : null;
     }
@@ -275,6 +293,12 @@ export async function createDocument(
   actor: DocumentActor,
 ): Promise<GeneratedDocumentDoc> {
   const settings = await getSettings();
+  if (!isReportGenerationEnabled(settings)) {
+    throw new AppError(403, {
+      code: "REPORT_GENERATION_DISABLED",
+      message: "Report generation is switched off in Settings, Integrations.",
+    });
+  }
   const payload = await buildDocumentPayload(input, actor);
   const trackingNumber = await allocateTrackingNumber(payload.type);
   const issuedAt = new Date();
@@ -395,7 +419,10 @@ export async function findDocumentForActor(
 ): Promise<GeneratedDocumentDoc> {
   const doc = await GeneratedDocument.findById(id).select("-pdf");
   // No existence oracle: another staff member's document is a plain 404.
-  if (!doc || (actor.role !== "admin" && String(doc.generatedBy) !== actor.id)) {
+  if (
+    !doc ||
+    (actor.role !== "admin" && String(doc.generatedBy) !== actor.id)
+  ) {
     throw new AppError(404, { message: "Document not found." });
   }
   return doc;
@@ -482,9 +509,9 @@ export async function verifyDocument(
   };
 
   if (doc.supersededBy) {
-    const replacement = await GeneratedDocument.findById(doc.supersededBy).select(
-      "trackingNumber createdAt",
-    );
+    const replacement = await GeneratedDocument.findById(
+      doc.supersededBy,
+    ).select("trackingNumber createdAt");
     if (replacement) {
       result.supersededBy = replacement.trackingNumber;
       result.supersededAt = replacement.createdAt;

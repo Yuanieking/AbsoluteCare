@@ -65,11 +65,14 @@ export interface IntegrationSettings {
   recaptchaEnabled: boolean;
   googleCalendarEnabled: boolean;
   googleDriveEnabled: boolean;
+  googleMapsEnabled: boolean;
   emailEnabled: boolean;
+  reportGenerationEnabled: boolean;
   googleAuthLastTest: IntegrationTestResult;
   recaptchaLastTest: IntegrationTestResult;
   googleCalendarLastTest: IntegrationTestResult;
   googleDriveLastTest: IntegrationTestResult;
+  googleMapsLastTest: IntegrationTestResult;
   emailLastTest: IntegrationTestResult;
   restartRequired: boolean;
   restartRequestedAt: Date | null;
@@ -179,7 +182,9 @@ const appSettingSchema = new mongoose.Schema<AppSetting>(
       recaptchaEnabled: { type: Boolean, default: true },
       googleCalendarEnabled: { type: Boolean, default: true },
       googleDriveEnabled: { type: Boolean, default: true },
+      googleMapsEnabled: { type: Boolean, default: true },
       emailEnabled: { type: Boolean, default: true },
+      reportGenerationEnabled: { type: Boolean, default: true },
       googleAuthLastTest: { type: mongoose.Schema.Types.Mixed, default: null },
       recaptchaLastTest: { type: mongoose.Schema.Types.Mixed, default: null },
       googleCalendarLastTest: {
@@ -190,6 +195,7 @@ const appSettingSchema = new mongoose.Schema<AppSetting>(
         type: mongoose.Schema.Types.Mixed,
         default: null,
       },
+      googleMapsLastTest: { type: mongoose.Schema.Types.Mixed, default: null },
       emailLastTest: { type: mongoose.Schema.Types.Mixed, default: null },
       restartRequired: { type: Boolean, default: false },
       restartRequestedAt: { type: Date, default: null },

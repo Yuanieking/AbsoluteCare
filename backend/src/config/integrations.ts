@@ -12,6 +12,7 @@ export type IntegrationStatusMap = Record<string, IntegrationStatus> & {
   recaptcha: IntegrationStatus;
   googleCalendar: IntegrationStatus;
   googleDrive: IntegrationStatus;
+  googleMaps: IntegrationStatus;
   email: IntegrationStatus;
 };
 
@@ -27,6 +28,7 @@ export interface IntegrationSources {
   recaptcha: string;
   googleCalendar: string;
   googleDrive: string;
+  googleMaps: string;
   email: string;
 }
 
@@ -35,6 +37,7 @@ export interface IntegrationDetailsMap {
   recaptcha: IntegrationDetails;
   googleCalendar: IntegrationDetails;
   googleDrive: IntegrationDetails;
+  googleMaps: IntegrationDetails;
   email: IntegrationDetails;
   sources: IntegrationSources;
   [key: string]: IntegrationDetails | IntegrationSources;
@@ -111,6 +114,9 @@ export function getIntegrationStatus(): IntegrationStatusMap {
       configured: missingVariables(googleDrive).length === 0,
       missing: missingVariables(googleDrive),
     },
+    // Address search and maps use keyless OpenStreetMap services, so there is
+    // nothing to configure; only the on/off switch matters.
+    googleMaps: { configured: true, missing: [] },
     email: { configured: emailMissing.length === 0, missing: emailMissing },
   };
 }
@@ -149,6 +155,12 @@ export function getIntegrationDetails(): IntegrationDetailsMap {
         `${API_BASE_URL}/integrations/google-drive/callback`,
       senderAddress: null,
     },
+    googleMaps: {
+      clientIdMasked: null,
+      siteKey: null,
+      redirectUri: null,
+      senderAddress: null,
+    },
     email: {
       clientIdMasked: null,
       siteKey: null,
@@ -160,6 +172,7 @@ export function getIntegrationDetails(): IntegrationDetailsMap {
       recaptcha: getIntegrationSource("RECAPTCHA_SECRET_KEY"),
       googleCalendar: getIntegrationSource("GOOGLE_CALENDAR_ENCRYPTION_KEY"),
       googleDrive: getIntegrationSource("GOOGLE_DRIVE_REDIRECT_URI"),
+      googleMaps: "none",
       email: getIntegrationSource("BREVO_API_KEY"),
     },
   };
