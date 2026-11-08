@@ -15,12 +15,13 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { useAuth } from '@/features/auth/session'
 import { useSettings } from '@/features/settings/provider'
 import { useRecaptcha } from '@/hooks/useRecaptcha'
 import { authenticate, getApiErrorDetails, type AuthPayload } from '@/lib/api/auth'
 import { consumePostAuthRedirect } from '@/lib/dashboard-path'
 import { sanitizePhone } from '@/lib/validation'
-import { AuthAlert, AuthHeading, AuthSuccess, NetworkAlert } from './AuthShell'
+import { AuthAlert, AuthHeading, NetworkAlert } from './AuthShell'
 import { GoogleButton } from './GoogleButton'
 import { PasswordField } from './PasswordField'
 import { signupSchema, type SignupValues } from './schemas'
@@ -32,6 +33,7 @@ type SignupFormProps = {
 export function SignupForm({ isStaffAlias }: SignupFormProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { setUser } = useAuth()
   const { settings, loading: settingsLoading, refreshSettings } = useSettings()
   const minLength = settings.passwordMinLength || 8
   const [returnTo] = useState(() =>
@@ -46,7 +48,6 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [networkError, setNetworkError] = useState('')
-  const [submitted, setSubmitted] = useState(false)
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema(minLength)),
@@ -90,8 +91,18 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
         acceptedTerms: values.terms,
       }
       if (recaptcha.enabled && recaptcha.token) payload.recaptchaToken = recaptcha.token
-      await authenticate('signup', payload)
-      setSubmitted(true)
+      const response = await authenticate('signup', payload)
+      if (response.data.pending) {
+        setError(response.data.message || 'Your account requires approval before you can sign in.')
+        return
+      }
+      const nextUser = response.data.user
+      if (!nextUser) {
+        setError('Your account was created, but sign-in could not be completed. Please log in.')
+        return
+      }
+      setUser(nextUser)
+      navigate('/dashboard', { replace: true })
     } catch (requestError) {
       const details = getApiErrorDetails(requestError)
       if (details.isNetwork) {
@@ -122,22 +133,6 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
       setLoading(false)
     }
   })
-
-  if (submitted) {
-    return (
-      <AuthSuccess
-        title="Account created"
-        description="Your AbsoluteCare account is ready. Log in to continue."
-        action={
-          <Button asChild size="lg" className="h-10">
-            <Link to="/auth?mode=login" state={returnTo ? { from: returnTo } : undefined}>
-              Log in
-            </Link>
-          </Button>
-        }
-      />
-    )
-  }
 
   return (
     <>

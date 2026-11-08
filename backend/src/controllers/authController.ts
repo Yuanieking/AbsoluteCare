@@ -463,6 +463,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       accountAudit: [{ action: "created" }],
     });
 
+    generateToken(newUser._id.toString(), res);
+
     res.status(201).json({
       message: "Account created successfully.",
       user: newUser.omitPassword(),
