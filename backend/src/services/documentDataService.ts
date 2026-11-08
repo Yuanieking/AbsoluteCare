@@ -4,7 +4,9 @@ import Appointment, {
 } from "../models/appointmentModel.js";
 import Dependent from "../models/dependentModel.js";
 import type { DocumentType } from "../models/generatedDocumentModel.js";
-import Session, { type Session as SessionData } from "../models/sessionModel.js";
+import Session, {
+  type Session as SessionData,
+} from "../models/sessionModel.js";
 import User from "../models/userModel.js";
 import { AppError } from "../errors/AppError.js";
 import type { DocumentCreateInput } from "../schemas/documentSchema.js";
@@ -50,7 +52,10 @@ interface GeneralSettings {
   currency: string;
 }
 
-function dateFormatter(general: GeneralSettings, options: Intl.DateTimeFormatOptions) {
+function dateFormatter(
+  general: GeneralSettings,
+  options: Intl.DateTimeFormatOptions,
+) {
   return new Intl.DateTimeFormat("en-PH", {
     timeZone: general.timezone || "Asia/Manila",
     ...options,
@@ -66,7 +71,9 @@ function dateLabel(value: Date, general: GeneralSettings): string {
 }
 
 function monthLabel(value: Date, general: GeneralSettings): string {
-  return dateFormatter(general, { year: "numeric", month: "long" }).format(value);
+  return dateFormatter(general, { year: "numeric", month: "long" }).format(
+    value,
+  );
 }
 
 function dateTimeLabel(value: Date, general: GeneralSettings): string {
@@ -83,13 +90,21 @@ function timeZoneLabel(general: GeneralSettings): string {
   const parts = dateFormatter(general, { timeZoneName: "short" }).formatToParts(
     new Date(),
   );
-  return parts.find((part) => part.type === "timeZoneName")?.value ?? general.timezone;
+  return (
+    parts.find((part) => part.type === "timeZoneName")?.value ??
+    general.timezone
+  );
 }
 
-function storedDateLabel(value: string | Date | null | undefined, general: GeneralSettings): string {
+function storedDateLabel(
+  value: string | Date | null | undefined,
+  general: GeneralSettings,
+): string {
   if (!value) return "";
   const parsed = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(parsed.getTime()) ? String(value) : dateLabel(parsed, general);
+  return Number.isNaN(parsed.getTime())
+    ? String(value)
+    : dateLabel(parsed, general);
 }
 
 function moneyLabel(amount: number, general: GeneralSettings): string {
@@ -189,7 +204,10 @@ interface AppointmentView {
 }
 
 const APPOINTMENT_POPULATION = [
-  { path: "patient", select: "firstname lastname email phone address dateOfBirth" },
+  {
+    path: "patient",
+    select: "firstname lastname email phone address dateOfBirth",
+  },
   {
     path: "dependent",
     select: "firstName lastName dateOfBirth sex relationship",
@@ -203,7 +221,8 @@ async function loadAppointment(id: string): Promise<AppointmentView> {
   const appointment = await Appointment.findById(id).populate(
     APPOINTMENT_POPULATION,
   );
-  if (!appointment) throw new AppError(404, { message: "Appointment not found." });
+  if (!appointment)
+    throw new AppError(404, { message: "Appointment not found." });
   return appointment as unknown as AppointmentView;
 }
 
@@ -236,7 +255,10 @@ async function clinicReportPayload(
     (total, row) => total + (row.duration || 0),
     0,
   );
-  const revenue = report.payments.reduce((total, row) => total + (row.total || 0), 0);
+  const revenue = report.payments.reduce(
+    (total, row) => total + (row.total || 0),
+    0,
+  );
   const unpaid = report.unpaid[0] ?? { total: 0, count: 0 };
 
   return {
@@ -259,13 +281,19 @@ async function clinicReportPayload(
         facts: [
           ["Registered patients", String(report.patientCount)],
           ["New patients in this period", String(report.newPatients)],
-          ["Patients with a recorded session", String(report.completedPatients)],
+          [
+            "Patients with a recorded session",
+            String(report.completedPatients),
+          ],
           ["Appointments booked", String(totalAppointments)],
           ["Appointment completion rate", completionRate],
           ["Sessions recorded", String(sessionsTotal)],
           ["Therapy time", minutesLabel(therapyMinutes)],
           ["Payments collected", moneyLabel(revenue, general)],
-          ["Open balances", `${moneyLabel(unpaid.total, general)} across ${unpaid.count} unsettled visits`],
+          [
+            "Open balances",
+            `${moneyLabel(unpaid.total, general)} across ${unpaid.count} unsettled visits`,
+          ],
         ],
       },
       {
@@ -371,9 +399,7 @@ async function patientSummaryPayload(
     dependent: dependent ? new Types.ObjectId(input.dependentId) : null,
     sessionDate: { $gte: input.from, $lte: input.to },
   } as unknown as QueryFilter<SessionData>)
-    .select(
-      "sessionDate therapist durationMinutes patientVisibleNotes service",
-    )
+    .select("sessionDate therapist durationMinutes patientVisibleNotes service")
     .populate("therapist", "firstname lastname")
     .populate("service", "name")
     .sort({ sessionDate: 1 });
@@ -386,16 +412,18 @@ async function patientSummaryPayload(
     service: { name: string } | null;
   }>;
 
-  const adherence = await Appointment.aggregate<{ _id: string; count: number }>([
-    {
-      $match: {
-        patient: patient._id,
-        dependent: dependent ? new Types.ObjectId(input.dependentId) : null,
-        scheduledStart: { $gte: input.from, $lte: input.to },
+  const adherence = await Appointment.aggregate<{ _id: string; count: number }>(
+    [
+      {
+        $match: {
+          patient: patient._id,
+          dependent: dependent ? new Types.ObjectId(input.dependentId) : null,
+          scheduledStart: { $gte: input.from, $lte: input.to },
+        },
       },
-    },
-    { $group: { _id: "$status", count: { $sum: 1 } } },
-  ]);
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ],
+  );
 
   const totalMinutes = rows.reduce(
     (total, row) => total + (row.durationMinutes || 0),
@@ -450,7 +478,10 @@ async function patientSummaryPayload(
           `${dateLabel(input.from, general)} to ${dateLabel(input.to, general)} · ${rows.length} session${rows.length === 1 ? "" : "s"} · ${minutesLabel(totalMinutes)} of therapy.`,
         ],
         facts: [
-          ["Treating therapists", therapists.length ? therapists.join(", ") : "None recorded"],
+          [
+            "Treating therapists",
+            therapists.length ? therapists.join(", ") : "None recorded",
+          ],
         ],
       },
       {
@@ -475,7 +506,10 @@ async function patientSummaryPayload(
           {
             columns: ["Outcome", "Appointments"],
             rows: [
-              ["Booked", String(adherence.reduce((total, row) => total + row.count, 0))],
+              [
+                "Booked",
+                String(adherence.reduce((total, row) => total + row.count, 0)),
+              ],
               ["Completed", countOf("completed")],
               ["Cancelled", countOf("cancelled")],
               ["No-show", countOf("no_show")],
@@ -502,7 +536,10 @@ function visitRecordPayload(
   const patientFacts: Array<[string, string]> = view.dependent
     ? [
         ["Patient", personName(view.patient)],
-        ["Dependent", `${view.dependent.firstName} ${view.dependent.lastName}`.trim()],
+        [
+          "Dependent",
+          `${view.dependent.firstName} ${view.dependent.lastName}`.trim(),
+        ],
         ["Relationship", view.dependent.relationship || "—"],
         [
           "Date of birth",
@@ -511,7 +548,10 @@ function visitRecordPayload(
       ]
     : [
         ["Patient", personName(view.patient)],
-        ["Date of birth", storedDateLabel(view.patient?.dateOfBirth, general) || "—"],
+        [
+          "Date of birth",
+          storedDateLabel(view.patient?.dateOfBirth, general) || "—",
+        ],
         ["Phone", view.patient?.phone || ""],
         ["Email", view.patient?.email || ""],
       ];
@@ -536,7 +576,9 @@ function visitRecordPayload(
           ["Scheduled", start],
           [
             "Ends",
-            view.scheduledEnd ? dateTimeLabel(view.scheduledEnd, general) : "Not set",
+            view.scheduledEnd
+              ? dateTimeLabel(view.scheduledEnd, general)
+              : "Not set",
           ],
           ["Therapist", personName(view.therapist) || "To be assigned"],
           ["Service", service?.name || "Unassigned"],
@@ -617,7 +659,10 @@ function receiptPayload(
               : dateLabel(view.createdAt, general),
           ],
           ["Payer", payer],
-          ["Service", view.service?.name || view.serviceSnapshot.name || "Unassigned"],
+          [
+            "Service",
+            view.service?.name || view.serviceSnapshot.name || "Unassigned",
+          ],
           ["Visit date", dateLabel(visit, general)],
           ["Amount paid", moneyLabel(view.payment.amount, general)],
           ["Method", METHOD_LABELS[view.payment.method] ?? view.payment.method],
@@ -626,10 +671,7 @@ function receiptPayload(
                 [string, string]
               >)
             : []),
-          [
-            "Received by",
-            personName(view.payment.recordedBy) || "Front desk",
-          ],
+          ["Received by", personName(view.payment.recordedBy) || "Front desk"],
         ],
         note: "This receipt covers the visit listed above only.",
       },
@@ -667,10 +709,7 @@ export async function buildDocumentPayload(
   }
 
   const appointment = await loadAppointment(input.appointmentId);
-  if (
-    actor.role === "therapist" &&
-    refId(appointment.therapist) !== actor.id
-  ) {
+  if (actor.role === "therapist" && refId(appointment.therapist) !== actor.id) {
     throw new AppError(404, { message: "Appointment not found." });
   }
 

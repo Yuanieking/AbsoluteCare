@@ -271,9 +271,10 @@ export const router = createBrowserRouter([
       },
       {
         path: 'documents',
-        ...createRoleRoutes(['admin', 'secretary', 'therapist'], [
-          { index: true, element: shellRoute(<StaffDocumentsPage />) },
-        ]),
+        ...createRoleRoutes(
+          ['admin', 'secretary', 'therapist'],
+          [{ index: true, element: shellRoute(<StaffDocumentsPage />) }],
+        ),
       },
       { path: 'secretary', ...createRoleRoutes('secretary', secretaryChildren) },
       {

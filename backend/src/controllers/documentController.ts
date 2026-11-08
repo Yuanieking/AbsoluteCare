@@ -1,5 +1,8 @@
 import type { Request, Response } from "express";
-import { documentCreateSchema, documentRevokeSchema } from "../schemas/documentSchema.js";
+import {
+  documentCreateSchema,
+  documentRevokeSchema,
+} from "../schemas/documentSchema.js";
 import {
   createDocument,
   documentView,
@@ -78,7 +81,9 @@ export async function revokeDocumentHandler(
 ): Promise<void> {
   const actor = await actorOf(req);
   if (actor.role !== "admin") {
-    res.status(403).json({ message: "Only an administrator can revoke a document." });
+    res
+      .status(403)
+      .json({ message: "Only an administrator can revoke a document." });
     return;
   }
   const { reason } = documentRevokeSchema.parse(req.body ?? {});

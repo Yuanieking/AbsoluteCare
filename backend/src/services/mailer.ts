@@ -88,7 +88,10 @@ function parseSender(from: string): { name?: string; email: string } {
   const match = /^(.*?)<([^<>]+)>\s*$/.exec(trimmed);
   const email = match ? (match[2] ?? "").trim() : "";
   if (!match || !email) return { email: trimmed };
-  const name = (match[1] ?? "").trim().replace(/^"(.*)"$/, "$1").trim();
+  const name = (match[1] ?? "")
+    .trim()
+    .replace(/^"(.*)"$/, "$1")
+    .trim();
   return name ? { name, email } : { email };
 }
 
@@ -197,7 +200,8 @@ export function classifyMailError(error: unknown): MailFailure {
   const status = Number(
     source.status || source.statusCode || source.responseCode || 0,
   );
-  const unavailable = "The email provider is temporarily unavailable. Please try again.";
+  const unavailable =
+    "The email provider is temporarily unavailable. Please try again.";
 
   if (code === "NOT_CONFIGURED") {
     const missing = Array.isArray(source.missing)

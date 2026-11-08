@@ -6,7 +6,9 @@ export async function verifyDocumentHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const raw = String(req.params.trackingNumber ?? "").trim().toUpperCase();
+  const raw = String(req.params.trackingNumber ?? "")
+    .trim()
+    .toUpperCase();
   const parsed = trackingNumberParamSchema.safeParse(raw);
   res.set("Cache-Control", "no-store");
   if (!parsed.success) {

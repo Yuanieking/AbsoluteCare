@@ -28,7 +28,9 @@ export const documentCreateSchema = z
         ...ranged,
       })
       .strict(),
-    z.object({ type: z.literal("visit_record"), appointmentId: objectId }).strict(),
+    z
+      .object({ type: z.literal("visit_record"), appointmentId: objectId })
+      .strict(),
     z.object({ type: z.literal("receipt"), appointmentId: objectId }).strict(),
   ])
   .superRefine((value, context) => {
@@ -53,21 +55,20 @@ export const documentCreateSchema = z
 
 export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
 
-export const documentListQuerySchema = z
-  .object({
-    type: z
-      .enum(["clinic_report", "patient_summary", "visit_record", "receipt"])
-      .optional(),
-    patientId: objectId.optional(),
-    appointmentId: objectId.optional(),
-    driveStatus: z.enum(["pending", "uploaded", "failed"]).optional(),
-    status: z.enum(["issued", "superseded", "revoked"]).optional(),
-    search: z.string().trim().max(120).optional(),
-    from: date.optional(),
-    to: date.optional(),
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(50).default(20),
-  });
+export const documentListQuerySchema = z.object({
+  type: z
+    .enum(["clinic_report", "patient_summary", "visit_record", "receipt"])
+    .optional(),
+  patientId: objectId.optional(),
+  appointmentId: objectId.optional(),
+  driveStatus: z.enum(["pending", "uploaded", "failed"]).optional(),
+  status: z.enum(["issued", "superseded", "revoked"]).optional(),
+  search: z.string().trim().max(120).optional(),
+  from: date.optional(),
+  to: date.optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
 
 export type DocumentListQuery = z.infer<typeof documentListQuerySchema>;
 

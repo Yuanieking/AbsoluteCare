@@ -40,6 +40,9 @@ export async function allocateTrackingNumber(
   return `${PREFIX[type]}-${year}-${String(counter?.seq ?? 1).padStart(6, "0")}`;
 }
 
-export function verificationUrl(trackingNumber: string, frontendUrl: string): string {
+export function verificationUrl(
+  trackingNumber: string,
+  frontendUrl: string,
+): string {
   return `${frontendUrl.trim().replace(/\/+$/, "")}/verify/${trackingNumber}`;
 }

@@ -12,40 +12,80 @@ test("Compiled native-ESM startup serves document authorization and public verif
   process.env.ADMIN_EMAILS = "";
   process.env.BREVO_API_KEY = "";
   process.env.MAIL_FROM = "";
-  const { default: Setting } = await import("../dist/src/models/appSettingModel.js");
-  const { default: Credential } = await import("../dist/src/models/integrationCredentialModel.js");
-  const { default: Document } = await import("../dist/src/models/generatedDocumentModel.js");
+  const { default: Setting } =
+    await import("../dist/src/models/appSettingModel.js");
+  const { default: Credential } =
+    await import("../dist/src/models/integrationCredentialModel.js");
+  const { default: Document } =
+    await import("../dist/src/models/generatedDocumentModel.js");
   const { default: User } = await import("../dist/src/models/userModel.js");
   const { JWT_SECRET } = await import("../dist/src/config/env.js");
   const { default: jwt } = await import("jsonwebtoken");
-  const settings = new Setting({ notifications: { remindersEnabled: false }, integrations: { googleDriveEnabled: false } });
+  const settings = new Setting({
+    notifications: { remindersEnabled: false },
+    integrations: { googleDriveEnabled: false },
+  });
   mongoose.connect = async () => mongoose;
   Setting.findOne = async () => settings;
-  Credential.find = () => { const q = { select: () => q, lean: async () => [] }; return q; };
+  Credential.find = () => {
+    const q = { select: () => q, lean: async () => [] };
+    return q;
+  };
   const issuer = "111111111111111111111111";
-  User.findById = () => ({ select: async () => ({ _id: issuer, firstname: "Secretary", lastname: "Example", role: "secretary", isActive: true }) });
-  Document.findById = () => ({ select: async () => new Document({ generatedBy: "222222222222222222222222" }) });
+  User.findById = () => ({
+    select: async () => ({
+      _id: issuer,
+      firstname: "Secretary",
+      lastname: "Example",
+      role: "secretary",
+      isActive: true,
+    }),
+  });
+  Document.findById = () => ({
+    select: async () =>
+      new Document({ generatedBy: "222222222222222222222222" }),
+  });
   Document.findOne = () => ({ select: async () => null });
-  globalThis.fetch = async () => { throw new Error("Unexpected outbound HTTP"); };
+  globalThis.fetch = async () => {
+    throw new Error("Unexpected outbound HTTP");
+  };
 
   const intervals = [];
   const originalInterval = globalThis.setInterval;
-  globalThis.setInterval = (...args) => { const timer = originalInterval(...args); intervals.push(timer); return timer; };
+  globalThis.setInterval = (...args) => {
+    const timer = originalInterval(...args);
+    intervals.push(timer);
+    return timer;
+  };
   const originalListen = http.Server.prototype.listen;
   let server;
-  http.Server.prototype.listen = function (...args) { server = this; return originalListen.apply(this, args); };
+  http.Server.prototype.listen = function (...args) {
+    server = this;
+    return originalListen.apply(this, args);
+  };
   try {
     await import("../dist/src/app.js");
     if (!server.listening) await once(server, "listening");
     const port = server.address().port;
     async function request(path, headers = {}, method = "GET") {
       return new Promise((resolve, reject) => {
-        const req = http.request({ hostname: "127.0.0.1", port, path, method, headers }, (res) => {
-          let body = "";
-          res.setEncoding("utf8");
-          res.on("data", (chunk) => { body += chunk; });
-          res.on("end", () => resolve({ status: res.statusCode, body: JSON.parse(body), headers: res.headers }));
-        });
+        const req = http.request(
+          { hostname: "127.0.0.1", port, path, method, headers },
+          (res) => {
+            let body = "";
+            res.setEncoding("utf8");
+            res.on("data", (chunk) => {
+              body += chunk;
+            });
+            res.on("end", () =>
+              resolve({
+                status: res.statusCode,
+                body: JSON.parse(body),
+                headers: res.headers,
+              }),
+            );
+          },
+        );
         req.on("error", reject);
         req.end();
       });
@@ -56,7 +96,11 @@ test("Compiled native-ESM startup serves document authorization and public verif
     assert.equal(unknown.headers["cache-control"], "no-store");
     assert.equal((await request("/documents")).status, 401);
     const session = jwt.sign({ userId: issuer, role: "secretary" }, JWT_SECRET);
-    const retry = await request("/documents/333333333333333333333333/retry", { Cookie: `session=${session}` }, "POST");
+    const retry = await request(
+      "/documents/333333333333333333333333/retry",
+      { Cookie: `session=${session}` },
+      "POST",
+    );
     assert.equal(retry.status, 404);
     assert.deepEqual(retry.body, { message: "Document not found." });
   } finally {

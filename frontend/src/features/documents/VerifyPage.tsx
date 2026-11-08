@@ -42,7 +42,9 @@ function StateMark({
     neutral: 'bg-hairline-in text-ink-soft',
   }
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium ${styles[tone]}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium ${styles[tone]}`}
+    >
       <Icon size={14} aria-hidden="true" />
       {word}
     </span>

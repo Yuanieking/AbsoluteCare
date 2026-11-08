@@ -7,20 +7,13 @@ import GoogleDriveConnection, {
 } from "../models/googleDriveConnectionModel.js";
 import type { DocumentType } from "../models/generatedDocumentModel.js";
 import { decryptSecret, encryptSecret } from "../utils/secretBox.js";
-import {
-  effectiveIntegrationEnabled,
-  getSettings,
-} from "./settingsService.js";
-import {
-  clinicIdentity,
-  renderDocumentPdf,
-} from "./documentPdfService.js";
+import { effectiveIntegrationEnabled, getSettings } from "./settingsService.js";
+import { clinicIdentity, renderDocumentPdf } from "./documentPdfService.js";
 import { verificationUrl } from "./documentNumberService.js";
 
 type ConnectionDoc = HydratedDocument<ConnectionData>;
 
-const DRIVE_SCOPE =
-  "https://www.googleapis.com/auth/drive.file openid email";
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file openid email";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const ROOT_FOLDER_NAME = "AbsoluteCare Documents";
 const TEST_FOLDER_NAME = "_connection-test";
@@ -60,7 +53,8 @@ const NOT_CONNECTED =
   "Google Drive is not connected. An admin can connect it in Settings, Integrations.";
 const DISABLED =
   "Google Drive filing is switched off in Settings, Integrations.";
-const REVOKED = "Google Drive access was revoked. Reconnect the clinic account.";
+const REVOKED =
+  "Google Drive access was revoked. Reconnect the clinic account.";
 
 function googleClient(): { id: string; secret: string } {
   return {
@@ -77,7 +71,10 @@ export async function getConnection(): Promise<ConnectionDoc | null> {
   return GoogleDriveConnection.findOne({ key: "clinic" });
 }
 
-export function driveAuthorizationUrl(state: string, redirectUri: string): string {
+export function driveAuthorizationUrl(
+  state: string,
+  redirectUri: string,
+): string {
   const params = new URLSearchParams({
     access_type: "offline",
     client_id: googleClient().id,
@@ -199,7 +196,9 @@ export interface DriveStatusView {
 export async function getDriveStatus(): Promise<DriveStatusView> {
   const connection = await getConnection();
   return {
-    connected: Boolean(connection?.connected && connection.refreshTokenEncrypted),
+    connected: Boolean(
+      connection?.connected && connection.refreshTokenEncrypted,
+    ),
     email: connection?.email ?? "",
     connectedAt: connection?.connectedAt ?? null,
     needsReconnect: Boolean(connection?.needsReconnect),
@@ -231,15 +230,23 @@ export async function markConnectionError(error: unknown): Promise<void> {
   );
 }
 
-let accessTokenCache: { value: string; expiresAt: number; credential: string } | null = null;
+let accessTokenCache: {
+  value: string;
+  expiresAt: number;
+  credential: string;
+} | null = null;
 
 async function accessToken(connection: ConnectionDoc): Promise<string> {
-  if (accessTokenCache?.credential === connection.refreshTokenEncrypted && accessTokenCache.expiresAt > Date.now()) {
+  if (
+    accessTokenCache?.credential === connection.refreshTokenEncrypted &&
+    accessTokenCache.expiresAt > Date.now()
+  ) {
     return accessTokenCache.value;
   }
   const generation = cacheGeneration;
   const refreshToken = decryptSecret(connection.refreshTokenEncrypted);
-  if (!refreshToken) throw new DriveError("not_connected", NOT_CONNECTED, false);
+  if (!refreshToken)
+    throw new DriveError("not_connected", NOT_CONNECTED, false);
   let response: Response;
   try {
     response = await fetch("https://oauth2.googleapis.com/token", {
@@ -261,9 +268,20 @@ async function accessToken(connection: ConnectionDoc): Promise<string> {
     );
   }
   if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: string };
-    if (response.status === 429 || response.status >= 500 || body.error === "temporarily_unavailable" || body.error === "server_error") {
-      throw new DriveError("transient", "Google Drive is temporarily unavailable. Retrying.", true);
+    const body = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    if (
+      response.status === 429 ||
+      response.status >= 500 ||
+      body.error === "temporarily_unavailable" ||
+      body.error === "server_error"
+    ) {
+      throw new DriveError(
+        "transient",
+        "Google Drive is temporarily unavailable. Retrying.",
+        true,
+      );
     }
     if (body.error === "invalid_grant" || response.status === 401) {
       await GoogleDriveConnection.updateOne(
@@ -272,7 +290,11 @@ async function accessToken(connection: ConnectionDoc): Promise<string> {
       );
       throw new DriveError("reconnect", REVOKED, false);
     }
-    throw new DriveError("rejected", "Google rejected the Drive credentials. Check the OAuth client configuration.", false);
+    throw new DriveError(
+      "rejected",
+      "Google rejected the Drive credentials. Check the OAuth client configuration.",
+      false,
+    );
   }
   const body = (await response.json()) as DriveTokens;
   if (!body.access_token) {
@@ -285,7 +307,8 @@ async function accessToken(connection: ConnectionDoc): Promise<string> {
   if (generation === cacheGeneration) {
     accessTokenCache = {
       value: body.access_token,
-      expiresAt: Date.now() + Math.max((body.expires_in ?? 3600) - 60, 0) * 1000,
+      expiresAt:
+        Date.now() + Math.max((body.expires_in ?? 3600) - 60, 0) * 1000,
       credential: connection.refreshTokenEncrypted,
     };
   }
@@ -294,8 +317,14 @@ async function accessToken(connection: ConnectionDoc): Promise<string> {
 
 async function classify(response: Response): Promise<DriveError> {
   const body = await response.text().catch(() => "");
-  if (response.status === 409) return new DriveError("already_exists", "The reserved Drive file already exists.", false);
-  if (response.status === 401) return new DriveError("reconnect", REVOKED, false);
+  if (response.status === 409)
+    return new DriveError(
+      "already_exists",
+      "The reserved Drive file already exists.",
+      false,
+    );
+  if (response.status === 401)
+    return new DriveError("reconnect", REVOKED, false);
   if (response.status === 403 && body.includes("storageQuotaExceeded")) {
     return new DriveError(
       "quota",
@@ -334,7 +363,11 @@ async function classify(response: Response): Promise<DriveError> {
 async function driveFetch(
   connection: ConnectionDoc,
   url: string,
-  init: { method?: string; headers?: Record<string, string>; body?: Uint8Array } = {},
+  init: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: Uint8Array;
+  } = {},
 ): Promise<Response> {
   const token = await accessToken(connection);
   let response: Response;
@@ -403,7 +436,11 @@ async function createFolder(
   );
   const body = (await response.json()) as { id?: string };
   if (!body.id) {
-    throw new DriveError("rejected", "Google Drive did not create the folder.", true);
+    throw new DriveError(
+      "rejected",
+      "Google Drive did not create the folder.",
+      true,
+    );
   }
   return body.id;
 }
@@ -413,7 +450,10 @@ async function ensureFolder(
   name: string,
   parentId: string,
 ): Promise<string> {
-  const account = crypto.createHash("sha256").update(connection.refreshTokenEncrypted).digest("hex");
+  const account = crypto
+    .createHash("sha256")
+    .update(connection.refreshTokenEncrypted)
+    .digest("hex");
   const key = `${account}:${parentId}:${name}`;
   const cached = folderCache.get(key);
   if (cached && cached.expiresAt > Date.now()) return cached.id;
@@ -449,15 +489,24 @@ function clinicDate(value: Date, timezone: string): string {
 
 async function ensureRootFolder(connection: ConnectionDoc): Promise<string> {
   // An upload started before reconnect must not overwrite the new account's root.
-  connection.$where = { refreshTokenEncrypted: connection.refreshTokenEncrypted };
+  connection.$where = {
+    refreshTokenEncrypted: connection.refreshTokenEncrypted,
+  };
   if (connection.rootFolderId) {
     try {
-      const response = await driveFetch(connection,
-        `https://www.googleapis.com/drive/v3/files/${connection.rootFolderId}?fields=id,mimeType,trashed&supportsAllDrives=true`);
-      const folder = await response.json() as { trashed?: boolean; mimeType?: string };
-      if (!folder.trashed && folder.mimeType === FOLDER_MIME) return connection.rootFolderId;
+      const response = await driveFetch(
+        connection,
+        `https://www.googleapis.com/drive/v3/files/${connection.rootFolderId}?fields=id,mimeType,trashed&supportsAllDrives=true`,
+      );
+      const folder = (await response.json()) as {
+        trashed?: boolean;
+        mimeType?: string;
+      };
+      if (!folder.trashed && folder.mimeType === FOLDER_MIME)
+        return connection.rootFolderId;
     } catch (error) {
-      if (!(error instanceof DriveError) || error.code !== "folder_missing") throw error;
+      if (!(error instanceof DriveError) || error.code !== "folder_missing")
+        throw error;
     }
     connection.rootFolderId = "";
     await connection.save();
@@ -536,22 +585,54 @@ async function uploadToFolder(
       },
     );
   } catch (error) {
-    if (!(error instanceof DriveError) || error.code !== "already_exists" || !fileId) throw error;
+    if (
+      !(error instanceof DriveError) ||
+      error.code !== "already_exists" ||
+      !fileId
+    )
+      throw error;
     // A prior attempt may have committed before its response was lost.
-    const existing = await driveFetch(connection,
-      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,webViewLink,parents,appProperties,trashed&supportsAllDrives=true`);
-    const file = await existing.json() as { id: string; webViewLink?: string; parents?: string[]; appProperties?: { trackingNumber?: string }; trashed?: boolean };
-    const properties = metadata.appProperties as { trackingNumber?: string } | undefined;
-    if (file.trashed || file.appProperties?.trackingNumber !== properties?.trackingNumber) {
-      throw new DriveError("rejected", "The reserved Drive file is unavailable. Contact the clinic administrator.", false);
+    const existing = await driveFetch(
+      connection,
+      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,webViewLink,parents,appProperties,trashed&supportsAllDrives=true`,
+    );
+    const file = (await existing.json()) as {
+      id: string;
+      webViewLink?: string;
+      parents?: string[];
+      appProperties?: { trackingNumber?: string };
+      trashed?: boolean;
+    };
+    const properties = metadata.appProperties as
+      | { trackingNumber?: string }
+      | undefined;
+    if (
+      file.trashed ||
+      file.appProperties?.trackingNumber !== properties?.trackingNumber
+    ) {
+      throw new DriveError(
+        "rejected",
+        "The reserved Drive file is unavailable. Contact the clinic administrator.",
+        false,
+      );
     }
-    return { fileId: file.id, webViewLink: file.webViewLink ?? "", folderId: file.parents?.[0] ?? folderId, fileName };
+    return {
+      fileId: file.id,
+      webViewLink: file.webViewLink ?? "",
+      folderId: file.parents?.[0] ?? folderId,
+      fileName,
+    };
   }
   const result = (await response.json()) as {
     id?: string;
     webViewLink?: string;
   };
-  if (!result.id) throw new DriveError("transient", "Google Drive did not confirm the uploaded file. Retrying.", true);
+  if (!result.id)
+    throw new DriveError(
+      "transient",
+      "Google Drive did not confirm the uploaded file. Retrying.",
+      true,
+    );
   return {
     fileId: result.id ?? "",
     webViewLink: result.webViewLink ?? "",
@@ -562,12 +643,20 @@ async function uploadToFolder(
 
 export async function reserveDriveFileId(): Promise<string> {
   const connection = await getConnection();
-  if (!connection?.connected) throw new DriveError("not_connected", NOT_CONNECTED, false);
-  const response = await driveFetch(connection,
-    "https://www.googleapis.com/drive/v3/files/generateIds?count=1&space=drive&type=files");
-  const body = await response.json() as { ids?: string[] };
+  if (!connection?.connected)
+    throw new DriveError("not_connected", NOT_CONNECTED, false);
+  const response = await driveFetch(
+    connection,
+    "https://www.googleapis.com/drive/v3/files/generateIds?count=1&space=drive&type=files",
+  );
+  const body = (await response.json()) as { ids?: string[] };
   const id = body.ids?.[0];
-  if (!id) throw new DriveError("transient", "Google Drive did not allocate a file ID. Retrying.", true);
+  if (!id)
+    throw new DriveError(
+      "transient",
+      "Google Drive did not allocate a file ID. Retrying.",
+      true,
+    );
   return id;
 }
 
@@ -607,15 +696,23 @@ export async function uploadDocumentFile(
       }).format(input.datedAt);
       const monthFolder = await ensureFolder(connection, month, typeFolder);
       const fileName = `${input.trackingNumber}_${clinicDate(input.datedAt, settings.general.timezone || "Asia/Manila")}.pdf`;
-      return await uploadToFolder(connection, input.buffer, monthFolder, fileName, {
-        description: `AbsoluteCare document ${input.trackingNumber}`,
-        appProperties: {
-          trackingNumber: input.trackingNumber,
-          documentType: input.type,
+      return await uploadToFolder(
+        connection,
+        input.buffer,
+        monthFolder,
+        fileName,
+        {
+          description: `AbsoluteCare document ${input.trackingNumber}`,
+          appProperties: {
+            trackingNumber: input.trackingNumber,
+            documentType: input.type,
+          },
         },
-      }, input.fileId);
+        input.fileId,
+      );
     } catch (error) {
-      if (!(error instanceof DriveError) || error.code !== "folder_missing") throw error;
+      if (!(error instanceof DriveError) || error.code !== "folder_missing")
+        throw error;
       folderCache.clear();
       pendingFolders.clear();
       cacheGeneration += 1;
@@ -686,9 +783,15 @@ export async function testDriveConnection(): Promise<DriveTestResult> {
     const root = await ensureRootFolder(connection);
     const folderId = await ensureFolder(connection, TEST_FOLDER_NAME, root);
     const fileName = `connection-test_${clinicDate(now, settings.general.timezone || "Asia/Manila")}.pdf`;
-    const uploaded = await uploadToFolder(connection, buffer, folderId, fileName, {
-      description: "AbsoluteCare Drive connection test",
-    });
+    const uploaded = await uploadToFolder(
+      connection,
+      buffer,
+      folderId,
+      fileName,
+      {
+        description: "AbsoluteCare Drive connection test",
+      },
+    );
     await trashFile(connection, uploaded.fileId);
     await GoogleDriveConnection.updateOne(
       { key: "clinic" },
@@ -696,7 +799,8 @@ export async function testDriveConnection(): Promise<DriveTestResult> {
     );
     return {
       ok: true,
-      message: "Google Drive is connected and writable. The test file was removed.",
+      message:
+        "Google Drive is connected and writable. The test file was removed.",
       fileName,
       webViewLink: uploaded.webViewLink,
     };
@@ -713,4 +817,3 @@ export async function testDriveConnection(): Promise<DriveTestResult> {
     return { ok: false, message: driveError.message };
   }
 }
-

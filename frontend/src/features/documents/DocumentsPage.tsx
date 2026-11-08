@@ -1,4 +1,12 @@
-import { Download, ExternalLink, FileText, LoaderCircle, RefreshCw, Search, ShieldCheck } from 'lucide-react'
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  LoaderCircle,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+} from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
@@ -78,8 +86,8 @@ export default function DocumentsPage() {
           : 'The retry was queued. Check back in a few minutes.',
       )
     } catch (error) {
-      const message = (error as { response?: { data?: { message?: string } } })
-        ?.response?.data?.message
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message
       showError(message || 'The retry could not be started.')
     } finally {
       setBusy('')
@@ -97,7 +105,12 @@ export default function DocumentsPage() {
             : 'Documents you generated. Each PDF is verified by its tracking number.'
         }
         actions={
-          <Button type="button" variant="outline" size="sm" onClick={() => void documents.refetch()}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void documents.refetch()}
+          >
             <RefreshCw size={15} aria-hidden="true" /> Refresh
           </Button>
         }
@@ -179,13 +192,27 @@ export default function DocumentsPage() {
           <table className="w-full border-collapse text-left text-[12.5px]">
             <thead>
               <tr className="border-b border-hairline text-[11.5px] text-ink-soft">
-                <th scope="col" className="px-3 py-2 font-medium">Issued</th>
-                <th scope="col" className="px-3 py-2 font-medium">Type</th>
-                <th scope="col" className="px-3 py-2 font-medium">Tracking number</th>
-                <th scope="col" className="px-3 py-2 font-medium">Subject</th>
-                <th scope="col" className="px-3 py-2 font-medium">Issued by</th>
-                <th scope="col" className="px-3 py-2 font-medium">Drive</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">Actions</th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Issued
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Type
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Tracking number
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Subject
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Issued by
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Drive
+                </th>
+                <th scope="col" className="px-3 py-2 text-right font-medium">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -213,7 +240,9 @@ export default function DocumentsPage() {
                     <td className="max-w-[180px] truncate px-3 py-2 text-ink">{item.subject}</td>
                     <td className="px-3 py-2 text-ink-soft">
                       {item.generatedBy.name}
-                      <span className="block text-[11px] text-ink-faint">{item.generatedBy.role}</span>
+                      <span className="block text-[11px] text-ink-faint">
+                        {item.generatedBy.role}
+                      </span>
                     </td>
                     <td className="px-3 py-2">
                       <span

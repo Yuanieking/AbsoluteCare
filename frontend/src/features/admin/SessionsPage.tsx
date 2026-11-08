@@ -122,7 +122,7 @@ export default function SessionsPage() {
             label="Summary"
             variant="ghost"
             size="xs"
-            disabled={!((row.original.patient as { _id?: string })?._id)}
+            disabled={!(row.original.patient as { _id?: string })?._id}
           />
           <Button
             type="button"

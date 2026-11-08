@@ -1,9 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
-import {
-  FRONTEND_URL,
-  JWT_SECRET,
-} from "../config/env.js";
+import { FRONTEND_URL, JWT_SECRET } from "../config/env.js";
 import { getIntegrationConfig } from "../config/runtimeConfig.js";
 import {
   connectClinicDrive,
@@ -24,10 +21,7 @@ function settingsDestination(params: Record<string, string>): string {
   return `${FRONTEND_URL}/staff/admin/settings?${query}`;
 }
 
-export async function connectDrive(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function connectDrive(req: Request, res: Response): Promise<void> {
   if (!effectiveIntegrationEnabled(await getSettings(), "googleDrive")) {
     res
       .status(403)
@@ -74,10 +68,7 @@ export async function driveCallback(
   }
 }
 
-export async function driveStatus(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function driveStatus(req: Request, res: Response): Promise<void> {
   res.set("Cache-Control", "no-store");
   res.json(await getDriveStatus());
 }
@@ -90,10 +81,7 @@ export async function disconnectDrive(
   res.status(204).send();
 }
 
-export async function testDrive(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function testDrive(req: Request, res: Response): Promise<void> {
   const result = await testDriveConnection();
   res.status(result.ok ? 200 : 502).json(result);
 }

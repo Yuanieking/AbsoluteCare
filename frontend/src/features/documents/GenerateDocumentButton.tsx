@@ -51,8 +51,8 @@ export function GenerateDocumentButton({
         },
       })
     } catch (error) {
-      const message = (error as { response?: { data?: { message?: string } } })
-        ?.response?.data?.message
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message
       showError(message || 'The document could not be generated.')
     } finally {
       setPending(false)

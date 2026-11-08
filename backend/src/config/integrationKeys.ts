@@ -68,6 +68,7 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
     helpUrl: "https://console.cloud.google.com/apis/credentials",
     redirectPath: "/integrations/google-drive/callback",
   },
+
   {
     id: "email",
     apiKey: "email",
@@ -82,6 +83,7 @@ const clean = (value: string): string =>
   typeof value === "string" ? value.trim() : "";
 
 const CLIENT_ID = /^\d{6,}-[a-z0-9]+\.apps\.googleusercontent\.com$/i;
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAIL_FROM =
   /^(?:[^<>]+<\s*[^\s@]+@[^\s@]+\.[^\s@]+>|[^\s@]+@[^\s@]+\.[^\s@]+)$/;
@@ -203,6 +205,7 @@ export const INTEGRATION_KEYS: IntegrationKeyDefinition[] = [
     helper:
       "Leave blank and the app creates an AbsoluteCare Documents folder. A folder the app did not create is not visible under the drive.file scope.",
   },
+
   {
     key: "BREVO_API_KEY",
     group: "email",
@@ -215,8 +218,10 @@ export const INTEGRATION_KEYS: IntegrationKeyDefinition[] = [
     validate: (value) => {
       const key = clean(value);
       if (key.length < 8) return "That key looks too short.";
-      if (key.length > 512) return "That key looks too long (512 characters max).";
-      if (/\s/.test(key)) return "API keys don't contain spaces or line breaks.";
+      if (key.length > 512)
+        return "That key looks too long (512 characters max).";
+      if (/\s/.test(key))
+        return "API keys don't contain spaces or line breaks.";
       if (PLACEHOLDER_VALUES.has(key.toLowerCase()))
         return "Replace the placeholder with the real Brevo API key.";
       return null;
