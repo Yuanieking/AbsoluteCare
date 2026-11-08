@@ -24,62 +24,62 @@ The "how to integrate for free" half of the request is answered in two places:
 
 ## 2. Interview decisions (binding)
 
-| #   | Question                                | Decision                                                                                                                                                       |
-| --- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Transport to Brevo                      | **REST API v3** (`POST https://api.brevo.com/v3/smtp/email`, `api-key` header). No SMTP relay, no nodemailer.                                                    |
-| 2   | Fate of existing mail keys              | **Brevo only.** `SMTP_*` and `GMAIL_*` are deleted from the key registry, env, defaults and `.env.example`. No generic-SMTP alternative provider, no read aliases. |
-| 3   | Sender                                  | **One verified single sender address**, e.g. the clinic's own Gmail address verified inside Brevo by link. No domain/DNS (SPF/DKIM) work in scope.             |
-| 4   | Free-tier 300/day limit                 | **Documentation only.** No send counter, no quota UI, no queue. Brevo's own limit error surfaces through the existing failure path.                            |
-| 5   | Inline logo (Brevo has no CID support)  | **Hosted URL only.** `ASSETS_BASE_URL` logo renders inline; otherwise the existing text wordmark + warning. The CID attachment variant is removed.              |
-| 6   | Health / verify behaviour               | **Both checks.** A cheap key check (`GET /v3/account`) for boot logging + the integrations card, **and** the existing real "Send test email" button for delivery proof. |
-| 7   | Retry policy                            | **Retry 429, 5xx and network/timeouts only.** `401`/`403`/`400` fail immediately. Backoff stays `250 ms` / `750 ms`, 3 attempts, 10 s timeout.                |
-| 8   | Orphaned encrypted SMTP rows in Mongo   | **Delete them.** Boot-time prune of `IntegrationCredential` docs whose key is no longer in the registry.                                                        |
-| 9   | Managed key set                         | **`BREVO_API_KEY` + the existing `MAIL_FROM`.** `MAIL_FROM` keeps its `Name <email>` shape and stays the sender.                                                |
-| 10  | nodemailer dependency                   | **Remove entirely** (`nodemailer`, `@types/nodemailer`, and the transport code).                                                                                |
-| 11  | Code structure                          | **Rewrite `services/mailer.ts` in place, same exports.** No caller changes.                                                                                    |
-| 12  | Error copy                              | **Rewrite every message for Brevo** (bad key, unverified sender, rate limit, provider down).                                                                    |
-| 13  | Save-time validation of the email group | **Account/key check only** — `GET /v3/account` with the candidate key. Sender verification is *not* checked at save time.                                       |
-| 14  | Backoff for retryable classes           | **Keep the existing 250 ms / 750 ms** jittered backoff. Do not parse `Retry-After`.                                                                             |
-| 15  | Documentation                           | **Add `docs/brevo-email-setup.md`** covering free signup → verify sender → create API key → paste into Settings → Integrations → 300/day limit.                 |
+| #   | Question                                | Decision                                                                                                                                                                  |
+| --- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Transport to Brevo                      | **REST API v3** (`POST https://api.brevo.com/v3/smtp/email`, `api-key` header). No SMTP relay, no nodemailer.                                                             |
+| 2   | Fate of existing mail keys              | **Brevo only.** `SMTP_*` and `GMAIL_*` are deleted from the key registry, env, defaults and `.env.example`. No generic-SMTP alternative provider, no read aliases.        |
+| 3   | Sender                                  | **One verified single sender address**, e.g. the clinic's own Gmail address verified inside Brevo by link. No domain/DNS (SPF/DKIM) work in scope.                        |
+| 4   | Free-tier 300/day limit                 | **Documentation only.** No send counter, no quota UI, no queue. Brevo's own limit error surfaces through the existing failure path.                                       |
+| 5   | Inline logo (Brevo has no CID support)  | **Hosted URL only.** `ASSETS_BASE_URL` logo renders inline; otherwise the existing text wordmark + warning. The CID attachment variant is removed.                        |
+| 6   | Health / verify behaviour               | **Both checks.** A cheap key check (`GET /v3/account`) for boot logging + the integrations card, **and** the existing real "Send test email" button for delivery proof.   |
+| 7   | Retry policy                            | **Retry 429, 5xx and network/timeouts only.** `401`/`403`/`400` fail immediately. Backoff stays `250 ms` / `750 ms`, 3 attempts, 10 s timeout.                            |
+| 8   | Orphaned encrypted SMTP rows in Mongo   | **Delete them.** Boot-time prune of `IntegrationCredential` docs whose key is no longer in the registry.                                                                  |
+| 9   | Managed key set                         | **`BREVO_API_KEY` + the existing `MAIL_FROM`.** `MAIL_FROM` keeps its `Name <email>` shape and stays the sender.                                                          |
+| 10  | nodemailer dependency                   | **Remove entirely** (`nodemailer`, `@types/nodemailer`, and the transport code).                                                                                          |
+| 11  | Code structure                          | **Rewrite `services/mailer.ts` in place, same exports.** No caller changes.                                                                                               |
+| 12  | Error copy                              | **Rewrite every message for Brevo** (bad key, unverified sender, rate limit, provider down).                                                                              |
+| 13  | Save-time validation of the email group | **Account/key check only** — `GET /v3/account` with the candidate key. Sender verification is _not_ checked at save time.                                                 |
+| 14  | Backoff for retryable classes           | **Keep the existing 250 ms / 750 ms** jittered backoff. Do not parse `Retry-After`.                                                                                       |
+| 15  | Documentation                           | **Add `docs/brevo-email-setup.md`** covering free signup → verify sender → create API key → paste into Settings → Integrations → 300/day limit.                           |
 | 16  | Missing/invalid key behaviour           | **Degrade exactly like today.** `sendEmail` returns `{ sent: false, code: "NOT_CONFIGURED" }`, health card goes red, nothing else breaks, OTP bootstrap path still works. |
 
 ---
 
 ## 3. Research findings (Brevo, verified Nov 2026)
 
-| Fact                          | Detail                                                                                                                                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Free plan                     | **300 emails/day**, no carry-over, up to 100,000 contacts. Transactional and campaign sends share limits differently; transactional sends beyond the daily cap are held in a Brevo-side retry queue (never assume the app needs to queue). |
-| API endpoint                  | `POST https://api.brevo.com/v3/smtp/email`, auth header `api-key: <key>`, JSON body.                                                                                                       |
-| Key shape                     | Created at **app.brevo.com/settings/keys/api**; the version column must read **v3**.                                                                                                       |
-| Required body fields          | `sender { name, email }`, `to: [{ email }]`, `subject`, plus `htmlContent` / `textContent`.                                                                                                |
-| Attachments                   | Base64 `content` or a `url`, with `name`. Size-capped (≈10 MB total) — irrelevant here, the largest thing sent is the `.ics`.                                                              |
-| **No inline CID images**      | Confirmed by Brevo support and third-party SDK docs: the v3 API supports no `Content-ID` inline embedding at all. This is why decision #5 exists.                                          |
-| Failure shape                 | JSON `{ code, message }` with HTTP `400` (bad param / unverified sender), `401`/`403` (bad or revoked key), `429` (rate/plan), `5xx` (provider).                                          |
-| Sender verification           | A single address can be verified from inside Brevo without DNS changes; sends from an unverified address fail with `400`.                                                                 |
-| Free-plan branding            | Free-plan mail can carry Brevo payload/footer branding depending on plan state. Documented as a known cosmetic trade-off, not a code concern.                                             |
+| Fact                     | Detail                                                                                                                                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Free plan                | **300 emails/day**, no carry-over, up to 100,000 contacts. Transactional and campaign sends share limits differently; transactional sends beyond the daily cap are held in a Brevo-side retry queue (never assume the app needs to queue). |
+| API endpoint             | `POST https://api.brevo.com/v3/smtp/email`, auth header `api-key: <key>`, JSON body.                                                                                                                                                       |
+| Key shape                | Created at **app.brevo.com/settings/keys/api**; the version column must read **v3**.                                                                                                                                                       |
+| Required body fields     | `sender { name, email }`, `to: [{ email }]`, `subject`, plus `htmlContent` / `textContent`.                                                                                                                                                |
+| Attachments              | Base64 `content` or a `url`, with `name`. Size-capped (≈10 MB total) — irrelevant here, the largest thing sent is the `.ics`.                                                                                                              |
+| **No inline CID images** | Confirmed by Brevo support and third-party SDK docs: the v3 API supports no `Content-ID` inline embedding at all. This is why decision #5 exists.                                                                                          |
+| Failure shape            | JSON `{ code, message }` with HTTP `400` (bad param / unverified sender), `401`/`403` (bad or revoked key), `429` (rate/plan), `5xx` (provider).                                                                                           |
+| Sender verification      | A single address can be verified from inside Brevo without DNS changes; sends from an unverified address fail with `400`.                                                                                                                  |
+| Free-plan branding       | Free-plan mail can carry Brevo payload/footer branding depending on plan state. Documented as a known cosmetic trade-off, not a code concern.                                                                                              |
 
 ---
 
 ## 4. Current system inventory (what actually changes)
 
-| File                                                       | Today                                                                                                   | Required after this change                                                                                                                      |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `backend/src/services/mailer.ts`                           | `nodemailer.createTransport` over SMTP, config-hash cached transport, 10 s race, retry, `classifyMailError`, health, `passwordResetEmail` | Same exports and semantics; `fetch` to Brevo v3, key check instead of `transport.verify()`, Brevo error classification, base64 attachments.     |
-| `backend/src/config/integrationKeys.ts`                    | Email group = `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `GMAIL_*`  | Email group = `BREVO_API_KEY` (secret, required) + `MAIL_FROM` (public, required); `helpUrl` → Brevo API keys page. Remove all SMTP/Gmail entries. |
-| `backend/src/config/integrations.ts`                       | `email` status from `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD`, with a `GMAIL_*` OAuth bypass                  | `email` status from `BREVO_API_KEY` + `MAIL_FROM`; delete the OAuth-missing branch; `sources.email` → `getIntegrationSource("BREVO_API_KEY")`.    |
-| `backend/src/config/env.ts`                                | `SMTP_HOST` (default `smtp.gmail.com`), `SMTP_PORT` (465), `SMTP_USER`, `SMTP_PASSWORD`, `GMAIL_*`, `MAIL_FROM` derived from `GMAIL_USER` | `BREVO_API_KEY` (default `""`), `MAIL_FROM` with an email-less default (`AbsoluteCare Therapy Center <no-reply@absolutecare.local>`).            |
-| `backend/src/config/runtimeConfig.ts`                      | `DEFAULTS` for SMTP/Gmail; `READ_CHAIN.SMTP_PASS = ["SMTP_PASS","SMTP_PASSWORD"]`                        | `BREVO_API_KEY` + `MAIL_FROM` in `DEFAULTS`; drop the SMTP read chain and every `GMAIL_*` default.                                              |
-| `backend/src/services/providerValidation.ts`               | `candidateMailConfig()` builds `MailConfig` from SMTP values; `checkEmail` calls `createMailTransport().verify()` | `candidateMailConfig()` returns `{ apiKey, from, missing }`; `checkEmail` calls `GET /v3/account`; failure fields name `BREVO_API_KEY`.           |
-| `backend/src/services/envWriter.ts`                        | `DROP_KEYS = {SMTP_PASSWORD}`; canonical `SMTP_PASSWORD → SMTP_PASS` migration block                      | `DROP_KEYS` becomes the retired-key set (`SMTP_*`, `GMAIL_*`) so a rewrite strips them; the migration block is deleted.                          |
-| `backend/src/services/integrationCredentialService.ts`     | Special case: saving `SMTP_PASS` also writes a `SMTP_PASSWORD` alias row                                | Delete that block. Add `pruneRetiredCredentials()` and call it at boot.                                                                         |
-| `backend/src/services/settingsService.ts`                  | Imports `SMTP_PASSWORD`, `SMTP_USER`, `GMAIL_APP_PASSWORD`, `GMAIL_USER` from `env.js`                   | Remove those imports (delete any now-unused references — verify with the compiler).                                                             |
-| `backend/src/controllers/settingsController.ts`            | `testEmail` → `verifyTransport()` → `sendEmail`; OTP mail; health map                                    | No code change expected; only the messages it forwards change (produced in `mailer.ts`).                                                        |
-| `backend/src/app.ts`                                       | `void verifyMailer()` after `listen`                                                                     | Unchanged call; now performs a key check. Add the credential prune after `connectDB()`.                                                          |
-| `backend/scripts/email-test.ts`, `scripts/email-preview.ts` | Use `sendEmail` / templates                                                                              | Unchanged (they inherit the new transport).                                                                                                     |
-| `backend/package.json`                                     | `nodemailer ^7`, `@types/nodemailer ^8`                                                                  | Both removed.                                                                                                                                   |
-| `backend/.env.example`                                     | SMTP/Gmail block                                                                                          | `BREVO_API_KEY` + `MAIL_FROM` only, with pointer to the new docs page.                                                                          |
-| `frontend/**`                                              | **Zero** occurrences of SMTP/Gmail/mailer — every label and helper comes from the backend registry         | No source changes. Dialog fields, helpers and help links update themselves.                                                                      |
+| File                                                        | Today                                                                                                                                     | Required after this change                                                                                                                         |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/src/services/mailer.ts`                            | `nodemailer.createTransport` over SMTP, config-hash cached transport, 10 s race, retry, `classifyMailError`, health, `passwordResetEmail` | Same exports and semantics; `fetch` to Brevo v3, key check instead of `transport.verify()`, Brevo error classification, base64 attachments.        |
+| `backend/src/config/integrationKeys.ts`                     | Email group = `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `GMAIL_*`                                   | Email group = `BREVO_API_KEY` (secret, required) + `MAIL_FROM` (public, required); `helpUrl` → Brevo API keys page. Remove all SMTP/Gmail entries. |
+| `backend/src/config/integrations.ts`                        | `email` status from `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD`, with a `GMAIL_*` OAuth bypass                                                | `email` status from `BREVO_API_KEY` + `MAIL_FROM`; delete the OAuth-missing branch; `sources.email` → `getIntegrationSource("BREVO_API_KEY")`.     |
+| `backend/src/config/env.ts`                                 | `SMTP_HOST` (default `smtp.gmail.com`), `SMTP_PORT` (465), `SMTP_USER`, `SMTP_PASSWORD`, `GMAIL_*`, `MAIL_FROM` derived from `GMAIL_USER` | `BREVO_API_KEY` (default `""`), `MAIL_FROM` with an email-less default (`AbsoluteCare Therapy Center <no-reply@absolutecare.local>`).              |
+| `backend/src/config/runtimeConfig.ts`                       | `DEFAULTS` for SMTP/Gmail; `READ_CHAIN.SMTP_PASS = ["SMTP_PASS","SMTP_PASSWORD"]`                                                         | `BREVO_API_KEY` + `MAIL_FROM` in `DEFAULTS`; drop the SMTP read chain and every `GMAIL_*` default.                                                 |
+| `backend/src/services/providerValidation.ts`                | `candidateMailConfig()` builds `MailConfig` from SMTP values; `checkEmail` calls `createMailTransport().verify()`                         | `candidateMailConfig()` returns `{ apiKey, from, missing }`; `checkEmail` calls `GET /v3/account`; failure fields name `BREVO_API_KEY`.            |
+| `backend/src/services/envWriter.ts`                         | `DROP_KEYS = {SMTP_PASSWORD}`; canonical `SMTP_PASSWORD → SMTP_PASS` migration block                                                      | `DROP_KEYS` becomes the retired-key set (`SMTP_*`, `GMAIL_*`) so a rewrite strips them; the migration block is deleted.                            |
+| `backend/src/services/integrationCredentialService.ts`      | Special case: saving `SMTP_PASS` also writes a `SMTP_PASSWORD` alias row                                                                  | Delete that block. Add `pruneRetiredCredentials()` and call it at boot.                                                                            |
+| `backend/src/services/settingsService.ts`                   | Imports `SMTP_PASSWORD`, `SMTP_USER`, `GMAIL_APP_PASSWORD`, `GMAIL_USER` from `env.js`                                                    | Remove those imports (delete any now-unused references — verify with the compiler).                                                                |
+| `backend/src/controllers/settingsController.ts`             | `testEmail` → `verifyTransport()` → `sendEmail`; OTP mail; health map                                                                     | No code change expected; only the messages it forwards change (produced in `mailer.ts`).                                                           |
+| `backend/src/app.ts`                                        | `void verifyMailer()` after `listen`                                                                                                      | Unchanged call; now performs a key check. Add the credential prune after `connectDB()`.                                                            |
+| `backend/scripts/email-test.ts`, `scripts/email-preview.ts` | Use `sendEmail` / templates                                                                                                               | Unchanged (they inherit the new transport).                                                                                                        |
+| `backend/package.json`                                      | `nodemailer ^7`, `@types/nodemailer ^8`                                                                                                   | Both removed.                                                                                                                                      |
+| `backend/.env.example`                                      | SMTP/Gmail block                                                                                                                          | `BREVO_API_KEY` + `MAIL_FROM` only, with pointer to the new docs page.                                                                             |
+| `frontend/**`                                               | **Zero** occurrences of SMTP/Gmail/mailer — every label and helper comes from the backend registry                                        | No source changes. Dialog fields, helpers and help links update themselves.                                                                        |
 
 Everything else (`isEmailSendingEnabled` master switch, the OTP verification flow, the
 bootstrap-without-OTP exception in `integrationCredentialController`, audit logging,
@@ -117,10 +117,10 @@ bootstrap-without-OTP exception in `integrationCredentialController`, audit logg
 Group id stays `email` (so `emailEnabled`, `emailLastTest`, the `integrationFields`
 map, and the Integrations card keep working untouched).
 
-| Key             | Kind   | Required | Validation                                                                                     | Notes                                                                     |
-| --------------- | ------ | -------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `BREVO_API_KEY` | secret | yes      | Trimmed, 8–512 chars, no whitespace/newlines, not in `PLACEHOLDER_VALUES`.                      | Masked `first5 + ••••••••`. Write-only. OTP + account check on change.    |
-| `MAIL_FROM`     | public | yes      | Existing `MAIL_FROM` regex: `Name <addr>` or bare address.                                     | Displayed in full. Parsed into Brevo `sender: { name, email }` at send time. |
+| Key             | Kind   | Required | Validation                                                                 | Notes                                                                        |
+| --------------- | ------ | -------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `BREVO_API_KEY` | secret | yes      | Trimmed, 8–512 chars, no whitespace/newlines, not in `PLACEHOLDER_VALUES`. | Masked `first5 + ••••••••`. Write-only. OTP + account check on change.       |
+| `MAIL_FROM`     | public | yes      | Existing `MAIL_FROM` regex: `Name <addr>` or bare address.                 | Displayed in full. Parsed into Brevo `sender: { name, email }` at send time. |
 
 - Group `helpUrl` → `https://app.brevo.com/settings/keys/api` (was the Gmail app-password page).
 - `BREVO_API_KEY` helper text: "Create it in Brevo → SMTP & API → API keys. The version column must say v3."
@@ -155,8 +155,8 @@ Exports that **must not change shape** (5 call-site files depend on them):
 ```ts
 interface MailConfig {
   apiKey: string;
-  from: string;            // raw MAIL_FROM string
-  missing: string[];       // ["BREVO_API_KEY" | "MAIL_FROM"]
+  from: string; // raw MAIL_FROM string
+  missing: string[]; // ["BREVO_API_KEY" | "MAIL_FROM"]
 }
 ```
 
@@ -200,7 +200,11 @@ headers: { "api-key": <key>, "content-type": "application/json", accept: "applic
 `EmailAttachment` in `emails/layout.ts` shrinks from a two-variant union to one:
 
 ```ts
-export type EmailAttachment = { filename: string; content: string; contentType: string };
+export type EmailAttachment = {
+  filename: string;
+  content: string;
+  contentType: string;
+};
 ```
 
 - The `{ filename, path, cid }` variant is deleted (it existed for the CID logo).
@@ -224,16 +228,16 @@ export type EmailAttachment = { filename: string; content: string; contentType: 
 Input becomes `{ status?, code?, message?, name? }` instead of nodemailer's
 `responseCode`/`statusCode`. All `userMessage` strings are rewritten for Brevo.
 
-| Condition                                             | `code`                  | `retryable` | Admin-facing message                                                                                                          |
-| ----------------------------------------------------- | ----------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `401` / `403`                                         | `BREVO_UNAUTHORIZED`    | no          | "Brevo rejected the API key. Copy a v3 key again from Brevo → SMTP & API → API keys."                                          |
-| `400` whose message mentions sender / verified / from | `SENDER_NOT_VERIFIED`   | no          | "Brevo won't send from this sender address yet. Verify it in Brevo → Senders, then try again."                                 |
-| `400` (other)                                         | `BREVO_BAD_REQUEST`     | no          | "Brevo rejected this message. Check the sender address and recipient."                                                         |
-| `429`                                                 | `BREVO_RATE_LIMIT`      | **yes**     | "Brevo is limiting how much mail this account can send right now. Try again shortly — the free plan allows 300 emails a day."    |
-| `5xx`                                                 | `BREVO_SERVER_ERROR`    | **yes**     | "Brevo is temporarily unavailable. Please try again."                                                                          |
-| abort / `ETIMEDOUT` / `ECONNECTION` / fetch rejection | `ETIMEDOUT` / `ECONNECTION` | **yes** | "The email provider is temporarily unavailable. Please try again."                                                            |
-| `NOT_CONFIGURED` (missing key/sender)                 | `NOT_CONFIGURED`        | no          | "Email isn't configured. Missing: `BREVO_API_KEY`." (existing dynamic list)                                                    |
-| `EMAIL_DISABLED` (admin switch)                       | `EMAIL_DISABLED`        | no          | Unchanged: "Email sending is turned off in Settings, so nothing was sent."                                                     |
+| Condition                                             | `code`                      | `retryable` | Admin-facing message                                                                                                          |
+| ----------------------------------------------------- | --------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `401` / `403`                                         | `BREVO_UNAUTHORIZED`        | no          | "Brevo rejected the API key. Copy a v3 key again from Brevo → SMTP & API → API keys."                                         |
+| `400` whose message mentions sender / verified / from | `SENDER_NOT_VERIFIED`       | no          | "Brevo won't send from this sender address yet. Verify it in Brevo → Senders, then try again."                                |
+| `400` (other)                                         | `BREVO_BAD_REQUEST`         | no          | "Brevo rejected this message. Check the sender address and recipient."                                                        |
+| `429`                                                 | `BREVO_RATE_LIMIT`          | **yes**     | "Brevo is limiting how much mail this account can send right now. Try again shortly — the free plan allows 300 emails a day." |
+| `5xx`                                                 | `BREVO_SERVER_ERROR`        | **yes**     | "Brevo is temporarily unavailable. Please try again."                                                                         |
+| abort / `ETIMEDOUT` / `ECONNECTION` / fetch rejection | `ETIMEDOUT` / `ECONNECTION` | **yes**     | "The email provider is temporarily unavailable. Please try again."                                                            |
+| `NOT_CONFIGURED` (missing key/sender)                 | `NOT_CONFIGURED`            | no          | "Email isn't configured. Missing: `BREVO_API_KEY`." (existing dynamic list)                                                   |
+| `EMAIL_DISABLED` (admin switch)                       | `EMAIL_DISABLED`            | no          | Unchanged: "Email sending is turned off in Settings, so nothing was sent."                                                    |
 
 `sender` detection is a case-insensitive substring test on Brevo's `message`
 (`sender`, `verified`, `from`), because Brevo does not expose a stable machine code for it.
@@ -314,7 +318,9 @@ Note the `MAIL_FROM` default no longer derives itself from `GMAIL_USER`.
 New `pruneRetiredCredentials()` in `integrationCredentialService.ts`:
 
 ```ts
-const stale = await IntegrationCredential.find({ key: { $nin: [...MANAGED_KEYS] } }).lean();
+const stale = await IntegrationCredential.find({
+  key: { $nin: [...MANAGED_KEYS] },
+}).lean();
 // delete those with a non-empty retired-key list; log only the count and key names
 ```
 
@@ -331,7 +337,7 @@ const stale = await IntegrationCredential.find({ key: { $nin: [...MANAGED_KEYS] 
 
 1. **Master switch**: `isEmailSendingEnabled(settings)` is still checked first in
    `sendEmail`, returning `EMAIL_DISABLED` with the same copy. Password resets and
-   invitations still bypass *user* preferences but not this switch.
+   invitations still bypass _user_ preferences but not this switch.
 2. **`SendEmailResult`** union unchanged, so `authController`, `adminUserController`,
    `notificationService`, `settingsController` and the `email-test.ts` script need no edits.
 3. **`passwordResetEmail({ email, token, staff })`** keeps forwarding to the template.
@@ -375,6 +381,7 @@ Structure (aim: a non-technical clinic admin can follow it):
    revoked keys fail with 401, unverified senders fail with 400.
 
 Also updated:
+
 - `backend/.env.example` — email block becomes `BREVO_API_KEY` / `MAIL_FROM` with a
   comment linking to the new guide and a warning never to commit the key.
 - `AGENTS.md` is **not** changed (it says nothing about mail).
@@ -419,23 +426,23 @@ shows `first5 + ••••••••`.
 
 ## 13. Edge cases and explicit answers
 
-| Case                                                | Behaviour                                                                                                                                 |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| No `BREVO_API_KEY` at all                           | `configured: false`, `missing: ["BREVO_API_KEY"]`, sends return `NOT_CONFIGURED`, app otherwise healthy.                                   |
-| Key present but revoked                             | `GET /v3/account` → 401 at boot and on test; sends fail `BREVO_UNAUTHORIZED`, non-retryable, card red.                                       |
-| `MAIL_FROM` not the verified sender                 | First real send → 400 → `SENDER_NOT_VERIFIED` with the verify-sender instruction. Save-time validation passes (decision #13), test email fails loudly. |
-| Daily 300/day cap hit                               | Sends fail with `BREVO_RATE_LIMIT` (retryable, 3 attempts) then surface; no app-side queue, no counter. Documented in the guide.            |
-| Admin turned email off                              | `EMAIL_DISABLED`, unchanged copy, nothing leaves the server.                                                                               |
-| Multi-recipient / CSV `to`                          | Normalized to `to: [{ email }]` entries; invalid addresses are rejected by Brevo as `BREVO_BAD_REQUEST`.                                    |
-| Attachments                                        | `.ics` only; base64, `text/calendar; charset=utf-8; method=REQUEST` preserved. Any future large attachment must respect Brevo's ~10 MB cap. |
-| Inline logo on a dev machine                        | Text wordmark, no attachment, existing `validateEmailAssets()` warning reworded.                                                            |
-| Email with no `text` body                           | `textContent` omitted rather than sent empty, so Brevo auto-generates a text part.                                                          |
-| Very slow Brevo response                            | 10 s abort → `ETIMEDOUT`, retried twice with 250/750 ms backoff, then surfaced.                                                             |
-| `.env` read-only / non-primary instance             | `.env` rewrite outcomes unchanged (`skipped_readonly` / `skipped_secondary`); DB stays authoritative.                                      |
-| Old encrypted SMTP rows present                     | Pruned once at boot with a count-only log.                                                                                                 |
-| Admin without an email address                      | Existing "Your account has no email address." guards in `settingsController` unchanged.                                                     |
-| Free-plan branding / "sent via Brevo" hints         | Accepted trade-off; called out in the docs guide, no code workaround.                                                                       |
-| Brevo key pasted with spaces / newlines             | Trimmed; newlines rejected by `validateValue` before save, same as every other secret.                                                      |
+| Case                                        | Behaviour                                                                                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| No `BREVO_API_KEY` at all                   | `configured: false`, `missing: ["BREVO_API_KEY"]`, sends return `NOT_CONFIGURED`, app otherwise healthy.                                               |
+| Key present but revoked                     | `GET /v3/account` → 401 at boot and on test; sends fail `BREVO_UNAUTHORIZED`, non-retryable, card red.                                                 |
+| `MAIL_FROM` not the verified sender         | First real send → 400 → `SENDER_NOT_VERIFIED` with the verify-sender instruction. Save-time validation passes (decision #13), test email fails loudly. |
+| Daily 300/day cap hit                       | Sends fail with `BREVO_RATE_LIMIT` (retryable, 3 attempts) then surface; no app-side queue, no counter. Documented in the guide.                       |
+| Admin turned email off                      | `EMAIL_DISABLED`, unchanged copy, nothing leaves the server.                                                                                           |
+| Multi-recipient / CSV `to`                  | Normalized to `to: [{ email }]` entries; invalid addresses are rejected by Brevo as `BREVO_BAD_REQUEST`.                                               |
+| Attachments                                 | `.ics` only; base64, `text/calendar; charset=utf-8; method=REQUEST` preserved. Any future large attachment must respect Brevo's ~10 MB cap.            |
+| Inline logo on a dev machine                | Text wordmark, no attachment, existing `validateEmailAssets()` warning reworded.                                                                       |
+| Email with no `text` body                   | `textContent` omitted rather than sent empty, so Brevo auto-generates a text part.                                                                     |
+| Very slow Brevo response                    | 10 s abort → `ETIMEDOUT`, retried twice with 250/750 ms backoff, then surfaced.                                                                        |
+| `.env` read-only / non-primary instance     | `.env` rewrite outcomes unchanged (`skipped_readonly` / `skipped_secondary`); DB stays authoritative.                                                  |
+| Old encrypted SMTP rows present             | Pruned once at boot with a count-only log.                                                                                                             |
+| Admin without an email address              | Existing "Your account has no email address." guards in `settingsController` unchanged.                                                                |
+| Free-plan branding / "sent via Brevo" hints | Accepted trade-off; called out in the docs guide, no code workaround.                                                                                  |
+| Brevo key pasted with spaces / newlines     | Trimmed; newlines rejected by `validateValue` before save, same as every other secret.                                                                 |
 
 ---
 

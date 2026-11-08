@@ -90,14 +90,14 @@ number and the date.
 
 ## 5. Failure messages
 
-| Message | What to do |
-| ------- | ---------- |
-| Google Drive is not connected. | Connect the clinic account on the card. |
+| Message                                                        | What to do                                                                                                                |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Google Drive is not connected.                                 | Connect the clinic account on the card.                                                                                   |
 | Google Drive access was revoked. Reconnect the clinic account. | The grant expired or was removed. Choose Reconnect. This is the usual symptom of an OAuth consent screen left in Testing. |
-| The clinic Google Drive is out of storage. | Free space in that account or connect a different one. |
-| The app cannot write to the configured folder. | Clear `GOOGLE_DRIVE_ROOT_FOLDER_ID` so the app creates its own folder. |
-| The configured Drive folder is not visible to this app. | Same cause: a folder id the app never created. |
-| Google Drive is temporarily unavailable. Retrying. | Nothing. The job retries on its own. |
+| The clinic Google Drive is out of storage.                     | Free space in that account or connect a different one.                                                                    |
+| The app cannot write to the configured folder.                 | Clear `GOOGLE_DRIVE_ROOT_FOLDER_ID` so the app creates its own folder.                                                    |
+| The configured Drive folder is not visible to this app.        | Same cause: a folder id the app never created.                                                                            |
+| Google Drive is temporarily unavailable. Retrying.             | Nothing. The job retries on its own.                                                                                      |
 
 Disconnecting stops future uploads and retries. Files already in Drive stay
 there, and every existing document keeps its Drive link, download and

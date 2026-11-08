@@ -81,7 +81,7 @@ Treat this key like a password. Anyone with it can send mail as the clinic.
 Saving does two things:
 
 - It checks the key against Brevo's account endpoint. A mistyped or revoked key
-  is rejected here with the message *"Brevo rejected this key…"* and **nothing
+  is rejected here with the message _"Brevo rejected this key…"_ and **nothing
   is saved** — no audit entry, no `.env` change.
 - It asks for a **verification code**, because every credential change needs a
   second factor. The code is emailed to your admin address.
@@ -112,16 +112,16 @@ the whole path, including that the sender is verified.
 
 ### What each failure message means
 
-| Message | Meaning | Fix |
-| --- | --- | --- |
-| *Brevo rejected the API key. Copy a v3 key again from Brevo → SMTP & API → API keys.* | The key is wrong, expired, or revoked. | Create a fresh v3 key and save it again. |
-| *Brevo won't send from this sender address yet. Verify it in Brevo → Senders, then try again.* | The sender address is not verified, or `MAIL_FROM` does not match the verified one. | Verify the address in Brevo, then set `MAIL_FROM` to exactly that address. |
-| *Brevo rejected this message. Check the sender address and recipient.* | Something else in the message was invalid — usually a bad recipient address. | Check the recipient address; for internal tests use a real inbox. |
-| *Brevo is limiting how much mail this account can send right now. Try again shortly — the free plan allows 300 emails a day.* | The 300/day cap or a burst limit was hit. | Wait, or send fewer emails. There is no counter in the app; Brevo owns the quota. |
-| *Brevo is temporarily unavailable. Please try again.* | Brevo returned a server error. | Retry in a few minutes. |
-| *The email provider is temporarily unavailable. Please try again.* | The request timed out or could not reach Brevo. | Check the server's internet access, then retry. |
-| *Email isn't configured. Missing: `BREVO_API_KEY`.* | No usable key was found. | Save the key as described in step 4. |
-| *Email sending is turned off in Settings, so nothing was sent.* | The admin master switch for email is off. | Turn email sending back on in Settings. |
+| Message                                                                                                                       | Meaning                                                                             | Fix                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| _Brevo rejected the API key. Copy a v3 key again from Brevo → SMTP & API → API keys._                                         | The key is wrong, expired, or revoked.                                              | Create a fresh v3 key and save it again.                                          |
+| _Brevo won't send from this sender address yet. Verify it in Brevo → Senders, then try again._                                | The sender address is not verified, or `MAIL_FROM` does not match the verified one. | Verify the address in Brevo, then set `MAIL_FROM` to exactly that address.        |
+| _Brevo rejected this message. Check the sender address and recipient._                                                        | Something else in the message was invalid — usually a bad recipient address.        | Check the recipient address; for internal tests use a real inbox.                 |
+| _Brevo is limiting how much mail this account can send right now. Try again shortly — the free plan allows 300 emails a day._ | The 300/day cap or a burst limit was hit.                                           | Wait, or send fewer emails. There is no counter in the app; Brevo owns the quota. |
+| _Brevo is temporarily unavailable. Please try again._                                                                         | Brevo returned a server error.                                                      | Retry in a few minutes.                                                           |
+| _The email provider is temporarily unavailable. Please try again._                                                            | The request timed out or could not reach Brevo.                                     | Check the server's internet access, then retry.                                   |
+| _Email isn't configured. Missing: `BREVO_API_KEY`._                                                                           | No usable key was found.                                                            | Save the key as described in step 4.                                              |
+| _Email sending is turned off in Settings, so nothing was sent._                                                               | The admin master switch for email is off.                                           | Turn email sending back on in Settings.                                           |
 
 The app retries a send three times (after roughly 0.25 s and 0.75 s) when the
 failure looks temporary — rate limits, Brevo outages, timeouts. Bad keys and
@@ -140,7 +140,7 @@ unverified senders fail immediately, because retrying them cannot help.
   email header therefore uses a hosted logo when `ASSETS_BASE_URL` is a public
   HTTPS URL, and falls back to the text wordmark otherwise. On a local machine
   you will see the wordmark — that is expected, not a bug.
-- **Free-plan branding.** Mail sent on the free plan *may* include Brevo
+- **Free-plan branding.** Mail sent on the free plan _may_ include Brevo
   branding or footer text, depending on the account's current plan state. This
   is cosmetic and cannot be removed from the app side.
 - **Revoked keys fail with 401.** Deleting a key in Brevo breaks sending until

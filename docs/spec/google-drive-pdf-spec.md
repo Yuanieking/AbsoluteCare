@@ -37,27 +37,27 @@ frontend.
 
 ## 2. Interview decisions (binding)
 
-| #   | Question                     | Decision                                                                                                                                                                                                 |
-| --- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Which documents              | **All four, one shared pipeline**: clinic activity report, per-patient therapy summary, per-visit record, payment receipt. One renderer, one numbering service, one Drive uploader.                      |
-| 2   | Drive authentication         | **One clinic Google account via OAuth.** A single admin connects the clinic Drive once; the refresh token is encrypted at rest, like Calendar tokens. No service account.                                |
-| 3   | Trigger                      | **Manual only.** Staff press a button; nothing is generated on appointment completion or on a schedule. Background work exists only for Drive retries.                                                   |
-| 4   | Verification audience        | **Public minimal check.** No login. Shows valid / superseded / revoked, document type, tracking number, issue date, and clinic name. **No patient identity on the public page.**                          |
-| 5   | Who generates                | **Admin, secretary and therapist** (patients cannot generate). Refined into a per-type matrix in §15 because clinic-wide financials and receipts should not be therapist-issued.                        |
+| #   | Question                     | Decision                                                                                                                                                                                                                |
+| --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Which documents              | **All four, one shared pipeline**: clinic activity report, per-patient therapy summary, per-visit record, payment receipt. One renderer, one numbering service, one Drive uploader.                                     |
+| 2   | Drive authentication         | **One clinic Google account via OAuth.** A single admin connects the clinic Drive once; the refresh token is encrypted at rest, like Calendar tokens. No service account.                                               |
+| 3   | Trigger                      | **Manual only.** Staff press a button; nothing is generated on appointment completion or on a schedule. Background work exists only for Drive retries.                                                                  |
+| 4   | Verification audience        | **Public minimal check.** No login. Shows valid / superseded / revoked, document type, tracking number, issue date, and clinic name. **No patient identity on the public page.**                                        |
+| 5   | Who generates                | **Admin, secretary and therapist** (patients cannot generate). Refined into a per-type matrix in §15 because clinic-wide financials and receipts should not be therapist-issued.                                        |
 | 6   | PDF engine                   | Requester asked for **FPDF or mPDF**; both are PHP libraries and cannot run in this Node/TypeScript backend. **pdfkit** is the Node equivalent (single dependency, draw-in-code, no Chromium) and is the chosen engine. |
-| 7   | Drive folder layout          | **Type / month subfolders** under one connected root folder, e.g. `AbsoluteCare Documents/Clinic reports/2026-11/`.                                                                                      |
-| 8   | Drive failure                | **Download still works, upload retries in the background.** The document is issued with its tracking number; Drive status is surfaced as "Pending sync" until the retry succeeds.                        |
-| 9   | Regeneration                 | **New tracking number; the old document is marked superseded.** Both remain verifiable. No in-place version bumps.                                                                                       |
-| 10  | QR payload                   | **Opaque tracking number in a URL**: `https://<frontend>/verify/RPT-2026-000123`. No signed token, no embedded document data.                                                                             |
-| 11  | Clinical notes in PDF        | **Patient-visible notes only.** `Session.clinicalNotes` never enters any generated PDF, including the clinical-copy summary.                                                                              |
-| 12  | Drive OAuth client           | **Reuse the existing `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`**, adding the Drive scope. Shown as its own integration card so it can be enabled, connected, tested and disconnected independently.       |
-| 13  | Retry durability             | **Persisted queue in MongoDB + a 5-minute scheduled job**, with attempt counts, next-retry timestamps and a final failed state.                                                                           |
-| 14  | Document discovery           | **A Documents archive page** listing issued PDFs with type, tracking number, issuer, Drive status, verify link, download and retry actions.                                                               |
-| 15  | Header / footer content      | **Full clinical letterhead**: clinic identity + logo, document title, tracking number, issue date/time, generated-by, page X of Y, verification URL, confidentiality notice, and an issuer signature block. |
-| 16  | Tracking number              | **Type prefix + year + zero-padded sequence**: `RPT-`, `PTS-`, `VIS-`, `RCP-` + `YYYY` + 6 digits.                                                                                                       |
-| 17  | Superseded / revoked display | **Three explicit states on the verification page**: Valid, Superseded by `<tracking number>` on `<date>`, Revoked on `<date>`.                                                                             |
-| 18  | Patient portal access        | **None.** Documents are a staff tool; patients only receive a copy if staff download and send it.                                                                                                        |
-| 19  | Multi-page treatment         | **Full header and footer on every page**; content flows between them.                                                                                                                                    |
+| 7   | Drive folder layout          | **Type / month subfolders** under one connected root folder, e.g. `AbsoluteCare Documents/Clinic reports/2026-11/`.                                                                                                     |
+| 8   | Drive failure                | **Download still works, upload retries in the background.** The document is issued with its tracking number; Drive status is surfaced as "Pending sync" until the retry succeeds.                                       |
+| 9   | Regeneration                 | **New tracking number; the old document is marked superseded.** Both remain verifiable. No in-place version bumps.                                                                                                      |
+| 10  | QR payload                   | **Opaque tracking number in a URL**: `https://<frontend>/verify/RPT-2026-000123`. No signed token, no embedded document data.                                                                                           |
+| 11  | Clinical notes in PDF        | **Patient-visible notes only.** `Session.clinicalNotes` never enters any generated PDF, including the clinical-copy summary.                                                                                            |
+| 12  | Drive OAuth client           | **Reuse the existing `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`**, adding the Drive scope. Shown as its own integration card so it can be enabled, connected, tested and disconnected independently.                   |
+| 13  | Retry durability             | **Persisted queue in MongoDB + a 5-minute scheduled job**, with attempt counts, next-retry timestamps and a final failed state.                                                                                         |
+| 14  | Document discovery           | **A Documents archive page** listing issued PDFs with type, tracking number, issuer, Drive status, verify link, download and retry actions.                                                                             |
+| 15  | Header / footer content      | **Full clinical letterhead**: clinic identity + logo, document title, tracking number, issue date/time, generated-by, page X of Y, verification URL, confidentiality notice, and an issuer signature block.             |
+| 16  | Tracking number              | **Type prefix + year + zero-padded sequence**: `RPT-`, `PTS-`, `VIS-`, `RCP-` + `YYYY` + 6 digits.                                                                                                                      |
+| 17  | Superseded / revoked display | **Three explicit states on the verification page**: Valid, Superseded by `<tracking number>` on `<date>`, Revoked on `<date>`.                                                                                          |
+| 18  | Patient portal access        | **None.** Documents are a staff tool; patients only receive a copy if staff download and send it.                                                                                                                       |
+| 19  | Multi-page treatment         | **Full header and footer on every page**; content flows between them.                                                                                                                                                   |
 
 Two decisions need a note for the implementer:
 
@@ -75,25 +75,25 @@ Two decisions need a note for the implementer:
 
 ### 3.1 Google Drive authentication
 
-| Fact | Detail | Consequence |
-| ---- | ------ | ----------- |
-| Service accounts cannot own files | Google: "Service accounts don't have storage quota and can't own files. Instead, they must upload files and folders into shared drives, or use OAuth 2.0." | Confirms decision #2. A service account would require a Workspace shared drive, which this clinic does not have. |
-| `drive.file` is the narrow, non-sensitive scope | `https://www.googleapis.com/auth/drive.file` allows creating files the app opens/creates; it is not a restricted scope and needs no security assessment. | Use it. Avoid `auth/drive`, which is restricted and requires OAuth app verification for public use. |
-| `drive.file` cannot see arbitrary folders | The scope only exposes files the app created (or the user picked via Google Picker). A folder ID copied from a user's My Drive will 404. | The root folder must be **created by the app** (default). A pre-existing folder ID is only accepted if this app created it earlier. Document this in the integration card. |
-| Refresh tokens in "Testing" publishing status expire after 7 days | Google OAuth apps left in Testing issue short-lived refresh tokens. | The Google Cloud OAuth consent screen must be **published to In production** for the Drive connection to survive. Put this in the setup guide. |
-| Files owned by the connected user | With OAuth on behalf of the clinic account, the clinic account owns the files and its Drive quota is consumed. | Correct ownership for a clinic: documents survive staff turnover as long as the clinic account remains. |
-| Upload API | `POST https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink,name,size` with a `multipart/related` body: JSON metadata part + `application/pdf` media part. | No `googleapis` SDK needed; the codebase already talks to Google over raw `fetch` in `calendarService.ts`. Keep that pattern. |
-| Folder search | `GET https://www.googleapis.com/drive/v3/files?q=name = '<name>' and '<parent>' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false&fields=files(id,name)` | Used to reuse a month folder instead of creating duplicates. |
-| Error codes | `401` invalid/revoked token, `403` `storageQuotaExceeded` or `insufficientFilePermissions`, `404` folder/file missing, `429` rate limit, `5xx` provider. | Drives the failure classification in §12.6. |
+| Fact                                                              | Detail                                                                                                                                                                                                                  | Consequence                                                                                                                                                                |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Service accounts cannot own files                                 | Google: "Service accounts don't have storage quota and can't own files. Instead, they must upload files and folders into shared drives, or use OAuth 2.0."                                                              | Confirms decision #2. A service account would require a Workspace shared drive, which this clinic does not have.                                                           |
+| `drive.file` is the narrow, non-sensitive scope                   | `https://www.googleapis.com/auth/drive.file` allows creating files the app opens/creates; it is not a restricted scope and needs no security assessment.                                                                | Use it. Avoid `auth/drive`, which is restricted and requires OAuth app verification for public use.                                                                        |
+| `drive.file` cannot see arbitrary folders                         | The scope only exposes files the app created (or the user picked via Google Picker). A folder ID copied from a user's My Drive will 404.                                                                                | The root folder must be **created by the app** (default). A pre-existing folder ID is only accepted if this app created it earlier. Document this in the integration card. |
+| Refresh tokens in "Testing" publishing status expire after 7 days | Google OAuth apps left in Testing issue short-lived refresh tokens.                                                                                                                                                     | The Google Cloud OAuth consent screen must be **published to In production** for the Drive connection to survive. Put this in the setup guide.                             |
+| Files owned by the connected user                                 | With OAuth on behalf of the clinic account, the clinic account owns the files and its Drive quota is consumed.                                                                                                          | Correct ownership for a clinic: documents survive staff turnover as long as the clinic account remains.                                                                    |
+| Upload API                                                        | `POST https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink,name,size` with a `multipart/related` body: JSON metadata part + `application/pdf` media part. | No `googleapis` SDK needed; the codebase already talks to Google over raw `fetch` in `calendarService.ts`. Keep that pattern.                                              |
+| Folder search                                                     | `GET https://www.googleapis.com/drive/v3/files?q=name = '<name>' and '<parent>' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false&fields=files(id,name)`                               | Used to reuse a month folder instead of creating duplicates.                                                                                                               |
+| Error codes                                                       | `401` invalid/revoked token, `403` `storageQuotaExceeded` or `insufficientFilePermissions`, `404` folder/file missing, `429` rate limit, `5xx` provider.                                                                | Drives the failure classification in §12.6.                                                                                                                                |
 
 ### 3.2 PDF generation in Node
 
-| Option | Verdict |
-| ------ | ------- |
-| **pdfkit** (chosen) | Programmatic layout with explicit header/footer, real TTF embedding, streaming/buffered output, ~1 dependency, no native build on Windows or Linux. Best fit for a fixed clinical letterhead. |
-| Puppeteer / headless Chrome | Best visual parity with the existing React Reports page, but adds a ~300 MB Chromium to the VPS and 50–100 ms per render. Rejected because the portal stays small and self-hosted. |
-| `@react-pdf/renderer` | No browser, but it introduces a second styling model beside Tailwind and complicates shared branding. Rejected. |
-| `pdf-lib` | Manipulation, not generation; would still need a generator. Not used. |
+| Option                      | Verdict                                                                                                                                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **pdfkit** (chosen)         | Programmatic layout with explicit header/footer, real TTF embedding, streaming/buffered output, ~1 dependency, no native build on Windows or Linux. Best fit for a fixed clinical letterhead. |
+| Puppeteer / headless Chrome | Best visual parity with the existing React Reports page, but adds a ~300 MB Chromium to the VPS and 50–100 ms per render. Rejected because the portal stays small and self-hosted.            |
+| `@react-pdf/renderer`       | No browser, but it introduces a second styling model beside Tailwind and complicates shared branding. Rejected.                                                                               |
+| `pdf-lib`                   | Manipulation, not generation; would still need a generator. Not used.                                                                                                                         |
 
 QR codes: `qrcode` (npm) renders a PNG buffer server-side (`QRCode.toBuffer(url, { type: "png", margin: 1, width: 180, errorCorrectionLevel: "M" })`), which pdfkit embeds with `doc.image()`. Do not generate the QR in the browser — the PDF must be correct before it ever reaches a browser.
 
@@ -108,23 +108,23 @@ header/footer band repeat on every page (decision #19).
 
 ## 4. Current system inventory
 
-| Location | Today | What this feature needs |
-| -------- | ----- | ----------------------- |
-| `backend/src/controllers/adminMonitoringController.ts` | `GET /admin/reports` returns aggregates; `GET /admin/reports/payments/export` returns CSV | Reuse `getReportData(from, to)` as the report data source; no change to the existing endpoints. |
-| `backend/src/services/adminMonitoringService.ts` | `getReportData`, `findAppointments`, `findSessions`, populated patient/therapist/service | Read-only reuse for PDF assembly. |
-| `frontend/src/features/admin/ReportsPage.tsx` | Client-side `ReportSheet` + `window.print()` ("Print or save as PDF") | Add a **Generate PDF** action that calls the API; keep the print path untouched. |
-| `backend/src/services/calendarService.ts` | Per-user Google OAuth, AES-256-GCM refresh tokens, raw `fetch` to Google | Pattern to copy for the clinic-level Drive connection (different storage: clinic-scoped, not per user). |
-| `backend/src/routes/calendarRoutes.ts` | `/integrations/google-calendar/{callback,connect,status,disconnect}` mounted in `app.ts`; callback is unauthenticated | Mirror for `/integrations/google-drive/*`. |
-| `backend/src/config/integrationKeys.ts` | Groups: google, recaptcha, googleCalendar, email | Add a `googleDrive` group + `GOOGLE_DRIVE_*` keys. |
-| `backend/src/config/integrations.ts` | `IntegrationStatusMap` with four entries | Add `googleDrive` status, details and source. |
-| `backend/src/models/appSettingModel.ts` | `integrations.googleCalendarEnabled` etc. | Add `googleDriveEnabled` + `googleDriveLastTest`. |
-| `backend/src/services/settingsService.ts` | `integrationDefaults`, `effectiveIntegrationEnabled` | Add the Drive flag to defaults and let the existing generic logic handle it. |
-| `backend/src/app.ts` | Mounts routes; runs the reminder job on a 15-minute `setInterval` | Mount document + verify routes; start a 5-minute document sync job the same way. |
-| `backend/src/utils/secretBox.ts` | AES-256-GCM at-rest encryption keyed by `CREDENTIAL_ENCRYPTION_KEY` → calendar key → `JWT_SECRET` | Reuse for the clinic Drive refresh token. No new encryption key. |
-| `backend/src/assets` | Only `email/logo.png` | Reuse that logo in the PDF letterhead. Add `assets/fonts/` only if an embedded display font is required. |
-| `backend/package.json` | No PDF/QR/Google deps | Add `pdfkit`, `@types/pdfkit`, `qrcode`, `@types/qrcode`. |
-| `frontend/src/app/router.tsx` | Public routes for landing, auth, legal, errors | Add public `/verify/:trackingNumber`; add staff `/staff/documents`. |
-| `frontend/src/app/nav-config.ts` | Admin/therapist/secretary sections | Add a Documents entry per role. |
+| Location                                               | Today                                                                                                                 | What this feature needs                                                                                  |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `backend/src/controllers/adminMonitoringController.ts` | `GET /admin/reports` returns aggregates; `GET /admin/reports/payments/export` returns CSV                             | Reuse `getReportData(from, to)` as the report data source; no change to the existing endpoints.          |
+| `backend/src/services/adminMonitoringService.ts`       | `getReportData`, `findAppointments`, `findSessions`, populated patient/therapist/service                              | Read-only reuse for PDF assembly.                                                                        |
+| `frontend/src/features/admin/ReportsPage.tsx`          | Client-side `ReportSheet` + `window.print()` ("Print or save as PDF")                                                 | Add a **Generate PDF** action that calls the API; keep the print path untouched.                         |
+| `backend/src/services/calendarService.ts`              | Per-user Google OAuth, AES-256-GCM refresh tokens, raw `fetch` to Google                                              | Pattern to copy for the clinic-level Drive connection (different storage: clinic-scoped, not per user).  |
+| `backend/src/routes/calendarRoutes.ts`                 | `/integrations/google-calendar/{callback,connect,status,disconnect}` mounted in `app.ts`; callback is unauthenticated | Mirror for `/integrations/google-drive/*`.                                                               |
+| `backend/src/config/integrationKeys.ts`                | Groups: google, recaptcha, googleCalendar, email                                                                      | Add a `googleDrive` group + `GOOGLE_DRIVE_*` keys.                                                       |
+| `backend/src/config/integrations.ts`                   | `IntegrationStatusMap` with four entries                                                                              | Add `googleDrive` status, details and source.                                                            |
+| `backend/src/models/appSettingModel.ts`                | `integrations.googleCalendarEnabled` etc.                                                                             | Add `googleDriveEnabled` + `googleDriveLastTest`.                                                        |
+| `backend/src/services/settingsService.ts`              | `integrationDefaults`, `effectiveIntegrationEnabled`                                                                  | Add the Drive flag to defaults and let the existing generic logic handle it.                             |
+| `backend/src/app.ts`                                   | Mounts routes; runs the reminder job on a 15-minute `setInterval`                                                     | Mount document + verify routes; start a 5-minute document sync job the same way.                         |
+| `backend/src/utils/secretBox.ts`                       | AES-256-GCM at-rest encryption keyed by `CREDENTIAL_ENCRYPTION_KEY` → calendar key → `JWT_SECRET`                     | Reuse for the clinic Drive refresh token. No new encryption key.                                         |
+| `backend/src/assets`                                   | Only `email/logo.png`                                                                                                 | Reuse that logo in the PDF letterhead. Add `assets/fonts/` only if an embedded display font is required. |
+| `backend/package.json`                                 | No PDF/QR/Google deps                                                                                                 | Add `pdfkit`, `@types/pdfkit`, `qrcode`, `@types/qrcode`.                                                |
+| `frontend/src/app/router.tsx`                          | Public routes for landing, auth, legal, errors                                                                        | Add public `/verify/:trackingNumber`; add staff `/staff/documents`.                                      |
+| `frontend/src/app/nav-config.ts`                       | Admin/therapist/secretary sections                                                                                    | Add a Documents entry per role.                                                                          |
 
 No existing PDF, Drive, QR or document-record code exists in the repository.
 
@@ -192,7 +192,11 @@ PDF bytes never travel through a controller's `res.json`.
 ### 7.1 `GeneratedDocument` (`backend/src/models/generatedDocumentModel.ts`)
 
 ```ts
-export type DocumentType = "clinic_report" | "patient_summary" | "visit_record" | "receipt";
+export type DocumentType =
+  | "clinic_report"
+  | "patient_summary"
+  | "visit_record"
+  | "receipt";
 export type DocumentStatus = "issued" | "superseded" | "revoked";
 export type DriveStatus = "pending" | "uploaded" | "failed";
 
@@ -209,16 +213,16 @@ export interface DocumentDriveState {
 }
 
 export interface GeneratedDocument {
-  trackingNumber: string;      // unique, immutable
+  trackingNumber: string; // unique, immutable
   type: DocumentType;
-  title: string;               // e.g. "Clinic activity report · October 2026"
+  title: string; // e.g. "Clinic activity report · October 2026"
   status: DocumentStatus;
-  fileId: string;              // stable uuid used in the Drive filename
-  fileName: string;            // "<tracking>_<yyyy-mm-dd>.pdf", no patient name
+  fileId: string; // stable uuid used in the Drive filename
+  fileName: string; // "<tracking>_<yyyy-mm-dd>.pdf", no patient name
   mimeType: "application/pdf";
   sizeBytes: number;
   sha256: string;
-  pdf: Buffer;                 // the file itself; select: false
+  pdf: Buffer; // the file itself; select: false
   patient: Types.ObjectId | null;
   dependent: Types.ObjectId | null;
   appointment: Types.ObjectId | null;
@@ -226,7 +230,7 @@ export interface GeneratedDocument {
   rangeTo: Date | null;
   generatedBy: Types.ObjectId;
   generatedByRole: "admin" | "secretary" | "therapist";
-  generatedByName: string;     // snapshot; survives user rename/archive
+  generatedByName: string; // snapshot; survives user rename/archive
   supersedes: Types.ObjectId | null;
   supersededBy: Types.ObjectId | null;
   revokedAt: Date | null;
@@ -243,7 +247,7 @@ Rules:
 - `pdf` is `select: false` so list endpoints never ship bytes; the download endpoint explicitly
   `.select("+pdf")`.
 - `trackingNumber` has a unique index. `status` changes are append-only in spirit: `issued →
-  superseded` and `issued → revoked`; nothing returns to `issued`.
+superseded` and `issued → revoked`; nothing returns to `issued`.
 - A 10 MB BSON guard: rendering throws `DocumentTooLargeError` above 10 MB (the Mongo document
   limit is 16 MB; a clinic report is typically 60–250 KB). Do not stream to GridFS for v1.
 - `generatedByName` is a snapshot, not a populate, so an archived staff account cannot blank the
@@ -257,7 +261,7 @@ Indexes: `{ trackingNumber: 1 }` unique, `{ type: 1, createdAt: -1 }`,
 
 ```ts
 export interface DocumentCounter {
-  key: string;   // "RPT-2026"
+  key: string; // "RPT-2026"
   seq: number;
 }
 ```
@@ -279,12 +283,12 @@ reused.
 
 ```ts
 export interface GoogleDriveConnection {
-  key: "clinic";                    // singleton
+  key: "clinic"; // singleton
   connected: boolean;
-  email: string;                    // connected Google account
-  refreshTokenEncrypted: string;    // secretBox
-  rootFolderId: string;             // app-created "AbsoluteCare Documents"
-  folderCache: { name: string; id: string }[];  // resolved type/month folders
+  email: string; // connected Google account
+  refreshTokenEncrypted: string; // secretBox
+  rootFolderId: string; // app-created "AbsoluteCare Documents"
+  folderCache: { name: string; id: string }[]; // resolved type/month folders
   connectedAt: Date | null;
   connectedBy: Types.ObjectId | null;
   needsReconnect: boolean;
@@ -430,12 +434,12 @@ Follow `DESIGN.md` translated to print: warm paper is not printable, so the PDF 
 
 Format: `{TYPE}-{YYYY}-{NNNNNN}`
 
-| Type | Prefix | Example |
-| ---- | ------ | ------- |
-| Clinic activity report | `RPT` | `RPT-2026-000123` |
-| Patient therapy summary | `PTS` | `PTS-2026-000045` |
-| Visit record | `VIS` | `VIS-2026-000891` |
-| Payment receipt | `RCP` | `RCP-2026-000210` |
+| Type                    | Prefix | Example           |
+| ----------------------- | ------ | ----------------- |
+| Clinic activity report  | `RPT`  | `RPT-2026-000123` |
+| Patient therapy summary | `PTS`  | `PTS-2026-000045` |
+| Visit record            | `VIS`  | `VIS-2026-000891` |
+| Payment receipt         | `RCP`  | `RCP-2026-000210` |
 
 - The year is the clinic-local year at issue time.
 - Sequence is per prefix per year, zero padded to six digits. Above 999999 the field widens rather than wraps (the format is `padStart`, not a slice).
@@ -503,12 +507,12 @@ Accessibility: the state is carried by an icon plus a word, never colour alone; 
 
 ### 12.1 Consent flow
 
-| Step | Detail |
-| ---- | ------ |
-| Start | `GET /integrations/google-drive/connect` (admin only) builds `https://accounts.google.com/o/oauth2/v2/auth` with `client_id`, `redirect_uri = GOOGLE_DRIVE_REDIRECT_URI`, `response_type=code`, `access_type=offline`, `prompt=consent`, `scope=https://www.googleapis.com/auth/drive.file`, and a signed short-lived `state` (admin id + nonce, same JWT secret, 10 min). |
-| Callback | `GET /integrations/google-drive/callback` (unauthenticated, like the Calendar callback) verifies `state`, exchanges the code at `https://oauth2.googleapis.com/token`, fetches the account email from `https://openidconnect.googleapis.com/v1/userinfo`, encrypts the refresh token with `secretBox.encryptSecret`, upserts the singleton connection, and redirects to `{FRONTEND_URL}/staff/admin/settings?section=integrations&drive=connected` (or `&drive=error&reason=...`). |
-| Status | `GET /integrations/google-drive/status` (admin/secretary) returns `{ connected, email, connectedAt, needsReconnect, rootFolderName, lastError }`. Never returns the token. |
-| Disconnect | `POST /integrations/google-drive/disconnect` (admin only, no OTP in v1 because it is not a credential write) clears the token and sets `connected: false`. Already-issued documents keep their Drive links. |
+| Step       | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Start      | `GET /integrations/google-drive/connect` (admin only) builds `https://accounts.google.com/o/oauth2/v2/auth` with `client_id`, `redirect_uri = GOOGLE_DRIVE_REDIRECT_URI`, `response_type=code`, `access_type=offline`, `prompt=consent`, `scope=https://www.googleapis.com/auth/drive.file`, and a signed short-lived `state` (admin id + nonce, same JWT secret, 10 min).                                                                                                         |
+| Callback   | `GET /integrations/google-drive/callback` (unauthenticated, like the Calendar callback) verifies `state`, exchanges the code at `https://oauth2.googleapis.com/token`, fetches the account email from `https://openidconnect.googleapis.com/v1/userinfo`, encrypts the refresh token with `secretBox.encryptSecret`, upserts the singleton connection, and redirects to `{FRONTEND_URL}/staff/admin/settings?section=integrations&drive=connected` (or `&drive=error&reason=...`). |
+| Status     | `GET /integrations/google-drive/status` (admin/secretary) returns `{ connected, email, connectedAt, needsReconnect, rootFolderName, lastError }`. Never returns the token.                                                                                                                                                                                                                                                                                                         |
+| Disconnect | `POST /integrations/google-drive/disconnect` (admin only, no OTP in v1 because it is not a credential write) clears the token and sets `connected: false`. Already-issued documents keep their Drive links.                                                                                                                                                                                                                                                                        |
 
 ### 12.2 Root folder
 
@@ -554,15 +558,15 @@ Content-Type: application/pdf
 
 ### 12.6 Failure classification
 
-| Condition | Drive status | Retry? | Staff-facing message |
-| --------- | ------------ | ------ | -------------------- |
-| No connection / disabled | `pending` | no | "Google Drive is not connected. An admin can connect it in Settings, Integrations." |
-| `401`, invalid_grant, revoked token | `pending` + `needsReconnect` | no (until re-consent) | "Google Drive access was revoked. Reconnect the clinic account." |
-| `403 storageQuotaExceeded` | `failed` | no | "The clinic Google Drive is out of storage. Free space or change the account." |
-| `403 insufficientFilePermissions` | `failed` | no | "The app cannot write to the configured folder." |
-| `404` folder | `pending` | yes, after clearing the folder cache and re-creating | "The Drive folder moved. The app will recreate it." |
-| `429`, `5xx`, network, timeout | `pending` | yes | "Google Drive is temporarily unavailable. Retrying." |
-| `400` other | `failed` | no | "Google Drive rejected this file." + Google's message, truncated |
+| Condition                           | Drive status                 | Retry?                                               | Staff-facing message                                                                |
+| ----------------------------------- | ---------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| No connection / disabled            | `pending`                    | no                                                   | "Google Drive is not connected. An admin can connect it in Settings, Integrations." |
+| `401`, invalid_grant, revoked token | `pending` + `needsReconnect` | no (until re-consent)                                | "Google Drive access was revoked. Reconnect the clinic account."                    |
+| `403 storageQuotaExceeded`          | `failed`                     | no                                                   | "The clinic Google Drive is out of storage. Free space or change the account."      |
+| `403 insufficientFilePermissions`   | `failed`                     | no                                                   | "The app cannot write to the configured folder."                                    |
+| `404` folder                        | `pending`                    | yes, after clearing the folder cache and re-creating | "The Drive folder moved. The app will recreate it."                                 |
+| `429`, `5xx`, network, timeout      | `pending`                    | yes                                                  | "Google Drive is temporarily unavailable. Retrying."                                |
+| `400` other                         | `failed`                     | no                                                   | "Google Drive rejected this file." + Google's message, truncated                    |
 
 Every transition updates `drive.attempts`, `lastAttemptAt`, `lastError` and `nextAttemptAt`. `lastError` is stored for staff and must never contain the token or the file bytes.
 
@@ -683,17 +687,17 @@ before the SPA fallback. It must never require a cookie, and it must not use `pr
 
 ## 15. Permissions matrix
 
-| Action | Admin | Secretary | Therapist | Patient |
-| ------ | :---: | :-------: | :-------: | :-----: |
-| Generate clinic activity report | yes | no | no | no |
-| Generate patient therapy summary | yes | yes | yes, own patients only | no |
-| Generate visit record | yes | yes | yes, own appointments only | no |
-| Generate payment receipt | yes | yes | no | no |
-| View Documents archive | all | own issuances | own issuances | no |
-| Download any document | yes | own issuances | own issuances | no |
-| Retry Drive sync | yes | yes | no | no |
-| Revoke document | yes | no | no | no |
-| Connect / disconnect Drive | yes | no | no | no |
+| Action                           | Admin |   Secretary   |         Therapist          | Patient |
+| -------------------------------- | :---: | :-----------: | :------------------------: | :-----: |
+| Generate clinic activity report  |  yes  |      no       |             no             |   no    |
+| Generate patient therapy summary |  yes  |      yes      |   yes, own patients only   |   no    |
+| Generate visit record            |  yes  |      yes      | yes, own appointments only |   no    |
+| Generate payment receipt         |  yes  |      yes      |             no             |   no    |
+| View Documents archive           |  all  | own issuances |       own issuances        |   no    |
+| Download any document            |  yes  | own issuances |       own issuances        |   no    |
+| Retry Drive sync                 |  yes  |      yes      |             no             |   no    |
+| Revoke document                  |  yes  |      no       |             no             |   no    |
+| Connect / disconnect Drive       |  yes  |      no       |             no             |   no    |
 
 "Own patients" and "own appointments" reuse the existing relationship checks used by therapist
 controllers: the therapist must appear as `appointment.therapist` or `session.therapist` for that
@@ -709,10 +713,10 @@ by passing a patient id into a staff endpoint without the role check above.
 
 ### 16.1 New group `googleDrive` in `integrationKeys.ts`
 
-| Key | Kind | Required | Notes |
-| --- | ---- | -------- | ----- |
-| `GOOGLE_DRIVE_REDIRECT_URI` | config | yes | Absolute `http(s)` URL; default `${API_BASE_URL}/integrations/google-drive/callback`. Must be registered in the Google Cloud console. |
-| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | config | no | Optional. Leave blank and the app creates `AbsoluteCare Documents`. Only app-created folder ids work under `drive.file`. |
+| Key                           | Kind   | Required | Notes                                                                                                                                 |
+| ----------------------------- | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_DRIVE_REDIRECT_URI`   | config | yes      | Absolute `http(s)` URL; default `${API_BASE_URL}/integrations/google-drive/callback`. Must be registered in the Google Cloud console. |
+| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | config | no       | Optional. Leave blank and the app creates `AbsoluteCare Documents`. Only app-created folder ids work under `drive.file`.              |
 
 Group metadata:
 
@@ -772,7 +776,10 @@ export const GOOGLE_DRIVE_REDIRECT_URI = getEnv(
   "GOOGLE_DRIVE_REDIRECT_URI",
   `${API_BASE_URL}/integrations/google-drive/callback`,
 );
-export const GOOGLE_DRIVE_ROOT_FOLDER_ID = getEnv("GOOGLE_DRIVE_ROOT_FOLDER_ID", "");
+export const GOOGLE_DRIVE_ROOT_FOLDER_ID = getEnv(
+  "GOOGLE_DRIVE_ROOT_FOLDER_ID",
+  "",
+);
 ```
 
 `runtimeConfig.ts` adds both to `DEFAULTS` (the redirect URI is load-bearing for consent) so the
@@ -828,13 +835,13 @@ period — staff-only page, so names are allowed here), issued by, Drive status 
 
 ### 18.3 Generation entry points
 
-| Screen | Document | Button placement |
-| ------ | -------- | ---------------- |
-| `ReportsPage.tsx` | Clinic activity report for the selected range | Next to the existing "Print or save as PDF" (which stays), labelled **Generate PDF** |
-| Admin patient record (`PeoplePage` person panel) | Patient therapy summary for a chosen range | Record action row, opens a small range dialog |
-| `AppointmentsPage` / appointment detail | Visit record | Row action and detail action |
-| `PaymentsPage` | Receipt for a paid visit | Row action, disabled for unpaid visits with the reason in a tooltip |
-| `SessionsPage` | Patient therapy summary for the row's patient | Row action |
+| Screen                                           | Document                                      | Button placement                                                                     |
+| ------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `ReportsPage.tsx`                                | Clinic activity report for the selected range | Next to the existing "Print or save as PDF" (which stays), labelled **Generate PDF** |
+| Admin patient record (`PeoplePage` person panel) | Patient therapy summary for a chosen range    | Record action row, opens a small range dialog                                        |
+| `AppointmentsPage` / appointment detail          | Visit record                                  | Row action and detail action                                                         |
+| `PaymentsPage`                                   | Receipt for a paid visit                      | Row action, disabled for unpaid visits with the reason in a tooltip                  |
+| `SessionsPage`                                   | Patient therapy summary for the row's patient | Row action                                                                           |
 
 Every button uses `GenerateDocumentButton`, shows a pending state on the button (not a full-page
 loader), and on success shows a toast: "Document RPT-2026-000123 generated. Filed to Google Drive."
@@ -860,33 +867,33 @@ no staff chrome.
 
 ## 19. Edge cases and explicit answers
 
-| Case | Behaviour |
-| ---- | --------- |
-| Drive never connected | Generation and download work; `drive.status` stays `pending`; Documents shows "Not connected"; the integration card is the fix. |
-| Drive disabled by an admin | Same as never connected, but the message names the switch. No retries run. |
-| Token revoked mid-queue | `needsReconnect = true`, all pending rows stop retrying, the card shows Reconnect, nothing is marked failed permanently. |
-| Drive quota exceeded | The affected document lands in `failed` with the quota message; others continue. |
-| No logo file | Wordmark fallback in the header. No broken image box. |
-| Clinic settings missing | Hard-coded defaults (name, Asia/Manila, PHP) are used, mirroring `emails/layout.ts`. |
-| Blank phone/email/address | Those segments are omitted, not printed as "undefined" or an empty separator. |
-| Zero-data period | Tables render with an explicit "No appointments in this period" row; the PDF still issues. |
-| Very long patient name or notes | Wrapped with pdfkit width, truncated clinically at 2,000 chars per note with an ellipsis; no overflow past the margin. |
-| Multi-page report | Header and footer repeat; table headers repeat; page X of Y is correct. |
-| Receipt for an unpaid visit | 409 "A receipt can only be issued for a paid visit." |
-| Visit record for a cancelled appointment | Allowed; the status is printed truthfully. |
-| Regenerate the same period | New tracking number; old row becomes `superseded` in the same transaction pair; verification shows the replacement. |
-| Revoke then verify | `revoked`, with the revocation date; no PDF content leaked. |
-| Revoke then regenerate | New document issues normally; the revoked one stays revoked. |
-| PDF exceeds 10 MB | 422 with "This document is too large to store. Narrow the date range." Nothing is issued. |
-| Two staff generate simultaneously | Atomic counter prevents duplicate tracking numbers; both documents are valid. |
-| App restarts with a pending upload | The persisted queue picks it up on the next job run. |
-| Drive file deleted manually | The document still downloads from Mongo; `webViewLink` 404s, and Retry re-uploads a new file. |
-| Tracking number not found | Public page shows the neutral not-found state and the clinic contact. |
-| Tracking number lowercase / spaces | Normalised (trim + uppercase) before lookup. |
+| Case                                      | Behaviour                                                                                                                                                |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Drive never connected                     | Generation and download work; `drive.status` stays `pending`; Documents shows "Not connected"; the integration card is the fix.                          |
+| Drive disabled by an admin                | Same as never connected, but the message names the switch. No retries run.                                                                               |
+| Token revoked mid-queue                   | `needsReconnect = true`, all pending rows stop retrying, the card shows Reconnect, nothing is marked failed permanently.                                 |
+| Drive quota exceeded                      | The affected document lands in `failed` with the quota message; others continue.                                                                         |
+| No logo file                              | Wordmark fallback in the header. No broken image box.                                                                                                    |
+| Clinic settings missing                   | Hard-coded defaults (name, Asia/Manila, PHP) are used, mirroring `emails/layout.ts`.                                                                     |
+| Blank phone/email/address                 | Those segments are omitted, not printed as "undefined" or an empty separator.                                                                            |
+| Zero-data period                          | Tables render with an explicit "No appointments in this period" row; the PDF still issues.                                                               |
+| Very long patient name or notes           | Wrapped with pdfkit width, truncated clinically at 2,000 chars per note with an ellipsis; no overflow past the margin.                                   |
+| Multi-page report                         | Header and footer repeat; table headers repeat; page X of Y is correct.                                                                                  |
+| Receipt for an unpaid visit               | 409 "A receipt can only be issued for a paid visit."                                                                                                     |
+| Visit record for a cancelled appointment  | Allowed; the status is printed truthfully.                                                                                                               |
+| Regenerate the same period                | New tracking number; old row becomes `superseded` in the same transaction pair; verification shows the replacement.                                      |
+| Revoke then verify                        | `revoked`, with the revocation date; no PDF content leaked.                                                                                              |
+| Revoke then regenerate                    | New document issues normally; the revoked one stays revoked.                                                                                             |
+| PDF exceeds 10 MB                         | 422 with "This document is too large to store. Narrow the date range." Nothing is issued.                                                                |
+| Two staff generate simultaneously         | Atomic counter prevents duplicate tracking numbers; both documents are valid.                                                                            |
+| App restarts with a pending upload        | The persisted queue picks it up on the next job run.                                                                                                     |
+| Drive file deleted manually               | The document still downloads from Mongo; `webViewLink` 404s, and Retry re-uploads a new file.                                                            |
+| Tracking number not found                 | Public page shows the neutral not-found state and the clinic contact.                                                                                    |
+| Tracking number lowercase / spaces        | Normalised (trim + uppercase) before lookup.                                                                                                             |
 | `FRONTEND_URL` is localhost in production | Boot warning, QR still encodes the localhost URL (unscannable off-machine), and the PDF header prints "Verification URL is not public". Fix the env key. |
-| User archived after issuing | Documents keep `generatedByName`; list filters by `generatedBy` still work because the id remains. |
-| Patient deleted | Documents and verification remain; the PDF is a historical record. The admin-only subject column shows the snapshot name stored on the document. |
-| Duplicate clicks | Button disables while pending; v1 has no server idempotency key because duplicates are semantically valid new documents. |
+| User archived after issuing               | Documents keep `generatedByName`; list filters by `generatedBy` still work because the id remains.                                                       |
+| Patient deleted                           | Documents and verification remain; the PDF is a historical record. The admin-only subject column shows the snapshot name stored on the document.         |
+| Duplicate clicks                          | Button disables while pending; v1 has no server idempotency key because duplicates are semantically valid new documents.                                 |
 
 ---
 
@@ -987,4 +994,3 @@ No changes to appointment, session, payment or user schemas. No new Express app 
 8. **Disk vs Mongo storage.** v1 keeps PDF bytes in Mongo with a 10 MB guard. If report sizes grow, move to GridFS without changing the API shape.
 9. **Retry cadence.** The 5-minute job and 5-attempt ceiling are assumptions. Tune after the first week of real Drive usage; do not build a configurable scheduler for v1.
 10. **Existing `docs/todo.md` line** about preview-then-export on Reports is satisfied by this feature's Generate action; update that line when the work lands.
-
