@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { locateAddress, openStreetMapUrl, type MapPoint } from '@/lib/addressSearch'
+import { cn } from '@/lib/utils'
 
 type Result =
   | { status: 'loading' }
@@ -8,11 +9,24 @@ type Result =
   | { status: 'error' }
   | { status: 'ready'; point: MapPoint }
 
-export function AddressMapPreview({ address }: { address: string }) {
+type AddressMapPreviewProps = {
+  address: string
+  location?: MapPoint
+  className?: string
+  mapClassName?: string
+}
+
+export function AddressMapPreview({
+  address,
+  location,
+  className,
+  mapClassName,
+}: AddressMapPreviewProps) {
   const container = useRef<HTMLDivElement>(null)
   const [result, setResult] = useState<Result>({ status: 'loading' })
 
   useEffect(() => {
+    if (location) return
     const controller = new AbortController()
     // Wait for typing to settle so the shared geocoder is not hit per keystroke.
     const timer = window.setTimeout(async () => {
@@ -28,9 +42,9 @@ export function AddressMapPreview({ address }: { address: string }) {
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [address])
+  }, [address, location])
 
-  const point = result.status === 'ready' ? result.point : null
+  const point = location ?? (result.status === 'ready' ? result.point : null)
 
   useEffect(() => {
     if (!point) return
@@ -72,27 +86,30 @@ export function AddressMapPreview({ address }: { address: string }) {
   }, [point])
 
   return (
-    <div className="mt-2">
+    <div className={cn('mt-2', className)}>
       {point ? (
         // `isolate` keeps Leaflet's high z-indexes below the suggestion list.
         <div
           ref={container}
           role="img"
           aria-label={`Map showing ${address}`}
-          className="isolate h-40 w-full overflow-hidden rounded-md border border-hairline"
+          className={cn(
+            'isolate h-40 w-full overflow-hidden rounded-md border border-hairline',
+            mapClassName,
+          )}
         />
       ) : null}
-      {result.status === 'loading' ? (
+      {!point && result.status === 'loading' ? (
         <p role="status" className="text-[11.5px] text-ink-faint">
           Locating address...
         </p>
       ) : null}
-      {result.status === 'notfound' ? (
+      {!point && result.status === 'notfound' ? (
         <p role="status" className="text-[11.5px] text-ink-faint">
           This address couldn’t be found on the map.
         </p>
       ) : null}
-      {result.status === 'error' ? (
+      {!point && result.status === 'error' ? (
         <p role="status" className="text-[11.5px] text-ink-faint">
           The map couldn’t be loaded right now.
         </p>
