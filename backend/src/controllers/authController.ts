@@ -23,6 +23,8 @@ import jwt from "jsonwebtoken";
 import { FRONTEND_URL, JWT_SECRET } from "../config/env.js";
 import { getIntegrationConfig } from "../config/runtimeConfig.js";
 import { generateToken } from "../utils/jwt.js";
+import { AppError } from "../errors/AppError.js";
+import { guardFresh } from "../services/concurrencyService.js";
 import { isValidEmail, normalizeEmail } from "../utils/validators.js";
 import { passwordResetEmail, sendEmail } from "../services/mailer.js";
 import {
@@ -649,7 +651,11 @@ export const updateProfile = async (
 ): Promise<void> => {
   try {
     const body = profileUpdateSchema.parse(req.body);
-    const user = await updateUserProfile(req.user.userId, body);
+    const user = await updateUserProfile(
+      req.user.userId,
+      body,
+      req.get("If-Match"),
+    );
 
     if (!user) {
       res.status(404).json({ message: "Account not found." });
@@ -657,6 +663,8 @@ export const updateProfile = async (
     }
     res.status(200).json({ user: user.omitPassword() });
   } catch (error) {
+    // ** Concurrency: let 409 STALE_RECORD reach the global handler instead of a 500.
+    if (error instanceof AppError) throw error;
     if (isZodFailure(error)) {
       res.status(400).json({
         message: "Please correct the highlighted profile fields.",
@@ -677,6 +685,8 @@ export const updateNotificationPreferences = async (
     res.status(404).json({ message: "Account not found." });
     return;
   }
+  // ** Concurrency: reject if the account changed since the client read it.
+  guardFresh(user, req.get("If-Match"));
   if (typeof req.body.inApp === "boolean")
     user.notificationPreferences.inApp = req.body.inApp;
   if (typeof req.body.email === "boolean")
@@ -714,6 +724,8 @@ export const changePassword = async (
     res.status(404).json({ message: "Account not found." });
     return;
   }
+  // ** Concurrency: reject if the account changed since the client read it.
+  guardFresh(user, req.get("If-Match"));
   user.password = await bcrypt.hash(parsed.password, 10);
   user.mustChangePassword = false;
   // First password change doubles as Terms acceptance for staff-provisioned

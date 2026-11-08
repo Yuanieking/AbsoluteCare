@@ -25,6 +25,7 @@ router.post("/login", verifyRecaptcha, login);
 router.post("/logout", logout);
 router.post("/forgot-password", verifyRecaptcha, forgotPassword);
 router.post("/reset-password", resetPassword);
+// ** PATCH /change-password - set a new password. If-Match: "<user.updatedAt>" -> 409 when stale.
 router.patch("/change-password", protectRoute, changePassword);
 router.get("/google", googleStart);
 router.get("/google/callback", googleCallback);
@@ -32,7 +33,10 @@ router.get("/google/session", googleSession);
 router.post("/google/complete", verifyRecaptcha, completeGoogleSignup);
 
 router.get("/me", protectRoute, checkAuth);
+// ** Concurrency: If-Match: "<user.updatedAt>" -> 409 STALE_RECORD when stale.
+// ** PATCH /profile - update own profile.
 router.patch("/profile", protectRoute, updateProfile);
+// ** PATCH /notification-preferences - update own notification toggles.
 router.patch(
   "/notification-preferences",
   protectRoute,

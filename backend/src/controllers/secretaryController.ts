@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { notify } from "../services/notificationService.js";
 import * as secretaryService from "../services/secretaryService.js";
+import { guardFresh } from "../services/concurrencyService.js";
 
 const ownId = (req: Request): string => req.user.userId;
 
@@ -100,7 +101,11 @@ export async function updateProfile(
       .filter((key) => req.body[key] !== undefined)
       .map((key) => [key, req.body[key]]),
   );
-  const user = await secretaryService.updateProfile(ownId(req), updates);
+  const user = await secretaryService.updateProfile(
+    ownId(req),
+    updates,
+    req.get("If-Match"),
+  );
   if (!user) {
     res.status(404).json({ message: "Secretary profile not found." });
     return;
@@ -207,6 +212,8 @@ export async function updatePayment(
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   const status = req.body.status || "paid";
   if (!["paid", "unpaid"].includes(status)) {
     res.status(400).json({ message: "Choose a valid payment status." });

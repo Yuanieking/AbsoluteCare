@@ -46,6 +46,7 @@ export async function markNotificationRead(
   const notification = await notificationService.markNotificationRead(
     req.user.userId,
     req.params.id as string,
+    req.get("If-Match"),
   );
   if (!notification) {
     res.status(404).json({ message: "Notification not found." });
@@ -61,6 +62,7 @@ export async function markNotificationUnread(
   const notification = await notificationService.markNotificationUnread(
     req.user.userId,
     req.params.id as string,
+    req.get("If-Match"),
   );
   if (!notification) {
     res.status(404).json({ message: "Notification not found." });
@@ -84,6 +86,7 @@ export async function deleteNotification(
   const deleted = await notificationService.deleteNotification(
     req.user.userId,
     req.params.id as string,
+    req.get("If-Match"),
   );
   if (!deleted) {
     res.status(404).json({ message: "Notification not found." });

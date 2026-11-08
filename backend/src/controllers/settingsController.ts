@@ -258,6 +258,8 @@ export async function patchSettings(
     values: next,
     adminId: req.user.userId,
     ip: req.ip ?? "",
+    // ** Concurrency: If-Match: "<settings.updatedAt>" guards the shared settings document.
+    ifMatch: req.get("If-Match"),
   });
   res.json({
     section: updated.section,
@@ -295,6 +297,8 @@ export async function patchIntegration(
     Boolean(body.enabled),
     req.user.userId,
     req.ip ?? "",
+    // ** Concurrency: If-Match: "<settings.updatedAt>" -> 409 STALE_RECORD when stale.
+    req.get("If-Match"),
   );
   res.json(await integrationResponse(key, updated));
 }

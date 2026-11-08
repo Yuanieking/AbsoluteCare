@@ -19,6 +19,11 @@ import {
   isValidFutureDate,
   manilaDateTime,
 } from "../utils/appointmentDates.js";
+import {
+  assertNotStale,
+  freshFilter,
+  guardFresh,
+} from "./concurrencyService.js";
 
 const servicePopulation = {
   path: "service",
@@ -82,12 +87,16 @@ export async function getProfile(therapistId: string): Promise<UserDoc | null> {
 export async function updateProfile(
   therapistId: string,
   updates: Record<string, unknown>,
+  ifMatch?: string,
 ): Promise<UserDoc | null> {
-  const user = await User.findByIdAndUpdate(
-    therapistId,
+  // ** Concurrency: atomic compare-and-swap on updatedAt when If-Match is sent.
+  const user = await User.findOneAndUpdate(
+    { _id: therapistId, ...freshFilter(ifMatch) } as QueryFilter<UserData>,
     updates as UpdateQuery<UserData>,
     { new: true, runValidators: true },
   ).select("-password");
+  if (!user)
+    await assertNotStale(ifMatch, () => User.exists({ _id: therapistId }));
   return user as unknown as UserDoc | null;
 }
 
@@ -197,10 +206,13 @@ export async function requestReschedule(
 export async function markNoShow(
   therapistId: string,
   appointmentId: string,
+  ifMatch?: string,
 ): Promise<TherapistActionResult> {
   const appointment = await findOwnAppointment(therapistId, appointmentId);
   if (!appointment)
     return { ok: false, status: 404, message: "Appointment not found." };
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, ifMatch);
   if (appointment.status !== "confirmed")
     return {
       ok: false,
@@ -315,12 +327,15 @@ export async function updateSession(
   therapistId: string,
   sessionId: string,
   changes: SessionChanges,
+  ifMatch?: string,
 ): Promise<HydratedDocument<SessionData> | null> {
   const session = await Session.findOne({
     _id: sessionId,
     therapist: therapistId,
   } as QueryFilter<SessionData>);
   if (!session) return null;
+  // ** Concurrency: reject if the session notes changed since the client read them.
+  guardFresh(session, ifMatch);
   if (changes.sessionDate !== undefined)
     session.sessionDate = new Date(changes.sessionDate);
   if (changes.durationMinutes !== undefined)

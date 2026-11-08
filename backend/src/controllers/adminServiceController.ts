@@ -8,6 +8,7 @@ import {
   updateService as updateServiceRecord,
   type ServicePayload,
 } from "../services/serviceCatalogService.js";
+import { guardFresh } from "../services/concurrencyService.js";
 
 const fields = ["name", "description", "duration", "fee", "category"] as const;
 
@@ -69,6 +70,8 @@ export async function updateService(
     res.status(404).json({ message: "Therapy service not found." });
     return;
   }
+  // ** Concurrency: reject if the service changed since the client read it.
+  guardFresh(service, req.get("If-Match"));
   const payload = servicePayload(req.body as Record<string, unknown>);
   const error = validatePayload({ ...service.toObject(), ...payload });
   if (error) {
@@ -88,6 +91,8 @@ export async function removeService(
     res.status(404).json({ message: "Therapy service not found." });
     return;
   }
+  // ** Concurrency: reject if the service changed since the client read it.
+  guardFresh(service, req.get("If-Match"));
   await removeServiceRecord(service, req.user.userId);
   res.json({
     service,

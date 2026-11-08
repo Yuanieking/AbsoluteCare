@@ -13,6 +13,7 @@ import {
   notifyAppointmentCompleted,
   notifyAppointmentNoShow,
 } from "../services/notificationService.js";
+import { guardFresh } from "../services/concurrencyService.js";
 
 function dateFilter(
   query: Request["query"],
@@ -48,6 +49,8 @@ export async function completeAppointment(
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   if (appointment.status !== "confirmed") {
     res.status(409).json({
       message: `Cannot complete an appointment with status "${appointment.status}".`,
@@ -72,6 +75,8 @@ export async function markNoShow(req: Request, res: Response): Promise<void> {
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   if (appointment.status !== "confirmed") {
     res.status(409).json({
       message: `Cannot mark an appointment with status "${appointment.status}" as no-show.`,

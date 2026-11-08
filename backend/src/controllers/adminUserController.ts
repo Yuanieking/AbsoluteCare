@@ -19,6 +19,7 @@ import type {
   AdminUserDoc,
   AdminUserRole,
 } from "../services/adminUserService.js";
+import { guardFresh } from "../services/concurrencyService.js";
 
 const roles = ["user", "therapist", "secretary", "admin"] as const;
 
@@ -185,6 +186,8 @@ export async function updateUser(req: Request, res: Response): Promise<void> {
     res.status(404).json({ message: "User not found." });
     return;
   }
+  // ** Concurrency: reject if the user changed since the client read it.
+  guardFresh(existing, req.get("If-Match"));
   const roleChanging = body.role !== undefined;
   const nextRole = normalizeRole(body.role);
   if (roleChanging && !validateRole(body.role)) {
@@ -235,6 +238,8 @@ async function setActive(
     res.status(404).json({ message: "User not found." });
     return;
   }
+  // ** Concurrency: reject if the user changed since the client read it.
+  guardFresh(user, req.get("If-Match"));
   if (user._id.toString() === req.user.userId) {
     res
       .status(400)
@@ -264,6 +269,8 @@ export async function archiveUser(req: Request, res: Response): Promise<void> {
     res.status(404).json({ message: "User not found." });
     return;
   }
+  // ** Concurrency: reject if the user changed since the client read it.
+  guardFresh(user, req.get("If-Match"));
   if (user._id.toString() === req.user.userId) {
     res.status(400).json({ message: "You cannot archive your own account." });
     return;
@@ -278,6 +285,8 @@ export async function removeUser(req: Request, res: Response): Promise<void> {
     res.status(404).json({ message: "User not found." });
     return;
   }
+  // ** Concurrency: reject if the user changed since the client read it.
+  guardFresh(user, req.get("If-Match"));
   if (user._id.toString() === req.user.userId) {
     res.status(400).json({ message: "You cannot remove your own account." });
     return;
@@ -311,6 +320,8 @@ async function updateRoleRecord(
     role,
     updates: normalizeUserFields(body, fields),
     adminId: req.user.userId,
+    // ** Concurrency: guarded inside the service (stale -> 409 STALE_RECORD).
+    ifMatch: req.get("If-Match"),
   });
   if (result.status === "not_found") {
     res.status(404).json({
@@ -421,6 +432,8 @@ export async function updateTherapistAvailability(
     res.status(404).json({ message: "Therapist not found." });
     return;
   }
+  // ** Concurrency: reject if the therapist record changed since the client read it.
+  guardFresh(user, req.get("If-Match"));
   const conflicts = await findConflicts(user._id.toString(), days);
   if (conflicts.length) {
     res.status(409).json(scheduleConflictPayload(conflicts));

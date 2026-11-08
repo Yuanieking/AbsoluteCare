@@ -76,6 +76,7 @@ export async function updateDependent(
     req.patient!._id,
     req.params.id as string,
     parsed,
+    req.get("If-Match"),
   );
   if (!dependent) {
     res.status(404).json({ message: "Dependent not found." });
@@ -91,6 +92,7 @@ export async function removeDependent(
   const dependent = await patientService.deactivateDependent(
     req.patient!._id,
     req.params.id as string,
+    req.get("If-Match"),
   );
   if (!dependent) {
     res.status(404).json({ message: "Dependent not found." });
@@ -375,6 +377,7 @@ export async function markNotificationRead(
   const notification = await patientService.markNotificationRead(
     req.patient!._id,
     req.params.id as string,
+    req.get("If-Match"),
   );
   if (!notification) {
     res.status(404).json({ message: "Notification not found." });

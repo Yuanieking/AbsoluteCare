@@ -31,6 +31,7 @@ import {
 import { availabilityError } from "../services/availabilityService.js";
 import { adminNotificationSchema } from "../schemas/appointmentSchema.js";
 import { manilaDateTime } from "../utils/appointmentDates.js";
+import { guardFresh } from "../services/concurrencyService.js";
 
 function scheduleFor(
   appointment: PopulatedAppointmentDoc,
@@ -266,6 +267,8 @@ export async function assignTherapist(
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   if (statusError(res, appointment, "assign a therapist to", ["pending"]))
     return;
   const therapistId: string = req.body.therapistId;
@@ -310,6 +313,8 @@ export async function confirmAppointment(
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   if (statusError(res, appointment, "confirm", ["pending"])) return;
   if (!appointment.therapist) {
     res.status(400).json({
@@ -395,6 +400,8 @@ export async function rescheduleAppointment(
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   if (statusError(res, appointment, "reschedule", ["confirmed"])) return;
   const newDate: string = req.body.newDate;
   const newTime: string = req.body.newTime;
@@ -417,6 +424,8 @@ export async function approveReschedule(
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   if (statusError(res, appointment, "approve a reschedule for", ["confirmed"]))
     return;
   if (appointment.rescheduleRequest?.status !== "requested") {
@@ -447,6 +456,8 @@ export async function declineReschedule(
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   if (statusError(res, appointment, "decline a reschedule for", ["confirmed"]))
     return;
   if (appointment.rescheduleRequest?.status !== "requested") {
@@ -484,6 +495,8 @@ export async function cancelAppointment(
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  // ** Concurrency: reject if the appointment changed since the client read it.
+  guardFresh(appointment, req.get("If-Match"));
   if (statusError(res, appointment, "cancel", ["pending", "confirmed"])) return;
   const reason: string | undefined = req.body.reason?.trim();
   if (!reason) {

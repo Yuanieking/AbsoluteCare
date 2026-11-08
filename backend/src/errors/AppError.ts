@@ -27,6 +27,16 @@ export class NotFoundError extends AppError {
   }
 }
 
+// ** Concurrency: thrown when a write carries an If-Match timestamp that no longer
+// ** matches the record's updatedAt (someone else changed it first).
+export class ConflictError extends AppError {
+  constructor(
+    message = "This record was changed by someone else. Reload and try again.",
+  ) {
+    super(409, { code: "STALE_RECORD", message });
+  }
+}
+
 export class ValidationError extends AppError {
   constructor(message: string) {
     super(400, { message });

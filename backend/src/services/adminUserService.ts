@@ -5,6 +5,7 @@ import User, {
   type UserDoc,
   type UserRole,
 } from "../models/userModel.js";
+import { guardFresh } from "./concurrencyService.js";
 
 export type AdminUserDoc = UserDoc;
 export type AdminUserRole = UserRole;
@@ -188,9 +189,12 @@ export async function updateRoleRecord(params: {
   role: UserRole;
   updates: Record<string, unknown>;
   adminId: string;
+  ifMatch?: string | undefined;
 }): Promise<RoleRecordUpdate> {
   const user = await User.findOne({ _id: params.id, role: params.role });
   if (!user) return { status: "not_found" };
+  // ** Concurrency: reject if the record changed since the client read it.
+  guardFresh(user, params.ifMatch);
   const updates = { ...params.updates };
   if (updates.email) {
     const email = (updates.email as string).trim().toLowerCase();

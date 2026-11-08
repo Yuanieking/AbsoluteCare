@@ -40,7 +40,7 @@ import {
 } from "./services/integrationCredentialService.js";
 import { syncBootstrapAdmins } from "./services/adminBootstrapService.js";
 import { setHttpServer } from "./services/restartService.js";
-import { AppError } from "./errors/AppError.js";
+import { AppError, ConflictError } from "./errors/AppError.js";
 
 const app = express();
 
@@ -63,7 +63,8 @@ const corsOptions: CorsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  // ** Concurrency: browsers must be allowed to send If-Match (timestamp guard) cross-origin.
+  allowedHeaders: ["Content-Type", "Authorization", "If-Match"],
   optionsSuccessStatus: 204,
 };
 
@@ -99,6 +100,12 @@ app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
     return res.status(error.status).json(error.payload);
   }
   const named = error as { name?: string; issues?: unknown; errors?: unknown };
+  // ** Concurrency: a guarded save() whose pinned updatedAt no longer matches
+  // ** (see services/concurrencyService.ts guardFresh) surfaces here as a 409.
+  if (named?.name === "DocumentNotFoundError") {
+    const stale = new ConflictError();
+    return res.status(stale.status).json(stale.payload);
+  }
   if (named?.name === "ZodError") {
     return res.status(400).json({
       message: "Please correct the highlighted fields.",

@@ -12,6 +12,7 @@ import User, {
   type User as UserData,
   type UserDoc,
 } from "../models/userModel.js";
+import { assertNotStale, freshFilter } from "./concurrencyService.js";
 
 const appointmentPopulate = [
   { path: "patient", select: "firstname lastname email phone profilePicture" },
@@ -145,15 +146,18 @@ export async function getProfile(userId: string): Promise<UserDoc | null> {
 export async function updateProfile(
   userId: string,
   updates: Record<string, unknown>,
+  ifMatch?: string,
 ): Promise<UserDoc | null> {
-  const user = await User.findByIdAndUpdate(
-    userId,
+  // ** Concurrency: atomic compare-and-swap on updatedAt when If-Match is sent.
+  const user = await User.findOneAndUpdate(
+    { _id: userId, ...freshFilter(ifMatch) } as QueryFilter<UserData>,
     {
       $set: updates,
       $push: { accountAudit: { action: "profile_updated", by: userId } },
     } as UpdateQuery<UserData>,
     { new: true, runValidators: true },
   ).select("-password -accountAudit");
+  if (!user) await assertNotStale(ifMatch, () => User.exists({ _id: userId }));
   return user as unknown as UserDoc | null;
 }
 

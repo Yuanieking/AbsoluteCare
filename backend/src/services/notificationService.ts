@@ -6,6 +6,7 @@ import Notification, {
 import User, { type UserDoc } from "../models/userModel.js";
 import Appointment from "../models/appointmentModel.js";
 import { sendEmail } from "./mailer.js";
+import { assertNotStale, freshFilter } from "./concurrencyService.js";
 import { getSettings } from "./settingsService.js";
 import {
   renderNotificationEmail,
@@ -276,23 +277,41 @@ export async function unreadNotificationCount(userId: string): Promise<number> {
 export async function markNotificationRead(
   userId: string,
   id: string,
+  ifMatch?: string,
 ): Promise<NotificationData | null> {
-  return Notification.findOneAndUpdate(
-    { user: userId, _id: id } as QueryFilter<NotificationData>,
+  // ** Concurrency: atomic compare-and-swap on updatedAt when If-Match is sent.
+  const notification = await Notification.findOneAndUpdate(
+    {
+      user: userId,
+      _id: id,
+      ...freshFilter(ifMatch),
+    } as QueryFilter<NotificationData>,
     { $set: { isRead: true, readAt: new Date() } },
     { new: true },
   );
+  if (!notification)
+    await assertNotStale(ifMatch, () => ownNotification(userId, id));
+  return notification;
 }
 
 export async function markNotificationUnread(
   userId: string,
   id: string,
+  ifMatch?: string,
 ): Promise<NotificationData | null> {
-  return Notification.findOneAndUpdate(
-    { user: userId, _id: id } as QueryFilter<NotificationData>,
+  // ** Concurrency: atomic compare-and-swap on updatedAt when If-Match is sent.
+  const notification = await Notification.findOneAndUpdate(
+    {
+      user: userId,
+      _id: id,
+      ...freshFilter(ifMatch),
+    } as QueryFilter<NotificationData>,
     { $set: { isRead: false, readAt: null } },
     { new: true },
   );
+  if (!notification)
+    await assertNotStale(ifMatch, () => ownNotification(userId, id));
+  return notification;
 }
 
 export async function markAllNotificationsRead(userId: string): Promise<void> {
@@ -305,12 +324,24 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
 export async function deleteNotification(
   userId: string,
   id: string,
+  ifMatch?: string,
 ): Promise<boolean> {
+  // ** Concurrency: delete only the version the client saw when If-Match is sent.
   const result = await Notification.deleteOne({
     user: userId,
     _id: id,
+    ...freshFilter(ifMatch),
   } as QueryFilter<NotificationData>);
+  if (!result.deletedCount)
+    await assertNotStale(ifMatch, () => ownNotification(userId, id));
   return Boolean(result.deletedCount);
+}
+
+function ownNotification(userId: string, id: string): Promise<unknown> {
+  return Notification.exists({
+    user: userId,
+    _id: id,
+  } as QueryFilter<NotificationData>);
 }
 
 export async function clearReadNotifications(userId: string): Promise<void> {

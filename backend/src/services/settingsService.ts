@@ -13,6 +13,8 @@ import {
   RECAPTCHA_SITE_KEY,
 } from "../config/env.js";
 import { getIntegrationStatus } from "../config/integrations.js";
+import { ConflictError } from "../errors/AppError.js";
+import { freshFilter, guardFresh } from "./concurrencyService.js";
 
 const integrationDefaults = {
   googleAuthEnabled: true,
@@ -252,13 +254,17 @@ export async function updateSettingsSection({
   values,
   adminId,
   ip,
+  ifMatch,
 }: {
   section: string;
   values: Record<string, unknown>;
   adminId: string;
   ip: string;
+  ifMatch?: string | undefined;
 }): Promise<UpdatedSection> {
   const current = await AppSetting.findOne({ key: "singleton" });
+  // ** Concurrency: fail fast if the settings document changed since the client read it.
+  if (current) guardFresh(current, ifMatch);
   // `section` is a runtime key of the settings document.
   const currentData = current
     ? (current.toObject() as unknown as Record<string, unknown>)
@@ -273,11 +279,15 @@ export async function updateSettingsSection({
     $set: { [section]: values, updatedBy: adminId },
     $inc: { version: 1 },
   };
+  // ** Concurrency: atomic compare-and-swap. Upsert is disabled while guarded, otherwise a
+  // ** stale filter would insert a second singleton instead of failing.
+  const guard = freshFilter(ifMatch);
   const updated = await AppSetting.findOneAndUpdate(
-    { key: "singleton" },
+    { key: "singleton", ...guard },
     update as unknown as UpdateQuery<AppSettingData>,
-    { new: true, upsert: true, setDefaultsOnInsert: true },
+    { new: true, upsert: !guard.updatedAt, setDefaultsOnInsert: true },
   ).populate("updatedBy", "firstname lastname");
+  if (!updated) throw new ConflictError();
   await SettingsAuditLog.insertMany(
     changed.map((field) => ({
       admin: objectId(adminId),
@@ -303,6 +313,7 @@ export async function setIntegrationFlag(
   enabled: boolean,
   adminId: string,
   ip: string,
+  ifMatch?: string,
 ): Promise<AppSettingData> {
   const settings = await getSettings();
   const integrations = settings.integrations as unknown as Record<
@@ -317,11 +328,14 @@ export async function setIntegrationFlag(
     },
     $inc: { version: 1 },
   };
+  // ** Concurrency: compare-and-swap on the singleton's updatedAt; no upsert while guarded.
+  const guard = freshFilter(ifMatch);
   const updated = await AppSetting.findOneAndUpdate(
-    { key: "singleton" },
+    { key: "singleton", ...guard },
     update as unknown as UpdateQuery<AppSettingData>,
-    { new: true, upsert: true, setDefaultsOnInsert: true },
+    { new: true, upsert: !guard.updatedAt, setDefaultsOnInsert: true },
   );
+  if (!updated) throw new ConflictError();
   await writeSettingsAudit({
     adminId,
     section: "integrations",
@@ -331,7 +345,7 @@ export async function setIntegrationFlag(
     ip,
   });
   invalidateSettingsCache();
-  return updated!.toObject() as unknown as AppSettingData;
+  return updated.toObject() as unknown as AppSettingData;
 }
 
 export async function saveIntegrationTestResult(
@@ -343,7 +357,8 @@ export async function saveIntegrationTestResult(
     {
       $set: { [`integrations.${field}`]: value },
     } as unknown as UpdateQuery<AppSettingData>,
-    { upsert: true },
+    // ** Concurrency: test-result bookkeeping must not bump updatedAt (false 409s).
+    { upsert: true, timestamps: false },
   );
   invalidateSettingsCache();
 }

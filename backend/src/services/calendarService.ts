@@ -231,7 +231,9 @@ export async function syncConfirmedAppointment(
       populated.googleEventId = event.id;
       populated.googleEventLink = event.htmlLink || "";
     }
-    await populated.save();
+    // ** Concurrency: calendar bookkeeping keeps updatedAt unchanged so the
+    // ** timestamp the client just received stays valid for its next If-Match write.
+    await populated.save({ timestamps: false });
   }
   return event;
 }
@@ -243,7 +245,7 @@ export interface CalendarEventOwner {
   therapist: Types.ObjectId | { _id: Types.ObjectId } | null;
   googleEventId: string;
   therapistGoogleEventId: string;
-  save(): Promise<unknown>;
+  save(options?: { timestamps?: boolean }): Promise<unknown>;
 }
 
 function ownerId(value: CalendarEventOwner["patient"]): Types.ObjectId | null {
@@ -275,7 +277,8 @@ export async function deleteCalendarEvent(
     else appointment.therapistGoogleEventId = "";
   }
   appointment.googleEventId = "";
-  await appointment.save();
+  // ** Concurrency: bookkeeping only, keep updatedAt (see syncConfirmedAppointment).
+  await appointment.save({ timestamps: false });
 }
 
 export async function backfillCalendar(

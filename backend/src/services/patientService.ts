@@ -19,6 +19,7 @@ import TherapyService, {
 } from "../models/therapyServiceModel.js";
 import User, { type UserDoc } from "../models/userModel.js";
 import { defaultTherapyServices } from "../config/therapyServices.js";
+import { assertNotStale, freshFilter } from "./concurrencyService.js";
 import type {
   DependentInput,
   DependentUpdateInput,
@@ -124,31 +125,54 @@ export async function updateDependent(
   patientId: Types.ObjectId,
   id: string,
   parsed: DependentUpdateInput,
+  ifMatch?: string,
 ): Promise<DependentDoc | null> {
-  return Dependent.findOneAndUpdate(
+  // ** Concurrency: atomic compare-and-swap on updatedAt when If-Match is sent.
+  const dependent = await Dependent.findOneAndUpdate(
     {
       _id: id,
       guardian: patientId,
       isActive: true,
+      ...freshFilter(ifMatch),
     } as unknown as QueryFilter<DependentData>,
     { $set: parsed },
     { new: true, runValidators: true },
   );
+  if (!dependent)
+    await assertNotStale(ifMatch, () => activeDependent(patientId, id));
+  return dependent;
+}
+
+function activeDependent(
+  patientId: Types.ObjectId,
+  id: string,
+): Promise<unknown> {
+  return Dependent.exists({
+    _id: id,
+    guardian: patientId,
+    isActive: true,
+  } as unknown as QueryFilter<DependentData>);
 }
 
 export async function deactivateDependent(
   patientId: Types.ObjectId,
   id: string,
+  ifMatch?: string,
 ): Promise<DependentDoc | null> {
-  return Dependent.findOneAndUpdate(
+  // ** Concurrency: atomic compare-and-swap on updatedAt when If-Match is sent.
+  const dependent = await Dependent.findOneAndUpdate(
     {
       _id: id,
       guardian: patientId,
       isActive: true,
+      ...freshFilter(ifMatch),
     } as unknown as QueryFilter<DependentData>,
     { $set: { isActive: false } },
     { new: true },
   );
+  if (!dependent)
+    await assertNotStale(ifMatch, () => activeDependent(patientId, id));
+  return dependent;
 }
 
 export async function findService(
@@ -332,12 +356,26 @@ export async function listNotifications(
 export async function markNotificationRead(
   patientId: Types.ObjectId,
   id: string,
+  ifMatch?: string,
 ): Promise<NotificationData | null> {
-  return Notification.findOneAndUpdate(
-    { _id: id, user: patientId } as unknown as QueryFilter<NotificationData>,
+  // ** Concurrency: atomic compare-and-swap on updatedAt when If-Match is sent.
+  const notification = await Notification.findOneAndUpdate(
+    {
+      _id: id,
+      user: patientId,
+      ...freshFilter(ifMatch),
+    } as unknown as QueryFilter<NotificationData>,
     { isRead: true },
     { new: true },
   );
+  if (!notification)
+    await assertNotStale(ifMatch, () =>
+      Notification.exists({
+        _id: id,
+        user: patientId,
+      } as unknown as QueryFilter<NotificationData>),
+    );
+  return notification;
 }
 
 export async function markAllNotificationsRead(

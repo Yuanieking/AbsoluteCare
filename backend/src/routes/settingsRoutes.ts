@@ -53,6 +53,8 @@ router.post(
   "/integrations/credentials/verification",
   asyncRoute(requestVerification),
 );
+// ** PATCH /integrations/credentials - not timestamp-guarded: one request writes several
+// ** credential records (no single updatedAt); the service has its own 409 confirmation flows.
 router.patch(
   "/integrations/credentials",
   jsonOnly,
@@ -75,9 +77,11 @@ router.post(
 router.post("/integrations/restart", asyncRoute(requestRestart));
 router.get("/integrations/handover", asyncRoute(downloadHandover));
 router.post("/integrations/:key/test", asyncRoute(testIntegration));
+// ** PATCH /integrations/:key - toggle an integration. If-Match: "<settings.updatedAt>" -> 409 when stale.
 router.patch("/integrations/:key", asyncRoute(patchIntegration));
 router.post("/verification", asyncRoute(requestVerification));
 router.post("/verification/confirm", asyncRoute(confirmVerification));
+// ** PATCH /:section - replace one settings section. If-Match: "<settings.updatedAt>" -> 409 when stale.
 router.patch("/:section", asyncRoute(patchSettings));
 router.get("/audit", asyncRoute(getAudit));
 router.get("/impact", asyncRoute(getImpact));

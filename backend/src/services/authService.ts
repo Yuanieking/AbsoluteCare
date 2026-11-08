@@ -6,6 +6,7 @@ import UserModel, {
 } from "../models/userModel.js";
 import Dependent from "../models/dependentModel.js";
 import type { ProfileUpdateInput } from "../schemas/authSchema.js";
+import { assertNotStale, freshFilter } from "./concurrencyService.js";
 
 export type { UserDoc, UserRole };
 
@@ -39,12 +40,14 @@ export function createUser(input: NewUserInput): Promise<UserDoc> {
   return UserModel.create(input);
 }
 
-export function updateUserProfile(
+export async function updateUserProfile(
   id: string,
   input: ProfileUpdateInput,
+  ifMatch?: string,
 ): Promise<UserDoc | null> {
-  return UserModel.findByIdAndUpdate(
-    id,
+  // ** Concurrency: atomic compare-and-swap on updatedAt when If-Match is sent.
+  const user = await UserModel.findOneAndUpdate(
+    { _id: id, ...freshFilter(ifMatch) },
     {
       firstname: input.firstName,
       lastname: input.lastName,
@@ -55,6 +58,8 @@ export function updateUserProfile(
     },
     { new: true, runValidators: true },
   );
+  if (!user) await assertNotStale(ifMatch, () => UserModel.exists({ _id: id }));
+  return user;
 }
 
 export function saveUser(user: UserDoc): Promise<UserDoc> {

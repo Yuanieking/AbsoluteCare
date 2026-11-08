@@ -17,6 +17,7 @@ import {
 import { syncConfirmedAppointment } from "../services/calendarService.js";
 import { notify, notifyMany } from "../services/notificationService.js";
 import * as therapistService from "../services/therapistService.js";
+import { guardFresh } from "../services/concurrencyService.js";
 
 const therapistId = (req: Request): string => req.user.userId;
 
@@ -52,7 +53,11 @@ export async function updateProfile(
     });
     return;
   }
-  const user = await therapistService.updateProfile(therapistId(req), updates);
+  const user = await therapistService.updateProfile(
+    therapistId(req),
+    updates,
+    req.get("If-Match"),
+  );
   res.json({ profile: user });
 }
 
@@ -67,6 +72,8 @@ export async function updateAvailability(
     res.status(404).json({ message: "Therapist profile not found." });
     return;
   }
+  // ** Concurrency: reject if the profile changed since the client read it.
+  guardFresh(user, req.get("If-Match"));
   const conflicts = await findConflicts(therapistId(req), days);
   if (conflicts.length) {
     res.status(409).json(scheduleConflictPayload(conflicts));
@@ -178,6 +185,7 @@ export async function markNoShow(req: Request, res: Response): Promise<void> {
   const result = await therapistService.markNoShow(
     therapistId(req),
     String(req.params.id),
+    req.get("If-Match"),
   );
   if (!result.ok) {
     res.status(result.status).json({ message: result.message });
@@ -256,6 +264,7 @@ export async function updateSession(
     therapistId(req),
     String(req.params.id),
     parsed,
+    req.get("If-Match"),
   );
   if (!session) {
     res.status(404).json({ message: "Session not found." });

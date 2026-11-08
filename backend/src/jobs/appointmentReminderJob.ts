@@ -42,7 +42,9 @@ export async function runAppointmentReminderJob(): Promise<void> {
             $addToSet: { remindersSentHours: hours },
             $set: { reminderSentAt: new Date() },
           },
-          { new: true },
+          // ** Concurrency: background bookkeeping must not bump updatedAt, or an
+          // ** admin's pending If-Match edit would be rejected as stale.
+          { new: true, timestamps: false },
         );
         if (!claimed) return;
         const label =
