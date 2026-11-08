@@ -634,7 +634,7 @@ export function IntegrationsSection({
           id="maps"
           icon={MapPin}
           title="Maps & address search"
-          description="Suggests addresses as staff and patients type, and shows a map preview, using OpenStreetMap services. No account or key is needed. Turning this off leaves plain address fields. The text being typed is sent to the public Photon search service."
+          description="Suggests addresses as staff and patients type, and shows a map preview, using OpenStreetMap services. Turning this off leaves plain address fields. The text being typed is sent to the public Photon search service."
           configured
           statusLabel={mapsEnabled ? 'On' : 'Off'}
           meta={lastChanged(mapsRecord)}
