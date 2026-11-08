@@ -154,7 +154,7 @@ const server = app.listen(PORT, () => {
     );
   if (!isPublicVerificationUrl()) {
     console.warn(
-      "documents: FRONTEND_URL is not public, so verification QR codes will not scan off this machine.",
+      "documents: FRONTEND_URL is not public, so document verification links will not open off this machine.",
     );
   }
   runAppointmentReminderJob().catch((error: unknown) =>

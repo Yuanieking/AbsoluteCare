@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit";
-import QRCode from "qrcode";
 import { ASSETS_DIR } from "../config/paths.js";
 import type {
   DocumentPayload,
@@ -99,10 +98,15 @@ function drawFact(doc: PdfDoc, label: string, value: string): void {
     ) + 6;
   ensureSpace(doc, height);
   const y = doc.y;
-  doc.fillColor(SOFT).text(label, PAGE_MARGIN, y, { width: labelWidth, lineGap: 1 });
+  doc
+    .fillColor(SOFT)
+    .text(label, PAGE_MARGIN, y, { width: labelWidth, lineGap: 1 });
   doc
     .fillColor(INK)
-    .text(value, PAGE_MARGIN + labelWidth + 8, y, { width: valueWidth, lineGap: 1 });
+    .text(value, PAGE_MARGIN + labelWidth + 8, y, {
+      width: valueWidth,
+      lineGap: 1,
+    });
   doc.x = PAGE_MARGIN;
   doc.y = y + height;
 }
@@ -130,7 +134,10 @@ function drawTable(
     table.columns.forEach((column, index) => {
       const width = widthAt(index);
       doc.text(fill(column), x, y, { width, lineGap: 1 });
-      height = Math.max(height, doc.heightOfString(column, { width, lineGap: 1 }));
+      height = Math.max(
+        height,
+        doc.heightOfString(column, { width, lineGap: 1 }),
+      );
       x += widths[index] ?? 40;
     });
     const after = y + height + 5;
@@ -161,7 +168,10 @@ function drawTable(
     cells.forEach((cell, index) => {
       rowHeight = Math.max(
         rowHeight,
-        doc.heightOfString(fill(cell) || " ", { width: widthAt(index), lineGap: 1 }) + 7,
+        doc.heightOfString(fill(cell) || " ", {
+          width: widthAt(index),
+          lineGap: 1,
+        }) + 7,
       );
     });
     if (ensureSpace(doc, rowHeight)) drawHead();
@@ -220,42 +230,53 @@ function drawSection(
 }
 
 function drawSignatureBlock(doc: PdfDoc, input: RenderInput): void {
-  ensureSpace(doc, 96);
-  doc.moveDown(2);
-  const y = doc.y;
   const width = contentWidth(doc);
-  const secondX = PAGE_MARGIN + width - 120;
-  doc
-    .moveTo(PAGE_MARGIN, y + 26)
-    .lineTo(PAGE_MARGIN + 120, y + 26)
-    .strokeColor(HAIRLINE)
-    .lineWidth(0.5)
-    .stroke();
-  doc
-    .moveTo(secondX, y + 26)
-    .lineTo(secondX + 120, y + 26)
-    .strokeColor(HAIRLINE)
-    .lineWidth(0.5)
-    .stroke();
+  const colWidth = 200;
+  const secondX = PAGE_MARGIN + width - colWidth;
+  const disclaimer =
+    "Electronically issued. This document is valid without a handwritten signature; its authenticity can be checked with the tracking number at the address in the footer.";
+
+  // Measure first so the block is kept together and nothing overlaps.
+  doc.font("Helvetica").fontSize(7.5);
+  const issuerHeight = doc.heightOfString(input.issuerLine, {
+    width: colWidth,
+    lineGap: 1,
+  });
+  const labelsHeight = 10 + Math.max(issuerHeight, 10);
+  doc.font("Helvetica-Oblique").fontSize(7);
+  const noteHeight = doc.heightOfString(disclaimer, { width, lineGap: 1 });
+  const lineOffset = 30;
+  const total = lineOffset + 4 + labelsHeight + 10 + noteHeight;
+
+  ensureSpace(doc, total + 8);
+  const y = doc.y + 8;
+  for (const x of [PAGE_MARGIN, secondX]) {
+    doc
+      .moveTo(x, y + lineOffset)
+      .lineTo(x + colWidth, y + lineOffset)
+      .strokeColor(HAIRLINE)
+      .lineWidth(0.5)
+      .stroke();
+  }
+  const labelY = y + lineOffset + 4;
   doc
     .font("Helvetica")
     .fontSize(7.5)
     .fillColor(SOFT)
-    .text("Issued by", PAGE_MARGIN, y + 30, { width: 120 })
-    .text(input.issuerLine, PAGE_MARGIN, y + 41, { width: 120, lineGap: 1 })
-    .text("Received by", secondX, y + 30, { width: 120 })
-    .text("Signature", secondX, y + 41, { width: 120 });
+    .text("Issued by", PAGE_MARGIN, labelY, { width: colWidth })
+    .text(input.issuerLine, PAGE_MARGIN, labelY + 10, {
+      width: colWidth,
+      lineGap: 1,
+    })
+    .text("Received by (signature)", secondX, labelY, { width: colWidth });
+  const noteY = labelY + labelsHeight + 10;
   doc
     .font("Helvetica-Oblique")
     .fontSize(7)
     .fillColor(FAINT)
-    .text(
-      "Electronically issued. This document is valid without a handwritten signature; scan the QR code to confirm it.",
-      PAGE_MARGIN,
-      y + 62,
-      { width },
-    );
-  doc.moveDown(2);
+    .text(disclaimer, PAGE_MARGIN, noteY, { width, lineGap: 1 });
+  doc.x = PAGE_MARGIN;
+  doc.y = noteY + noteHeight;
 }
 
 function verifyHost(url: string): string {
@@ -278,23 +299,25 @@ function fitText(doc: PdfDoc, text: string, width: number): string {
 function drawHeader(
   doc: PdfDoc,
   input: RenderInput,
-  qr: Buffer,
+  pageIndex: number,
 ): void {
   doc.save();
   const pageWidth = doc.page.width;
   const contentRight = pageWidth - PAGE_MARGIN;
+  const leftWidth = 270;
   const logoPath = path.join(ASSETS_DIR, "email/logo.png");
   const hasLogo = fs.existsSync(logoPath);
-  let leftY = 34;
+  let leftY = 30;
   if (hasLogo) {
-    doc.image(logoPath, PAGE_MARGIN, leftY, { height: 32 });
-    leftY += 36;
+    doc.image(logoPath, PAGE_MARGIN, leftY, { height: 30 });
+    leftY += 35;
   }
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(hasLogo ? 10 : 13)
-    .fillColor(PINE)
-    .text(input.clinic.name, PAGE_MARGIN, leftY, { width: 260 });
+  const nameSize = hasLogo ? 10 : 13;
+  doc.font("Helvetica-Bold").fontSize(nameSize).fillColor(PINE);
+  doc.text(fitText(doc, input.clinic.name, leftWidth), PAGE_MARGIN, leftY, {
+    width: leftWidth,
+    lineBreak: false,
+  });
   const contact = [input.clinic.address, input.clinic.phone, input.clinic.email]
     .filter(Boolean)
     .join(" · ");
@@ -303,47 +326,63 @@ function drawHeader(
       .font("Helvetica")
       .fontSize(7.5)
       .fillColor(SOFT)
-      .text(contact, PAGE_MARGIN, leftY + 14, { width: 250, lineGap: 1 });
+      .text(contact, PAGE_MARGIN, leftY + nameSize + 4, {
+        width: leftWidth,
+        height: 20,
+        ellipsis: true,
+        lineGap: 1,
+      });
   }
 
-  const qrSize = 52;
-  doc.image(qr, contentRight - qrSize, 30, { width: qrSize, height: qrSize });
-
-  const rightX = pageWidth / 2;
-  const rightWidth = contentRight - qrSize - 16 - rightX;
+  const rightWidth = 210;
+  const rightX = contentRight - rightWidth;
   doc
-    .font("Helvetica-Bold")
-    .fontSize(13)
-    .fillColor(PINE)
-    .text(input.payload.title, rightX, 36, {
+    .font("Helvetica")
+    .fontSize(6.5)
+    .fillColor(FAINT)
+    .text("TRACKING NUMBER", rightX, 32, {
       width: rightWidth,
       align: "right",
-    });
-
-  doc.font("Helvetica").fontSize(9);
-  const trackingWidth = Math.min(doc.widthOfString(input.trackingNumber) + 14, rightWidth);
-  const boxX = contentRight - qrSize - 16 - trackingWidth;
-  doc
-    .roundedRect(boxX, 58, trackingWidth, 17, 2)
-    .strokeColor(HAIRLINE)
-    .lineWidth(0.6)
-    .stroke();
-  doc
-    .fillColor(INK)
-    .text(input.trackingNumber, boxX + 7, 62, {
-      width: trackingWidth - 14,
-      align: "center",
       lineBreak: false,
     });
 
+  doc.font("Helvetica").fontSize(9);
+  const trackingWidth = Math.min(
+    doc.widthOfString(input.trackingNumber) + 14,
+    rightWidth,
+  );
+  const boxX = contentRight - trackingWidth;
+  doc
+    .roundedRect(boxX, 43, trackingWidth, 18, 2)
+    .strokeColor(HAIRLINE)
+    .lineWidth(0.6)
+    .stroke();
+  doc.fillColor(INK).text(input.trackingNumber, boxX + 7, 48, {
+    width: trackingWidth - 14,
+    align: "center",
+    lineBreak: false,
+  });
+
+  let noteY = 68;
+  if (pageIndex > 0) {
+    // The first page already carries the full title in its body.
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor(PINE);
+    doc.text(fitText(doc, input.payload.title, rightWidth), rightX, noteY, {
+      width: rightWidth,
+      align: "right",
+      lineBreak: false,
+    });
+    noteY += 13;
+  }
   if (!input.verifyIsPublic) {
     doc
       .font("Helvetica")
       .fontSize(6.5)
       .fillColor(CLAY)
-      .text("Verification URL is not public", rightX, 80, {
+      .text("Verification URL is not public", rightX, noteY, {
         width: rightWidth,
         align: "right",
+        lineBreak: false,
       });
   }
 
@@ -372,42 +411,42 @@ function drawFooter(
     .strokeColor(HAIRLINE)
     .lineWidth(0.5)
     .stroke();
+  const pageLabel = `Page ${page} of ${total}`;
+  const pageLabelWidth = 80;
   doc.font("Helvetica").fontSize(7).fillColor(SOFT);
-  doc.text(fitText(doc, input.issuerLine, 205), PAGE_MARGIN, pageHeight - 49, {
-    width: 205,
-    lineBreak: false,
-  });
-  doc.text(`Page ${page} of ${total}`, PAGE_MARGIN + 205, pageHeight - 49, {
-    width: width - 410,
-    align: "center",
-    lineBreak: false,
-  });
   doc.text(
-    fitText(doc, `Verify: ${input.verificationUrl}`, 200),
-    contentRight - 200,
-    pageHeight - 49,
-    { width: 200, align: "right", lineBreak: false },
+    fitText(doc, input.issuerLine, width - pageLabelWidth - 12),
+    PAGE_MARGIN,
+    pageHeight - 50,
+    { width: width - pageLabelWidth - 12, lineBreak: false },
   );
-  doc
-    .fontSize(6.5)
-    .fillColor(FAINT)
-    .text(
+  doc.text(pageLabel, contentRight - pageLabelWidth, pageHeight - 50, {
+    width: pageLabelWidth,
+    align: "right",
+    lineBreak: false,
+  });
+  doc.fontSize(6.5).fillColor(SOFT);
+  doc.text(
+    fitText(doc, `Verify: ${input.verificationUrl}`, width),
+    PAGE_MARGIN,
+    pageHeight - 39,
+    { width, lineBreak: false },
+  );
+  doc.fontSize(6.5).fillColor(FAINT);
+  doc.text(
+    fitText(
+      doc,
       `Confidential. Issued by ${input.clinic.name}. Authenticity can be checked at ${verifyHost(input.verificationUrl)}.`,
-      PAGE_MARGIN,
-      pageHeight - 36,
-      { width, align: "center", lineBreak: false },
-    );
+      width,
+    ),
+    PAGE_MARGIN,
+    pageHeight - 28,
+    { width, lineBreak: false },
+  );
   doc.restore();
 }
 
 export async function renderDocumentPdf(input: RenderInput): Promise<Buffer> {
-  const qr = await QRCode.toBuffer(input.verificationUrl, {
-    type: "png",
-    margin: 1,
-    width: 180,
-    errorCorrectionLevel: "M",
-  });
-
   const doc = new PDFDocument({
     size: "A4",
     margins: {
@@ -455,7 +494,7 @@ export async function renderDocumentPdf(input: RenderInput): Promise<Buffer> {
     doc.switchToPage(index);
     // A bottom margin of zero stops the footer from triggering another page.
     doc.page.margins.bottom = 0;
-    drawHeader(doc, input, qr);
+    drawHeader(doc, input, index - range.start);
     drawFooter(doc, input, index - range.start + 1, range.count);
   }
 
