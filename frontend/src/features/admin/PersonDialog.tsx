@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { WeeklyAvailabilityEditor } from '@/components/availability/WeeklyAvailabilityEditor'
 import { StatusBadge } from '@/components/domain/StatusBadge'
-import { TextField, TextareaField } from '@/components/form/FormFields'
+import { AddressField, TextField } from '@/components/form/FormFields'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -249,10 +249,11 @@ export function PersonDialog({
               />
             )}
             <div className="sm:col-span-2">
-              <TextareaField<PersonValues>
+              <AddressField<PersonValues>
                 control={form.control}
                 name="address"
                 label="Address"
+                multiline
                 rows={3}
                 disabled={readOnly}
               />

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Camera, Edit3, Save, X } from 'lucide-react'
 import { useEffect, useState, type ChangeEvent } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { TextField } from '@/components/form/FormFields'
+import { AddressField, TextField } from '@/components/form/FormFields'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
@@ -194,7 +194,7 @@ export default function PatientProfilePage() {
                 max={todayInManila()}
               />
               <div className="sm:col-span-2">
-                <TextField<ProfileValues>
+                <AddressField<ProfileValues>
                   control={form.control}
                   name="address"
                   label="Address"

@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { AddressInput } from './AddressInput'
 
 type FieldBase<T extends FieldValues> = {
   control: Control<T>
@@ -76,6 +77,35 @@ export function TextareaField<T extends FieldValues>({
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Textarea {...props} {...field} value={field.value ?? ''} />
+          </FormControl>
+          {description ? <FormDescription>{description}</FormDescription> : null}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
+export function AddressField<T extends FieldValues>({
+  control,
+  name,
+  label,
+  description,
+  ...props
+}: FieldBase<T> &
+  Omit<
+    ComponentProps<typeof AddressInput>,
+    'name' | 'value' | 'defaultValue' | 'onChange' | 'onBlur'
+  >) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <AddressInput {...props} {...field} value={field.value ?? ''} />
           </FormControl>
           {description ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage />

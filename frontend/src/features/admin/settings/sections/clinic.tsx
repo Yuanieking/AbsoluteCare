@@ -1,4 +1,5 @@
 import { Globe2 } from 'lucide-react'
+import { AddressInput } from '@/components/form/AddressInput'
 import { sectionMap } from '../config'
 import {
   ChipGroup,
@@ -52,8 +53,10 @@ export function GeneralSection({
           />
         </SettingRow>
         <SettingRow label="Address" helper="The clinic address used in contact details.">
-          <TextInput
-            ariaLabel="Clinic address"
+          <AddressInput
+            aria-label="Clinic address"
+            wrapperClassName="w-72"
+            className="h-9 text-[13px]"
             value={value.address}
             onChange={(next) => update('address', next)}
           />

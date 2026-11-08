@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/feedback/EmptyState'
-import { TextField } from '@/components/form/FormFields'
+import { AddressField, TextField } from '@/components/form/FormFields'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
@@ -168,7 +168,7 @@ export default function TherapistProfilePage() {
                 inputMode="numeric"
                 placeholder="Not provided"
               />
-              <TextField<TherapistProfileValues>
+              <AddressField<TherapistProfileValues>
                 control={form.control}
                 name="address"
                 label="Address"

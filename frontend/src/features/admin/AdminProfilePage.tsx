@@ -3,7 +3,7 @@ import { Edit3, Save, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useSearchParams } from 'react-router-dom'
-import { TextField } from '@/components/form/FormFields'
+import { AddressField, TextField } from '@/components/form/FormFields'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
@@ -138,7 +138,7 @@ export default function AdminProfilePage() {
                 </span>
               </div>
               <div className="sm:col-span-2">
-                <TextField<AdminProfileValues>
+                <AddressField<AdminProfileValues>
                   control={form.control}
                   name="address"
                   label="Address"
