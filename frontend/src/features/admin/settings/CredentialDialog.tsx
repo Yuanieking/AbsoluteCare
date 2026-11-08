@@ -2,6 +2,7 @@ import { AlertTriangle, ChevronDown, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -38,7 +39,6 @@ function affectedAccountLabel(count: number) {
 export function CredentialDialog({
   group,
   unmanaged = [],
-  mail = null,
   onClose,
   onSaved,
 }: {
@@ -53,7 +53,8 @@ export function CredentialDialog({
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState('')
-  const [step, setStep] = useState<'edit' | 'code'>('edit')
+  const [step, setStep] = useState<'edit' | 'password' | 'code'>('edit')
+  const [password, setPassword] = useState('')
   const [pending, setPending] = useState<PendingChange | null>(null)
   const [code, setCode] = useState<string[]>(EMPTY_CODE)
   const [maskedEmail, setMaskedEmail] = useState('')
@@ -71,7 +72,6 @@ export function CredentialDialog({
   const rotatingKeys = group.keys.filter((entry) => entry.loadBearing && dirtyValues[entry.key])
   const rotationBlocked = rotatingKeys.length > 0 && !confirmRotation
   const connectionCount = group.connectedAccounts ?? 0
-  const noAdminEmail = mail?.adminEmail === false
 
   function applyRequestError(error: unknown) {
     const data = (
@@ -87,11 +87,6 @@ export function CredentialDialog({
         )
         return
       }
-      setPending({
-        kind: 'save',
-        action: `rotateIntegrationCredentials:${group.id}`,
-        values: dirtyValues,
-      })
       setErrors({})
       setFormError('')
       setBootstrap(true)
@@ -104,43 +99,60 @@ export function CredentialDialog({
     setFormError(messageOf(error, 'That change couldn’t be checked. Nothing was saved.'))
   }
 
-  async function startSave() {
-    setBusy(true)
+  // Step 1: remember what is being changed and ask for the superuser password.
+  function startPassword(next: PendingChange) {
+    setPending(next)
+    setPassword('')
     setErrors({})
     setFormError('')
-    const action = `rotateIntegrationCredentials:${group.id}`
-    try {
-      const response = await api.requestCredentialVerification({
-        action,
-        values: dirtyValues,
-        confirmKeyRotation: confirmRotation,
-      })
-      setPending({ kind: 'save', action, values: dirtyValues })
-      setMaskedEmail(response.maskedEmail ?? '')
-      setBootstrap(false)
-      setCode(EMPTY_CODE)
-      setStep('code')
-    } catch (error) {
-      applyRequestError(error)
-    } finally {
-      setBusy(false)
-    }
+    setBootstrap(false)
+    setStep('password')
   }
 
-  async function startDestructive(kind: 'clear' | 'rollback', key: string) {
+  function startSave() {
+    startPassword({
+      kind: 'save',
+      action: `rotateIntegrationCredentials:${group.id}`,
+      values: dirtyValues,
+    })
+  }
+
+  function startDestructive(kind: 'clear' | 'rollback', key: string) {
+    startPassword({ kind, action: `${kind}IntegrationCredential:${key}`, key })
+  }
+
+  // Step 2: the password is checked server-side, then the code goes to SU_EMAIL.
+  async function sendCode() {
+    if (!pending || !password) return
     setBusy(true)
     setErrors({})
     setFormError('')
-    const action = `${kind}IntegrationCredential:${key}`
     try {
-      const response = await api.requestCredentialVerification({ action })
-      setPending({ kind, action, key })
+      const response = await api.requestCredentialVerification({
+        action: pending.action,
+        password,
+        ...(pending.kind === 'save'
+          ? { values: pending.values, confirmKeyRotation: confirmRotation }
+          : {}),
+      })
       setMaskedEmail(response.maskedEmail ?? '')
       setBootstrap(false)
       setCode(EMPTY_CODE)
+      setPassword('')
       setStep('code')
     } catch (error) {
-      setFormError(messageOf(error, 'A verification code could not be sent.'))
+      const data = (
+        error as { response?: { data?: { code?: string; fields?: Record<string, string> } } }
+      ).response?.data
+      if (data?.code === 'PASSWORD_INVALID' || data?.code === 'PASSWORD_LOCKED') {
+        setFormError(messageOf(error, 'That password was not accepted.'))
+      } else if (data?.code === 'MAILER_NOT_CONFIGURED' || data?.fields) {
+        applyRequestError(error)
+        // Field errors belong on the edit step, where the fields are shown.
+        if (data?.fields) setStep('edit')
+      } else {
+        setFormError(messageOf(error, 'A verification code could not be sent.'))
+      }
     } finally {
       setBusy(false)
     }
@@ -248,13 +260,6 @@ export function CredentialDialog({
                 </div>
               ) : null}
 
-              {noAdminEmail ? (
-                <p role="status" className="text-[12px] text-signal">
-                  Your admin account has no email address, so a verification code can’t be sent. Add
-                  an email to this account first.
-                </p>
-              ) : null}
-
               {formError ? (
                 <p role="alert" className="text-[12px] text-destructive">
                   {formError}
@@ -321,7 +326,7 @@ export function CredentialDialog({
                                   variant="ghost"
                                   size="xs"
                                   disabled={busy}
-                                  onClick={() => void startDestructive('rollback', entry.key)}
+                                  onClick={() => startDestructive('rollback', entry.key)}
                                 >
                                   Restore previous value
                                 </Button>
@@ -332,7 +337,7 @@ export function CredentialDialog({
                                 size="xs"
                                 className="text-destructive"
                                 disabled={busy}
-                                onClick={() => void startDestructive('clear', entry.key)}
+                                onClick={() => startDestructive('clear', entry.key)}
                               >
                                 Revert to .env
                               </Button>
@@ -356,13 +361,57 @@ export function CredentialDialog({
               </Button>
               <Button
                 type="button"
-                disabled={busy || !dirty || rotationBlocked || noAdminEmail}
-                onClick={() => void startSave()}
+                disabled={busy || !dirty || rotationBlocked}
+                onClick={startSave}
               >
+                Save and verify
+              </Button>
+            </DialogFooter>
+          </>
+        ) : step === 'password' ? (
+          <>
+            <div className="grid gap-3">
+              <p className="text-[12.5px] text-ink-soft">
+                Enter the superuser password. We then email a six-digit code to the superuser
+                address.
+              </p>
+              <Input
+                type="password"
+                autoComplete="off"
+                autoFocus
+                aria-label="Superuser password"
+                placeholder="Superuser password"
+                value={password}
+                disabled={busy}
+                onChange={(event) => setPassword(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void sendCode()
+                }}
+              />
+              {formError ? (
+                <p role="alert" className="text-[12px] text-destructive">
+                  {formError}
+                </p>
+              ) : null}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={() => {
+                  setStep('edit')
+                  setPassword('')
+                  setFormError('')
+                }}
+              >
+                Back
+              </Button>
+              <Button type="button" disabled={busy || !password} onClick={() => void sendCode()}>
                 {busy ? (
                   <LoaderCircle className="animate-spin" size={15} aria-hidden="true" />
                 ) : null}
-                {busy ? 'Checking...' : 'Save and verify'}
+                {busy ? 'Checking...' : 'Send code'}
               </Button>
             </DialogFooter>
           </>
@@ -372,7 +421,7 @@ export function CredentialDialog({
               <p className="text-[12.5px] text-ink-soft">
                 {bootstrap
                   ? 'Email is failing right now, so we can’t send a verification code. This change will be saved and marked unverified in the audit log.'
-                  : `We sent a six-digit code to ${maskedEmail || 'your admin email'}. It expires in 10 minutes.`}
+                  : `We sent a six-digit code to ${maskedEmail || 'the superuser email'}. It expires in 10 minutes.`}
               </p>
 
               {bootstrap ? (
@@ -410,7 +459,7 @@ export function CredentialDialog({
                 variant="outline"
                 disabled={busy}
                 onClick={() => {
-                  setStep('edit')
+                  setStep(bootstrap ? 'edit' : 'password')
                   setFormError('')
                 }}
               >

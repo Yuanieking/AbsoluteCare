@@ -70,6 +70,7 @@ export async function getIntegrationCredentials() {
 
 export async function requestCredentialVerification(payload: {
   action: string
+  password: string
   values?: Record<string, string>
   confirmKeyRotation?: boolean
 }) {

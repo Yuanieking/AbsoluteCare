@@ -10,6 +10,7 @@ import * as api from './api'
 import { isSectionKey, sectionMap, sections } from './config'
 import { CredentialDialog } from './CredentialDialog'
 import { SaveBar } from './fields'
+import { SuperuserVerifyDialog } from './SuperuserVerifyDialog'
 import { useSettingsBundle } from './queries'
 import { RestartBanner, type RestartPhase } from './RestartBanner'
 import { AuditSection } from './AuditLog'
@@ -45,6 +46,7 @@ export default function SettingsPage() {
   const [drafts, setDrafts] = useState<Partial<Record<SettingsSectionKey, SectionValue>>>({})
   const [saving, setSaving] = useState(false)
   const [credentialGroup, setCredentialGroup] = useState('')
+  const [pendingDisable, setPendingDisable] = useState<keyof IntegrationValues | null>(null)
   const [restartPhase, setRestartPhase] = useState<RestartPhase>('idle')
   const [restartMessage, setRestartMessage] = useState('')
   const [downloadingHandover, setDownloadingHandover] = useState(false)
@@ -123,10 +125,21 @@ export default function SettingsPage() {
     }
   }
 
-  async function commitIntegration(field: keyof IntegrationValues, enabled: boolean) {
+  async function commitIntegration(
+    field: keyof IntegrationValues,
+    enabled: boolean,
+    verificationToken?: string,
+  ) {
+    if (!enabled && guardedDisableActions[field] && !verificationToken) {
+      setPendingDisable(field)
+      return
+    }
     setSaving(true)
     try {
-      await api.updateIntegration(integrationKeys[field], { enabled })
+      await api.updateIntegration(integrationKeys[field], {
+        enabled,
+        ...(verificationToken ? { verificationToken } : {}),
+      })
       await bundle.refetch()
       showSuccess('Integration settings updated')
     } catch (error) {
@@ -413,6 +426,20 @@ export default function SettingsPage() {
           </>
         )}
       </div>
+
+      {pendingDisable ? (
+        <SuperuserVerifyDialog
+          action={guardedDisableActions[pendingDisable] ?? ''}
+          title={`Turn off ${pendingDisable === 'googleAuthEnabled' ? 'Google sign-in' : 'reCAPTCHA'}`}
+          description="This weakens sign-in protection, so it needs superuser verification."
+          onClose={() => setPendingDisable(null)}
+          onVerified={async (token) => {
+            const field = pendingDisable
+            setPendingDisable(null)
+            await commitIntegration(field, false, token)
+          }}
+        />
+      ) : null}
 
       {openGroup ? (
         <CredentialDialog

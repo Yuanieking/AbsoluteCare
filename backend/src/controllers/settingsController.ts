@@ -1,7 +1,12 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
-import { JWT_SECRET, TEST_EMAIL_RECIPIENT } from "../config/env.js";
+import {
+  JWT_SECRET,
+  SU_EMAIL,
+  SU_PASS,
+  TEST_EMAIL_RECIPIENT,
+} from "../config/env.js";
 import {
   getMailerHealth,
   sendEmail,
@@ -12,6 +17,7 @@ import {
   verificationCode as renderVerificationCode,
 } from "../emails/templates/index.js";
 import {
+  consumeVerification,
   createVerificationCode,
   deleteVerificationCode,
   expireOpenVerifications,
@@ -56,7 +62,11 @@ import {
   triggerRestart,
 } from "../services/restartService.js";
 import { testDriveConnection } from "../services/driveService.js";
-import { parseAction, trimValues } from "../services/verificationActions.js";
+import {
+  parseAction,
+  trimValues,
+  verifySettingsToken,
+} from "../services/verificationActions.js";
 import { isValidEmail } from "../utils/validators.js";
 
 interface HealthEntry {
@@ -87,6 +97,40 @@ type IntegrationKey = keyof typeof integrationFields;
 
 function hashValue(value: string): string {
   return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+// ** Superuser password gate for requesting a verification code. Failed
+// ** attempts are counted per admin so SU_PASS cannot be brute-forced.
+const PASSWORD_WINDOW_MS = 15 * 60 * 1000;
+const PASSWORD_MAX_FAILURES = 5;
+const passwordFailures = new Map<string, { count: number; resetAt: number }>();
+
+function passwordLocked(adminId: string): number {
+  const entry = passwordFailures.get(adminId);
+  if (!entry || entry.resetAt <= Date.now()) {
+    passwordFailures.delete(adminId);
+    return 0;
+  }
+  return entry.count >= PASSWORD_MAX_FAILURES ? entry.resetAt : 0;
+}
+
+function recordPasswordFailure(adminId: string): void {
+  const now = Date.now();
+  const entry = passwordFailures.get(adminId);
+  if (!entry || entry.resetAt <= now) {
+    passwordFailures.set(adminId, {
+      count: 1,
+      resetAt: now + PASSWORD_WINDOW_MS,
+    });
+    return;
+  }
+  entry.count += 1;
+}
+
+function superuserPasswordMatches(password: string): boolean {
+  const expected = Buffer.from(hashValue(SU_PASS), "hex");
+  const actual = Buffer.from(hashValue(password), "hex");
+  return crypto.timingSafeEqual(expected, actual);
 }
 
 function integrationKey(key: unknown): string | null {
@@ -230,9 +274,40 @@ export async function patchSettings(
     return;
   }
   const body = (req.body ?? {}) as Record<string, unknown>;
-  const { verificationToken: ignoredVerificationToken, ...sectionBody } = body;
-  void ignoredVerificationToken;
+  const { verificationToken, ...sectionBody } = body;
   const next = validateSettingsSection(section, sectionBody);
+  // ** Turning Google sign-in or reCAPTCHA off through a section save needs the
+  // ** same superuser verification as the integration toggle.
+  const currentSection = (
+    (await getSettings()) as unknown as Record<
+      string,
+      Record<string, unknown> | undefined
+    >
+  )[section];
+  const disableChecks: [string, string][] = [
+    ["googleAuthEnabled", "disable_google_auth"],
+    ["recaptchaEnabled", "disable_recaptcha"],
+  ];
+  let verificationIds: string[] = [];
+  for (const [field, action] of disableChecks) {
+    if (currentSection?.[field] === true && next[field] === false) {
+      const payload = verifySettingsToken(
+        req.user.userId,
+        action,
+        verificationToken,
+      );
+      if (!payload) {
+        res.status(409).json({
+          code: "VERIFICATION_REQUIRED",
+          action,
+          message: "This change needs a verification code.",
+        });
+        return;
+      }
+      if (payload.verificationId)
+        verificationIds = [...verificationIds, payload.verificationId];
+    }
+  }
   if (section === "integrations") {
     const configured = statusMap();
     const requirements: Record<string, boolean> = {
@@ -269,6 +344,7 @@ export async function patchSettings(
     // ** Concurrency: If-Match: "<settings.updatedAt>" guards the shared settings document.
     ifMatch: req.get("If-Match"),
   });
+  for (const id of verificationIds) await consumeVerification(id);
   res.json({
     section: updated.section,
     version: updated.version,
@@ -300,6 +376,30 @@ export async function patchIntegration(
     res.status(409).json({ code: "NOT_CONFIGURED", missing: status.missing });
     return;
   }
+  // ** Disabling sign-in or reCAPTCHA needs the superuser password + email code.
+  const guardedAction =
+    !body.enabled && key === "googleAuth"
+      ? "disable_google_auth"
+      : !body.enabled && key === "recaptcha"
+        ? "disable_recaptcha"
+        : null;
+  let verificationId: string | undefined;
+  if (guardedAction) {
+    const payload = verifySettingsToken(
+      req.user.userId,
+      guardedAction,
+      body.verificationToken,
+    );
+    if (!payload) {
+      res.status(409).json({
+        code: "VERIFICATION_REQUIRED",
+        action: guardedAction,
+        message: "This change needs a verification code.",
+      });
+      return;
+    }
+    verificationId = payload.verificationId;
+  }
   const updated = await setIntegrationFlag(
     field,
     Boolean(body.enabled),
@@ -308,6 +408,7 @@ export async function patchIntegration(
     // ** Concurrency: If-Match: "<settings.updatedAt>" -> 409 STALE_RECORD when stale.
     req.get("If-Match"),
   );
+  await consumeVerification(verificationId);
   res.json(await integrationResponse(key, updated));
 }
 
@@ -389,6 +490,41 @@ export async function requestVerification(
     return;
   }
 
+  if (!SU_PASS || !SU_EMAIL) {
+    res.status(409).json({
+      code: "SU_NOT_CONFIGURED",
+      message:
+        "Superuser verification is not set up. Add SU_EMAIL and SU_PASS to backend/.env and restart the server.",
+    });
+    return;
+  }
+  const lockedUntil = passwordLocked(req.user.userId);
+  if (lockedUntil) {
+    res.status(429).json({
+      code: "PASSWORD_LOCKED",
+      retryAfter: lockedUntil,
+      message: "Too many incorrect passwords. Try again later.",
+    });
+    return;
+  }
+  const password = typeof body.password === "string" ? body.password : "";
+  if (!password) {
+    res.status(400).json({
+      code: "PASSWORD_REQUIRED",
+      message: "Enter the superuser password.",
+    });
+    return;
+  }
+  if (!superuserPasswordMatches(password)) {
+    recordPasswordFailure(req.user.userId);
+    res.status(403).json({
+      code: "PASSWORD_INVALID",
+      message: "That password is incorrect.",
+    });
+    return;
+  }
+  passwordFailures.delete(req.user.userId);
+
   let digest = "";
   if (parsed.kind === "rotate") {
     const trimmed = trimValues(body.values);
@@ -429,12 +565,6 @@ export async function requestVerification(
     parsed.action,
   );
   const admin = await getAdminContact(req.user.userId);
-  if (!admin?.email) {
-    res
-      .status(400)
-      .json({ message: "Your admin account has no email address." });
-    return;
-  }
   const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
   if (recentCount >= 3) {
     res.status(429).json({
@@ -464,10 +594,12 @@ export async function requestVerification(
             ? "disabling reCAPTCHA"
             : "disabling Google sign-in";
   const emailPayload = await renderVerificationCode({
-    email: admin.email,
+    email: SU_EMAIL,
     code,
     action: actionLabel,
-    adminName: `${admin.firstname} ${admin.lastname}`.trim(),
+    adminName: admin
+      ? `${admin.firstname} ${admin.lastname}`.trim()
+      : "Administrator",
   });
   const result = await sendEmail(emailPayload);
   if (!result.sent) {
@@ -480,7 +612,7 @@ export async function requestVerification(
   }
   res.json({
     message: "Verification code sent.",
-    maskedEmail: `${admin.email.slice(0, 2)}***${admin.email.slice(admin.email.indexOf("@"))}`,
+    maskedEmail: `${SU_EMAIL.slice(0, 2)}***${SU_EMAIL.slice(SU_EMAIL.indexOf("@"))}`,
     expiresAt: verification.expiresAt,
     resendAfter: Date.now() + 60 * 1000,
     digest,
@@ -547,6 +679,7 @@ const testableGroups: Record<string, { group: string; health: string }> = {
   googleAuth: { group: "google", health: "google" },
   recaptcha: { group: "recaptcha", health: "recaptcha" },
   googleCalendar: { group: "googleCalendar", health: "calendar" },
+
   email: { group: "email", health: "email" },
 };
 
@@ -671,5 +804,6 @@ export async function getIntegrationHealth(
     drive: { ...drive, ...healthFor("drive") },
     maps: { ...maps, ...healthFor("maps") },
     email: { ...email, ...getMailerHealth() },
+    report,
   });
 }

@@ -49,6 +49,9 @@ const UNMANAGED_KEYS = [
   "CORS_ORIGINS",
   "GOOGLE_REDIRECT_URI",
   "SEED_PASSWORD",
+  "SU_EMAIL",
+  "SU_PASS",
+  "SU_PASSWORD",
   "CREDENTIAL_ENCRYPTION_KEY",
   "ALLOW_SELF_RESTART",
   "INTEGRATION_VALIDATION",
@@ -744,8 +747,8 @@ export async function pruneRetiredCredentials(): Promise<void> {
   try {
     const stale = (await IntegrationCredential.find({
       key: { $nin: [...MANAGED_KEYS] },
-    } as QueryFilter<IntegrationCredentialData>
-      ).select("key")
+    } as QueryFilter<IntegrationCredentialData>)
+      .select("key")
       .lean()) as unknown as Array<{ key: string }> | null;
     const keys = (stale ?? [])
       .map((doc) => String(doc.key || ""))
