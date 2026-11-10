@@ -172,14 +172,25 @@ export default function AppointmentsPage() {
       meta: { label: 'Patient' },
       header: 'Patient',
       accessorFn: (appointment) => patientName(appointment),
-      cell: ({ row }) => <span className="font-medium text-ink">{patientName(row.original)}</span>,
+      cell: ({ row }) => (
+        <span
+          className="block max-w-[11rem] truncate font-medium text-ink"
+          title={patientName(row.original)}
+        >
+          {patientName(row.original)}
+        </span>
+      ),
     },
     {
       id: 'service',
       meta: { label: 'Service' },
       header: 'Service',
       accessorFn: (appointment) => serviceName(appointment),
-      cell: ({ row }) => <span className="text-ink-soft">{serviceName(row.original)}</span>,
+      cell: ({ row }) => (
+        <span className="block max-w-[12rem] whitespace-normal text-ink-soft">
+          {serviceName(row.original)}
+        </span>
+      ),
     },
     {
       id: 'therapist',
@@ -214,7 +225,7 @@ export default function AppointmentsPage() {
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
         <div
-          className="flex flex-wrap justify-end gap-1"
+          className="ml-auto flex max-w-[17rem] flex-wrap justify-end gap-x-0.5 gap-y-0.5"
           onClick={(event) => event.stopPropagation()}
         >
           {actions(row.original).map((action) => {
