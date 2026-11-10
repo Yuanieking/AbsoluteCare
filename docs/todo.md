@@ -22,6 +22,7 @@ Normalized sql
 
 7 integrations
 
-remove qr in the pdf report
-and fix the pdf export layout inconcistency and ovelapping
+
+created at and updated at
+more middleware
 
