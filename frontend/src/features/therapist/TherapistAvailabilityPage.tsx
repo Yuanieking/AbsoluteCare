@@ -226,7 +226,7 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
             </p>
           ) : (
             <p className="text-[12px] text-ink-faint">
-              Saving is blocked while a confirmed appointment sits outside the new hours.
+              Saving is blocked while a pending or confirmed appointment sits outside the new hours.
             </p>
           )}
         </div>

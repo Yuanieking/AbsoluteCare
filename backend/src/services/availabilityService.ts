@@ -147,7 +147,7 @@ interface ConflictingAppointment {
   patient?: { firstname?: string; lastname?: string } | null;
 }
 
-/** Confirmed, still-upcoming appointments that fall outside the proposed schedule. */
+/** Pending or confirmed, still-upcoming appointments that fall outside the proposed schedule. */
 export async function findConflicts(
   therapistId: string,
   days: DayHours[],
@@ -155,7 +155,7 @@ export async function findConflicts(
   if (!days.length) return [];
   const appointments = await Appointment.find({
     therapist: therapistId,
-    status: "confirmed",
+    status: { $in: ["pending", "confirmed"] },
     scheduledStart: { $gte: new Date() },
   } as QueryFilter<AppointmentRecord>)
     .populate("patient", "firstname lastname")
@@ -188,8 +188,8 @@ export async function findConflicts(
 
 export function conflictMessage(count: number): string {
   return count === 1
-    ? "1 confirmed appointment falls outside this schedule. Reschedule or cancel it first."
-    : `${count} confirmed appointments fall outside this schedule. Reschedule or cancel them first.`;
+    ? "1 active appointment falls outside this schedule. Reschedule or cancel it first."
+    : `${count} active appointments fall outside this schedule. Reschedule or cancel them first.`;
 }
 
 export function scheduleConflictPayload(
