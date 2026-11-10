@@ -20,6 +20,12 @@ const tabs: { key: AppointmentTab; label: string }[] = [
   { key: 'previous', label: 'Previous' },
 ]
 
+function openRequest(appointment: Appointment) {
+  return appointment.rescheduleRequest?.status === 'requested'
+    ? appointment.rescheduleRequest
+    : null
+}
+
 export default function AppointmentsPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<AppointmentTab>('pending')
@@ -50,14 +56,34 @@ export default function AppointmentsPage() {
       meta: { label: 'Date' },
       header: 'Date',
       accessorFn: (appointment) => appointment.scheduledStart || appointment.requestedDate || '',
-      cell: ({ row }) => <strong className="font-medium">{appointmentDate(row.original)}</strong>,
+      cell: ({ row }) => {
+        const request = openRequest(row.original)
+        return (
+          <div>
+            <strong className="font-medium">{appointmentDate(row.original)}</strong>
+            {request?.proposedDate ? (
+              <div className="text-[11.5px] text-ink-faint">Requested: {request.proposedDate}</div>
+            ) : null}
+          </div>
+        )
+      },
     },
     {
       id: 'time',
       meta: { label: 'Time' },
       header: 'Time',
       accessorFn: (appointment) => appointment.scheduledStart || appointment.requestedTime || '',
-      cell: ({ row }) => appointmentTime(row.original),
+      cell: ({ row }) => {
+        const request = openRequest(row.original)
+        return (
+          <div>
+            <div>{appointmentTime(row.original)}</div>
+            {request?.proposedTime ? (
+              <div className="text-[11.5px] text-ink-faint">Requested: {request.proposedTime}</div>
+            ) : null}
+          </div>
+        )
+      },
     },
     {
       id: 'service',

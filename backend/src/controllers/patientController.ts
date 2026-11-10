@@ -207,16 +207,22 @@ export async function requestReschedule(
   if (!["pending", "confirmed"].includes(appointment.status)) {
     res
       .status(400)
-      .json({ message: "This appointment can no longer be rescheduled." });
+      .json({
+        message: `A ${appointment.status.replace("_", "-")} appointment can no longer be rescheduled.`,
+      });
     return;
   }
   const currentStart =
     appointment.scheduledStart ||
     manilaDateTime(appointment.requestedDate, appointment.requestedTime);
-  if (
-    currentStart <= new Date() ||
-    !isValidFutureDate(parsed.proposedDate, parsed.proposedTime)
-  ) {
+  if (currentStart <= new Date()) {
+    res.status(400).json({
+      message:
+        "This appointment has already passed and can no longer be rescheduled.",
+    });
+    return;
+  }
+  if (!isValidFutureDate(parsed.proposedDate, parsed.proposedTime)) {
     res
       .status(400)
       .json({ message: "Choose a future reschedule date and time." });

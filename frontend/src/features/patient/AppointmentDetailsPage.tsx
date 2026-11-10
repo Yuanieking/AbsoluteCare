@@ -6,7 +6,12 @@ import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { appointmentDate, appointmentTime, therapistName } from '@/lib/format/patient'
+import {
+  appointmentDate,
+  appointmentTime,
+  isPastAppointment,
+  therapistName,
+} from '@/lib/format/patient'
 import { showPromise } from '@/lib/toast'
 import { therapistInitials } from './format'
 import { useSyncCalendar } from './mutations'
@@ -62,8 +67,11 @@ export default function AppointmentDetailsPage() {
   }
 
   const therapist = appointment.therapist
+  const requestedChange =
+    appointment.rescheduleRequest?.status === 'requested' ? appointment.rescheduleRequest : null
   const canReschedule =
     ['pending', 'confirmed'].includes(appointment.status) &&
+    !isPastAppointment(appointment) &&
     appointment.rescheduleRequest?.status !== 'requested'
 
   return (
@@ -91,10 +99,20 @@ export default function AppointmentDetailsPage() {
         <div>
           <dt className="text-[11.5px] text-ink-faint">Date</dt>
           <dd className="mt-1 text-[14px] font-medium text-ink">{appointmentDate(appointment)}</dd>
+          {requestedChange?.proposedDate ? (
+            <dd className="mt-0.5 text-[12px] text-ink-faint">
+              Requested: {requestedChange.proposedDate}
+            </dd>
+          ) : null}
         </div>
         <div>
           <dt className="text-[11.5px] text-ink-faint">Time</dt>
           <dd className="mt-1 text-[14px] font-medium text-ink">{appointmentTime(appointment)}</dd>
+          {requestedChange?.proposedTime ? (
+            <dd className="mt-0.5 text-[12px] text-ink-faint">
+              Requested: {requestedChange.proposedTime}
+            </dd>
+          ) : null}
         </div>
         <div>
           <dt className="text-[11.5px] text-ink-faint">Duration</dt>

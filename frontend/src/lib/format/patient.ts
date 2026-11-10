@@ -56,6 +56,15 @@ export function appointmentDate(appointment: AppointmentLike): string {
     : appointment.requestedDate || 'Date to be confirmed'
 }
 
+export function isPastAppointment(appointment: AppointmentLike, now = Date.now()): boolean {
+  const start = appointment.scheduledStart
+    ? new Date(appointment.scheduledStart)
+    : appointment.requestedDate
+      ? new Date(`${appointment.requestedDate}T${appointment.requestedTime || '00:00'}:00+08:00`)
+      : null
+  return start && !Number.isNaN(start.getTime()) ? start.getTime() <= now : false
+}
+
 export function appointmentTime(appointment: AppointmentLike): string {
   return appointment.scheduledStart
     ? formatAppointmentTime(appointment.scheduledStart, appointment.scheduledEnd)

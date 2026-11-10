@@ -178,18 +178,27 @@ export async function requestReschedule(
   const appointment = await findOwnAppointment(therapistId, appointmentId);
   if (!appointment)
     return { ok: false, status: 404, message: "Appointment not found." };
-  const currentStart =
-    appointment.scheduledStart ||
-    manilaDateTime(appointment.requestedDate, appointment.requestedTime);
-  if (
-    !["pending", "confirmed"].includes(appointment.status) ||
-    currentStart <= new Date() ||
-    !isValidFutureDate(input.proposedDate, input.proposedTime)
-  )
+  if (!["pending", "confirmed"].includes(appointment.status))
     return {
       ok: false,
       status: 400,
-      message: "Choose a future date and time for an active appointment.",
+      message: `A ${appointment.status.replace("_", "-")} appointment can no longer be rescheduled.`,
+    };
+  const currentStart =
+    appointment.scheduledStart ||
+    manilaDateTime(appointment.requestedDate, appointment.requestedTime);
+  if (currentStart <= new Date())
+    return {
+      ok: false,
+      status: 400,
+      message:
+        "This appointment has already passed and can no longer be rescheduled.",
+    };
+  if (!isValidFutureDate(input.proposedDate, input.proposedTime))
+    return {
+      ok: false,
+      status: 400,
+      message: "Choose a future reschedule date and time.",
     };
   appointment.rescheduleRequest = {
     status: "requested",
