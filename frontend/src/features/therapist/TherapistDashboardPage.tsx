@@ -1,6 +1,5 @@
 import { CalendarDays, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { BarSparkline } from '@/components/charts/sparkline'
 import { ChartCard } from '@/components/domain/ChartCard'
 import { StatTile } from '@/components/domain/StatTile'
 import { StatusBadge } from '@/components/domain/StatusBadge'
@@ -210,23 +209,50 @@ export default function TherapistDashboardPage() {
 
         <ChartCard
           title="Session load"
-          subtitle="Recorded sessions, last 6 months"
+          subtitle="Sessions recorded per month, last 6 months"
           state={series.some((point) => point.value > 0) ? 'ready' : 'empty'}
           emptyMessage="Recorded sessions appear here as you close out visits."
           height={220}
         >
-          <div className="h-[220px] w-full">
-            <BarSparkline
-              data={series}
-              dataKey="value"
-              height={220}
-              barRadius={3}
-              aria-label="Recorded sessions per month"
-            />
-          </div>
+          <SessionLoadBars series={series} />
         </ChartCard>
       </div>
     </PageBody>
+  )
+}
+
+const MONTH_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' })
+
+function monthLabel(key: string) {
+  const [year, month] = key.split('-').map(Number)
+  if (!year || !month) return key
+  return MONTH_FORMAT.format(new Date(Date.UTC(year, month - 1, 1)))
+}
+
+/** Labeled columns: each bar shows its session count above and its month below. */
+function SessionLoadBars({ series }: { series: { label: string; value: number }[] }) {
+  const max = Math.max(...series.map((point) => point.value), 1)
+  return (
+    <ul className="flex h-[220px] items-end gap-2" aria-label="Recorded sessions per month">
+      {series.map((point) => (
+        <li key={point.label} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-1.5">
+          <div className="flex h-[170px] flex-col justify-end gap-1">
+            <span className="text-center text-[12px] font-medium tabular-nums text-ink">
+              {point.value}
+            </span>
+            <span
+              aria-hidden="true"
+              className="block w-full rounded-t-[3px]"
+              style={{
+                height: `${Math.max((point.value / max) * 140, point.value ? 4 : 1)}px`,
+                background: 'var(--color-chart-1)',
+              }}
+            />
+          </div>
+          <span className="text-center text-[11.5px] text-ink-soft">{monthLabel(point.label)}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
