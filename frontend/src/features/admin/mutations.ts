@@ -10,6 +10,7 @@ function useAdminInvalidation() {
       keys.appointments.all,
       keys.services.all,
       keys.sessions.all,
+      keys.specializations.all,
       keys.payments.all,
       keys.reports.all,
       keys.therapists.all,
@@ -60,15 +61,19 @@ export function useSavePerson(role: 'patient' | 'therapist') {
     mutationFn: ({
       id,
       payload,
+      customSpecializations = [],
     }: {
       id: string
       payload: Record<string, unknown> & { specialization?: string[] }
+      /** Custom specializations to keep in the shared list, even when unchecked. */
+      customSpecializations?: string[]
     }) =>
       role === 'patient'
         ? api.updatePatient(id, payload)
         : (async () => {
             const updated = await api.updateTherapist(id, payload)
             await api.updateTherapistSpecialization(id, payload.specialization ?? [])
+            await api.registerSpecializations(customSpecializations)
             return updated
           })(),
     onSuccess: invalidate,

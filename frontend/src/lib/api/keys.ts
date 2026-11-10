@@ -20,6 +20,7 @@ export const keys = {
   reports: domain('reports'),
   services: domain('services'),
   sessions: domain('sessions'),
+  specializations: domain('specializations'),
   settings: domain('settings'),
   therapists: domain('therapists'),
   users: domain('users'),

@@ -107,6 +107,16 @@ export async function updateTherapistSpecialization(id: string, specialization: 
   await axiosInstance.patch(`/admin/therapists/${id}/specialization`, { specialization })
 }
 
+export async function listSpecializations() {
+  const response = await axiosInstance.get('/admin/specializations')
+  return (response.data?.specializations || []) as string[]
+}
+
+export async function registerSpecializations(names: string[]) {
+  const response = await axiosInstance.post('/admin/specializations', { names })
+  return (response.data?.specializations || []) as string[]
+}
+
 export type AvailabilityInput = {
   workingDays: string[]
   workingHoursByDay: DayHours[]

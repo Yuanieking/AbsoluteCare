@@ -135,6 +135,10 @@ export const apiRoutes = {
     updateService: { method: 'patch', path: '/admin/services/:id' },
     removeService: { method: 'delete', path: '/admin/services/:id' },
   },
+  adminSpecializationRoutes: {
+    listSpecializations: { method: 'get', path: '/admin/specializations' },
+    registerSpecializations: { method: 'post', path: '/admin/specializations' },
+  },
   adminRecordRoutes: {
     getPatient: { method: 'get', path: '/admin/patients/:id' },
     updatePatient: { method: 'patch', path: '/admin/patients/:id' },

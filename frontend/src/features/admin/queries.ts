@@ -36,6 +36,14 @@ export function useAdminServices() {
   return useQuery({ queryKey: keys.services.list(scope), queryFn: api.listServices })
 }
 
+export function useSpecializationCatalog(enabled = true) {
+  return useQuery({
+    queryKey: keys.specializations.list(scope),
+    queryFn: api.listSpecializations,
+    enabled,
+  })
+}
+
 export function useAdminSessions(filters: SessionFilters = {}) {
   return useQuery({
     queryKey: keys.sessions.list({ ...scope, ...filters }),

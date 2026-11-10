@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoaderCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { WeeklyAvailabilityEditor } from '@/components/availability/WeeklyAvailabilityEditor'
 import { StatusBadge } from '@/components/domain/StatusBadge'
@@ -16,11 +16,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
 import { formatSchedule, scheduleErrors, scheduleOf, schedulePayload } from '@/lib/availability'
 import { getApiErrorDetails } from '@/lib/api/auth'
 import { showPromise } from '@/lib/toast'
 import { accountStatus, lastAvailabilityAudit, specializationList } from './format'
 import { useSavePerson, useSaveTherapistAvailability } from './mutations'
+import { useSpecializationCatalog } from './queries'
 import { personSchema, type PersonValues } from './schemas'
 import type { PersonRef, UserAccount } from './types'
 
@@ -30,6 +32,18 @@ const specializationOptions = [
   'Occupational Therapist (OTs)',
   'Special Education (SPED) Teachers',
 ]
+
+function customSpecializations(...lists: string[][]) {
+  const seen = new Set(specializationOptions.map((item) => item.toLowerCase()))
+  const result: string[] = []
+  for (const item of lists.flat()) {
+    const key = item.trim().toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    result.push(item.trim())
+  }
+  return result
+}
 
 type Conflict = {
   appointmentId: string
@@ -96,6 +110,14 @@ export function PersonDialog({
     defaultValues: toForm(person),
   })
   const specialization = useWatch({ control: form.control, name: 'specialization' }) ?? []
+  // Custom specializations come from the shared list and stay listed once unchecked.
+  const catalog = useSpecializationCatalog(role === 'therapist').data
+  const [addedOptions, setAddedOptions] = useState(() => specializationList(person))
+  const customOptions = useMemo(
+    () => customSpecializations(catalog ?? [], addedOptions),
+    [catalog, addedOptions],
+  )
+  const [customDraft, setCustomDraft] = useState('')
 
   const [days, setDays] = useState(() => scheduleOf(person))
   const [savedDays, setSavedDays] = useState(days)
@@ -123,7 +145,11 @@ export function PersonDialog({
         ? { dateOfBirth: values.dateOfBirth }
         : { specialization: values.specialization }),
     }
-    const request = save.mutateAsync({ id: person._id, payload })
+    const request = save.mutateAsync({
+      id: person._id,
+      payload,
+      customSpecializations: customOptions,
+    })
     showPromise(request, {
       loading: 'Saving profile...',
       success: 'Profile saved.',
@@ -140,6 +166,19 @@ export function PersonDialog({
       })
     }
   })
+
+  function addCustomSpecialization() {
+    const value = customDraft.trim()
+    if (!value) return
+    const known = [...specializationOptions, ...customOptions, ...specialization]
+    const match = known.find((item) => item.toLowerCase() === value.toLowerCase())
+    const name = match ?? value
+    if (!match) setAddedOptions((current) => [...current, name])
+    if (!specialization.includes(name)) {
+      form.setValue('specialization', [...specialization, name], { shouldDirty: true })
+    }
+    setCustomDraft('')
+  }
 
   async function submitSchedule() {
     if (!person) return
@@ -269,7 +308,7 @@ export function PersonDialog({
                     <div className="grid gap-2 sm:grid-cols-2">
                       {[
                         ...specializationOptions,
-                        ...specialization.filter((item) => !specializationOptions.includes(item)),
+                        ...customOptions,
                       ].map((option) => {
                         const checked = specialization.includes(option)
                         return (
@@ -297,6 +336,30 @@ export function PersonDialog({
                         )
                       })}
                     </div>
+                    {readOnly ? null : (
+                      <div className="flex gap-2">
+                        <Input
+                          value={customDraft}
+                          onChange={(event) => setCustomDraft(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter') return
+                            event.preventDefault()
+                            addCustomSpecialization()
+                          }}
+                          placeholder="Add another specialization"
+                          maxLength={80}
+                          aria-label="Add another specialization"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addCustomSpecialization}
+                          disabled={!customDraft.trim()}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />
