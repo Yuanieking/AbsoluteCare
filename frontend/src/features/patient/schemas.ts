@@ -48,8 +48,16 @@ export const dependentSchema = z.object({
 })
 
 export const profileSchema = z.object({
-  firstName: z.string().trim().min(1, 'First name is required.'),
-  lastName: z.string().trim().min(1, 'Last name is required.'),
+  firstName: z
+    .string()
+    .trim()
+    .min(1, 'First name is required.')
+    .max(80, 'Keep names to 80 characters or fewer.'),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, 'Last name is required.')
+    .max(80, 'Keep names to 80 characters or fewer.'),
   phone: z
     .string()
     .trim()
@@ -60,7 +68,7 @@ export const profileSchema = z.object({
       (value) => !value || value <= todayInManila(),
       'Date of birth cannot be in the future.',
     ),
-  address: z.string(),
+  address: z.string().max(240, 'Keep the address to 240 characters or fewer.'),
   profilePicture: z.string(),
 })
 

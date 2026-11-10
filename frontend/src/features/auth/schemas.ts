@@ -1,10 +1,20 @@
 import { z } from 'zod'
-import { EMAIL_ERROR, PHONE_ERROR, isValidEmail, isValidPhone } from '@/lib/validation'
+import {
+  EMAIL_ERROR,
+  EMAIL_MAX_LENGTH,
+  PHONE_ERROR,
+  isValidEmail,
+  isValidPhone,
+} from '@/lib/validation'
+
+const NAME_MAX = 80
+const nameMax = `Keep names to ${NAME_MAX} characters or fewer.`
 
 const emailSchema = z
   .string()
   .trim()
   .min(1, EMAIL_ERROR)
+  .max(EMAIL_MAX_LENGTH, EMAIL_ERROR)
   .refine((value) => isValidEmail(value), EMAIL_ERROR)
 
 export const loginSchema = z.object({
@@ -15,8 +25,8 @@ export const loginSchema = z.object({
 export const signupSchema = (minLength: number) =>
   z
     .object({
-      firstName: z.string().trim().min(1, 'First name is required'),
-      lastName: z.string().trim().min(1, 'Last name is required'),
+      firstName: z.string().trim().min(1, 'First name is required').max(NAME_MAX, nameMax),
+      lastName: z.string().trim().min(1, 'Last name is required').max(NAME_MAX, nameMax),
       phone: z
         .string()
         .trim()
@@ -46,8 +56,8 @@ export const resetPasswordSchema = (minLength: number) =>
     })
 
 export const googleSetupSchema = z.object({
-  firstName: z.string().trim().min(1, 'First name is required'),
-  lastName: z.string().trim().min(1, 'Last name is required'),
+  firstName: z.string().trim().min(1, 'First name is required').max(NAME_MAX, nameMax),
+  lastName: z.string().trim().min(1, 'Last name is required').max(NAME_MAX, nameMax),
   terms: z.boolean().refine((value) => value, 'Accept the terms before creating your account.'),
 })
 

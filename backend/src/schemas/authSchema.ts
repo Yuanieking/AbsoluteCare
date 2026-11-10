@@ -19,8 +19,16 @@ const phone = z
 
 export const signupSchema = z
   .object({
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
+    firstName: z
+      .string()
+      .trim()
+      .min(1, "First name is required")
+      .max(80, "First name must be 80 characters or fewer"),
+    lastName: z
+      .string()
+      .trim()
+      .min(1, "Last name is required")
+      .max(80, "Last name must be 80 characters or fewer"),
     email,
     password: z.string().min(1, "Password is required"),
     confirmPassword: z.string(),
@@ -42,11 +50,24 @@ export const loginSchema = z.object({
 });
 
 export const profileUpdateSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required").max(80),
-  lastName: z.string().trim().min(1, "Last name is required").max(80),
+  firstName: z
+    .string()
+    .trim()
+    .min(1, "First name is required")
+    .max(80, "First name must be 80 characters or fewer"),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, "Last name is required")
+    .max(80, "Last name must be 80 characters or fewer"),
   phone: phone.optional().default(""),
   dateOfBirth: z.string().trim().max(30).nullable().optional(),
-  address: z.string().trim().max(240).optional().default(""),
+  address: z
+    .string()
+    .trim()
+    .max(240, "Address must be 240 characters or fewer")
+    .optional()
+    .default(""),
   profilePicture: z.string().trim().max(2_000_000).optional().default(""),
 });
 

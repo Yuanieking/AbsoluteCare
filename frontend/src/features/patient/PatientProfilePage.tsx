@@ -126,6 +126,7 @@ export default function PatientProfilePage() {
   const display = editing ? watched : toForm(profile)
   const avatarInitials =
     display.firstName || display.lastName ? initials(display.firstName, display.lastName) : 'AC'
+  const fullName = `${display.firstName || 'Patient'} ${display.lastName}`.trim()
 
   return (
     <PageBody>
@@ -204,7 +205,9 @@ export default function PatientProfilePage() {
 
               <div className="rounded-md bg-sunk p-3 sm:col-span-2">
                 <p className="text-[11.5px] text-ink-faint">Email</p>
-                <p className="mt-0.5 text-[13px] text-ink">{profile?.email || 'Not provided'}</p>
+                <p className="mt-0.5 text-[13px] text-ink [overflow-wrap:anywhere]">
+                  {profile?.email || 'Not provided'}
+                </p>
                 <p className="mt-1 text-[11.5px] text-ink-soft">
                   {isGoogleAccount ? 'Managed by Google' : 'Email changes require verification.'}
                 </p>
@@ -234,14 +237,22 @@ export default function PatientProfilePage() {
           </Form>
         ) : (
           <div className="grid gap-5 sm:grid-cols-[200px_minmax(0,1fr)]">
-            <div className="flex flex-col items-start gap-2">
+            <div className="flex min-w-0 flex-col items-start gap-2">
               <Avatar picture={display.profilePicture} fallback={avatarInitials} large />
-              <strong className="text-[14px] text-ink">
-                {display.firstName || 'Patient'} {display.lastName}
+              <strong
+                className="line-clamp-3 max-w-full text-[14px] text-ink [overflow-wrap:anywhere]"
+                title={fullName}
+              >
+                {fullName}
               </strong>
-              <span className="text-[12px] text-ink-soft">{profile?.email || 'Not provided'}</span>
+              <span
+                className="line-clamp-2 max-w-full text-[12px] text-ink-soft [overflow-wrap:anywhere]"
+                title={profile?.email}
+              >
+                {profile?.email || 'Not provided'}
+              </span>
             </div>
-            <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <dl className="grid min-w-0 gap-x-6 gap-y-3 sm:grid-cols-2">
               <Detail label="First name" value={display.firstName} />
               <Detail label="Last name" value={display.lastName} />
               <Detail label="Phone" value={display.phone} />
@@ -286,9 +297,14 @@ function Avatar({
 
 function Detail({ label, value }: { label: string; value?: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className="text-[11.5px] text-ink-faint">{label}</dt>
-      <dd className="mt-0.5 text-[13px] text-ink">{value || 'Not provided'}</dd>
+      <dd
+        className="mt-0.5 line-clamp-3 text-[13px] text-ink [overflow-wrap:anywhere]"
+        title={value || undefined}
+      >
+        {value || 'Not provided'}
+      </dd>
     </div>
   )
 }

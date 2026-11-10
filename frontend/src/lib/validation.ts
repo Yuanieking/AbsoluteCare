@@ -1,12 +1,16 @@
 export const EMAIL_ERROR = 'Enter a valid email address, e.g. name@gmail.com'
 export const PHONE_ERROR = 'Enter a valid mobile number (e.g. 09171234567)'
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+export const EMAIL_MAX_LENGTH = 254
+const emailPattern =
+  /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
 const phonePattern = /^(?:09\d{9}|\+639\d{9})$/
 
 export function isValidEmail(value: unknown): boolean {
   const email = String(value || '').trim()
-  return email.split('@').length === 2 && emailPattern.test(email)
+  if (email.length > EMAIL_MAX_LENGTH) return false
+  const [local = ''] = email.split('@')
+  return local.length <= 64 && emailPattern.test(email)
 }
 
 export function sanitizePhone(value: unknown): string {
