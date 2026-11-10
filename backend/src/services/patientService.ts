@@ -211,6 +211,7 @@ export async function createAppointment(input: {
     requestedTime: input.requestedTime,
     notes: input.notes,
     status: "pending",
+    payment: { amount: input.service.fee },
     serviceSnapshot: {
       name: input.service.name,
       duration: input.service.duration,
