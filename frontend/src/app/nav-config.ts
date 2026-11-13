@@ -308,6 +308,36 @@ export function getRoleNav(role: string | null | undefined): RoleNav {
   return roleNavs[role as NavRole] ?? secretaryNav
 }
 
+/** Staff areas an admin can switch on or off per role in Settings. */
+const gatedSections: Record<string, 'documents'> = { documents: 'documents' }
+
+export type NavRoleAccess = {
+  secretary: { documents: boolean }
+  therapist: { documents: boolean }
+}
+
+export function hasAreaAccess(
+  role: string | null | undefined,
+  area: 'documents',
+  access: NavRoleAccess | undefined,
+): boolean {
+  if (role === 'secretary' || role === 'therapist') return access?.[role]?.[area] !== false
+  return true
+}
+
+/** Drops sections the admin has switched off for this role. */
+export function filterNavByAccess(
+  nav: RoleNav,
+  role: string | null | undefined,
+  access: NavRoleAccess | undefined,
+): RoleNav {
+  const sections = nav.sections.filter((section) => {
+    const area = gatedSections[section.key]
+    return !area || hasAreaAccess(role, area, access)
+  })
+  return sections.length === nav.sections.length ? nav : { ...nav, sections }
+}
+
 /** Sections bucketed by group, preserving declaration order within each. */
 export function groupSections(sections: NavSection[]): { group: string; items: NavSection[] }[] {
   const groups: { group: string; items: NavSection[] }[] = []

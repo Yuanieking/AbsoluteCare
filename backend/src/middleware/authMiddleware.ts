@@ -2,6 +2,11 @@ import jwt from "jsonwebtoken";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { JWT_SECRET } from "../config/env.js";
 import User from "../models/userModel.js";
+import {
+  getSettings,
+  roleHasAccess,
+  type AccessArea,
+} from "../services/settingsService.js";
 import type { AuthUser } from "../types/api.js";
 
 export const protectRoute = async (
@@ -95,5 +100,24 @@ export function requireRole(...roles: string[]): RequestHandler {
     }
     req.user.role = user.role;
     next();
+  };
+}
+
+// Runs after requireRole: admins always pass, other staff roles pass only
+// while the admin has switched the area on in Settings.
+export function requireAccess(area: AccessArea): RequestHandler {
+  return async (req, res, next) => {
+    try {
+      const settings = await getSettings();
+      if (!roleHasAccess(settings, String(req.user.role), area)) {
+        res.status(403).json({
+          message: "Your role does not have access to this area.",
+        });
+        return;
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
   };
 }

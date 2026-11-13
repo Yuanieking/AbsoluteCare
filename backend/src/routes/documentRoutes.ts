@@ -1,5 +1,10 @@
 import { Router, type RequestHandler } from "express";
-import { protectRoute, requireRole } from "../middleware/authMiddleware.js";
+import {
+  protectRoute,
+  requireAccess,
+  requireRole,
+} from "../middleware/authMiddleware.js";
+import { objectIdParam } from "../middleware/validateObjectId.js";
 import {
   createDocumentHandler,
   downloadDocumentHandler,
@@ -15,7 +20,12 @@ const asyncRoute =
     Promise.resolve(handler(req, res, next)).catch(next);
 
 const router = Router();
-router.use(protectRoute, requireRole("admin", "secretary", "therapist"));
+router.param("id", objectIdParam);
+router.use(
+  protectRoute,
+  requireRole("admin", "secretary", "therapist"),
+  requireAccess("documents"),
+);
 router.post("/", asyncRoute(createDocumentHandler));
 router.get("/", asyncRoute(listDocumentsHandler));
 router.get("/:id", asyncRoute(getDocumentHandler));

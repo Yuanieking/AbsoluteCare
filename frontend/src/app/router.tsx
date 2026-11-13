@@ -5,7 +5,7 @@ import AppLoader from '@/components/feedback/AppLoader'
 import { PageSkeletonFallback, type SkeletonVariant } from '@/components/feedback/Skeletons'
 import PatientLayout from '@/components/layout/PatientLayout'
 import StaffLayout from '@/components/layout/StaffLayout'
-import { ProtectedRoute, PublicOnlyRoute } from '@/app/routes/ProtectedRoute'
+import { AreaGuard, ProtectedRoute, PublicOnlyRoute } from '@/app/routes/ProtectedRoute'
 import RouteErrorBoundary from '@/app/routes/RouteErrorBoundary'
 import { useAuth } from '@/features/auth/session'
 
@@ -273,7 +273,14 @@ export const router = createBrowserRouter([
         path: 'documents',
         ...createRoleRoutes(
           ['admin', 'secretary', 'therapist'],
-          [{ index: true, element: shellRoute(<StaffDocumentsPage />) }],
+          [
+            {
+              index: true,
+              element: (
+                <AreaGuard area="documents">{shellRoute(<StaffDocumentsPage />)}</AreaGuard>
+              ),
+            },
+          ],
         ),
       },
       { path: 'secretary', ...createRoleRoutes('secretary', secretaryChildren) },

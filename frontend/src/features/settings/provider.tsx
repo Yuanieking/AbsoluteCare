@@ -2,6 +2,11 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { getPublicSettings } from './api'
 
+export type RoleAccess = {
+  secretary: { documents: boolean; driveStatus: boolean }
+  therapist: { documents: boolean }
+}
+
 export type PublicSettings = {
   googleAuthEnabled: boolean
   patientRegistrationEnabled: boolean
@@ -21,6 +26,7 @@ export type PublicSettings = {
   phone: string
   email: string
   termsVersion: string
+  roleAccess: RoleAccess
   passwordMinLength: number
   currency: string
   timezone: string
@@ -50,6 +56,10 @@ const defaults: PublicSettings = {
   phone: '',
   email: '',
   termsVersion: '1.0',
+  roleAccess: {
+    secretary: { documents: true, driveStatus: true },
+    therapist: { documents: true },
+  },
   passwordMinLength: 8,
   currency: 'PHP',
   timezone: 'Asia/Manila',

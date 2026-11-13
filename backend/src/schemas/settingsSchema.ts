@@ -26,6 +26,9 @@ const sectionSchemas = {
       maxLoginAttempts: bounded(3, 10),
       lockoutMinutes: bounded(1, 1440),
       termsVersion: z.string().trim().min(1).max(30),
+      secretaryCanOpenDocuments: boolean,
+      secretaryCanViewDriveStatus: boolean,
+      therapistCanOpenDocuments: boolean,
     })
     .strict(),
   booking: z

@@ -1,5 +1,9 @@
 import { Router, type RequestHandler } from "express";
-import { protectRoute, requireRole } from "../middleware/authMiddleware.js";
+import {
+  protectRoute,
+  requireAccess,
+  requireRole,
+} from "../middleware/authMiddleware.js";
 import {
   connectDrive,
   disconnectDrive,
@@ -25,6 +29,7 @@ router.get(
   "/google-drive/status",
   protectRoute,
   requireRole("admin", "secretary"),
+  requireAccess("driveStatus"),
   asyncRoute(driveStatus),
 );
 router.post(

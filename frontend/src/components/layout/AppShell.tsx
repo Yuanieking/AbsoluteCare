@@ -1,10 +1,11 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Menu, Search } from 'lucide-react'
 import Logo from '@/components/brand/Logo'
 import { TopProgressBar } from '@/components/feedback/TopProgressBar'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
-import { getActiveTab, getRoleNav, matchSection } from '@/app/nav-config'
+import { filterNavByAccess, getActiveTab, getRoleNav, matchSection } from '@/app/nav-config'
+import { useSettings } from '@/features/settings/provider'
 import { cn } from '@/lib/utils'
 import { CommandPalette } from './CommandPalette'
 import { Rail, RailNav } from './Rail'
@@ -30,7 +31,11 @@ type AppShellProps = {
 
 export function AppShell({ role, context, actions, badges, children }: AppShellProps) {
   const location = useLocation()
-  const nav = getRoleNav(role)
+  const { settings } = useSettings()
+  const nav = useMemo(
+    () => filterNavByAccess(getRoleNav(role), role, settings.roleAccess),
+    [role, settings.roleAccess],
+  )
   const section = matchSection(nav, location.pathname)
   const activeTab = getActiveTab(section, location.search)
   const [collapsed, setCollapsed] = useState(readCollapsed)

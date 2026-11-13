@@ -20,6 +20,9 @@ export interface AuthSettings {
   maxLoginAttempts: number;
   lockoutMinutes: number;
   termsVersion: string;
+  secretaryCanOpenDocuments: boolean;
+  secretaryCanViewDriveStatus: boolean;
+  therapistCanOpenDocuments: boolean;
 }
 
 export interface BookingSettings {
@@ -134,6 +137,9 @@ const appSettingSchema = new mongoose.Schema<AppSetting>(
       maxLoginAttempts: { type: Number, min: 3, max: 10, default: 5 },
       lockoutMinutes: { type: Number, min: 1, max: 1440, default: 15 },
       termsVersion: { type: String, default: "1.0" },
+      secretaryCanOpenDocuments: { type: Boolean, default: true },
+      secretaryCanViewDriveStatus: { type: Boolean, default: true },
+      therapistCanOpenDocuments: { type: Boolean, default: true },
     },
     booking: {
       onlineBookingEnabled: { type: Boolean, default: true },

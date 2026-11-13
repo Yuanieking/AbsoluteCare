@@ -32,6 +32,9 @@ export type AuthValues = {
   maxLoginAttempts: number
   lockoutMinutes: number
   termsVersion: string
+  secretaryCanOpenDocuments: boolean
+  secretaryCanViewDriveStatus: boolean
+  therapistCanOpenDocuments: boolean
 }
 
 export type NotificationsValues = {

@@ -1,6 +1,9 @@
+import type { ReactNode } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import AppLoader from '@/components/feedback/AppLoader'
+import { hasAreaAccess } from '@/app/nav-config'
 import { useAuth } from '@/features/auth/session'
+import { useSettings } from '@/features/settings/provider'
 import { getDashboardPath, isReturnablePath } from '@/lib/dashboard-path'
 
 export function ProtectedRoute({ allowedRoles }: { allowedRoles?: string[] }) {
@@ -34,6 +37,18 @@ export function ProtectedRoute({ allowedRoles }: { allowedRoles?: string[] }) {
   }
 
   return <Outlet />
+}
+
+/** Sends staff away from an area the admin has switched off for their role. */
+export function AreaGuard({ area, children }: { area: 'documents'; children: ReactNode }) {
+  const { user } = useAuth()
+  const { settings } = useSettings()
+
+  if (user && !hasAreaAccess(user.role, area, settings.roleAccess)) {
+    return <Navigate replace to={getDashboardPath(user)} />
+  }
+
+  return children
 }
 
 export function PublicOnlyRoute() {

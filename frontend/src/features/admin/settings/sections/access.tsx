@@ -1,4 +1,4 @@
-import { KeyRound } from 'lucide-react'
+import { KeyRound, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { sectionMap } from '../config'
 import {
@@ -12,6 +12,15 @@ import {
   TextInput,
 } from '../fields'
 import type { AuthValues } from '../types'
+
+function FixedAccess() {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-ink-soft">
+      <Lock size={13} aria-hidden="true" />
+      Always on
+    </span>
+  )
+}
 
 export function AuthSection({
   value,
@@ -124,6 +133,55 @@ export function AuthSection({
             onChange={(next) => update('termsVersion', next)}
             className="w-32"
           />
+        </SettingRow>
+      </SettingsCard>
+
+      <SettingsCard
+        title="Roles and permissions"
+        description="Role-based access control (RBAC) is active. Choose which shared areas each staff role can open. The server enforces this on every request."
+        footer="Roles are assigned in Users. Save to apply changes."
+      >
+        <SettingRow
+          label="Admin"
+          helper="Full access to every area. Locked so the clinic can't lose its own admin access."
+        >
+          <FixedAccess />
+        </SettingRow>
+        <SettingRow
+          label="Secretary: Documents"
+          helper="Generate, view, and download clinic documents. The front desk, schedule, and payments are always available."
+        >
+          <SwitchRow
+            label="Secretary can open Documents"
+            checked={value.secretaryCanOpenDocuments}
+            onChange={(next) => update('secretaryCanOpenDocuments', next)}
+          />
+        </SettingRow>
+        <SettingRow
+          label="Secretary: Google Drive status"
+          helper="See whether the clinic Google Drive is connected. Connecting and disconnecting stays admin only."
+        >
+          <SwitchRow
+            label="Secretary can view Google Drive status"
+            checked={value.secretaryCanViewDriveStatus}
+            onChange={(next) => update('secretaryCanViewDriveStatus', next)}
+          />
+        </SettingRow>
+        <SettingRow
+          label="Therapist: Documents"
+          helper="Generate, view, and download clinic documents. Appointments, availability, and session records are always available."
+        >
+          <SwitchRow
+            label="Therapist can open Documents"
+            checked={value.therapistCanOpenDocuments}
+            onChange={(next) => update('therapistCanOpenDocuments', next)}
+          />
+        </SettingRow>
+        <SettingRow
+          label="Patient"
+          helper="Own dependents, appointments, sessions, and notifications only."
+        >
+          <FixedAccess />
         </SettingRow>
       </SettingsCard>
 

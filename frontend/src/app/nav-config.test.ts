@@ -1,6 +1,27 @@
 import { LayoutGrid } from 'lucide-react'
 import { expect, test } from 'vitest'
-import { getActiveTab, getRoleNav, matchSection, type NavSection } from './nav-config'
+import {
+  filterNavByAccess,
+  getActiveTab,
+  getRoleNav,
+  hasAreaAccess,
+  matchSection,
+  type NavSection,
+} from './nav-config'
+
+const off = { secretary: { documents: false }, therapist: { documents: false } }
+const on = { secretary: { documents: true }, therapist: { documents: true } }
+
+test('switched-off areas disappear from staff navigation only', () => {
+  const keys = (role: string, access: typeof on) =>
+    filterNavByAccess(getRoleNav(role), role, access).sections.map((section) => section.key)
+  expect(keys('secretary', off)).not.toContain('documents')
+  expect(keys('therapist', off)).not.toContain('documents')
+  expect(keys('secretary', on)).toContain('documents')
+  expect(keys('admin', off)).toContain('documents')
+  expect(hasAreaAccess('admin', 'documents', off)).toBe(true)
+  expect(hasAreaAccess('therapist', 'documents', undefined)).toBe(true)
+})
 
 test('the longest section path wins over a shared prefix', () => {
   const nav = getRoleNav('admin')

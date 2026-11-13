@@ -108,6 +108,46 @@ export function isReportGenerationEnabled(
   return integrations?.reportGenerationEnabled !== false;
 }
 
+export type AccessArea = "documents" | "driveStatus";
+
+export interface RoleAccess {
+  secretary: { documents: boolean; driveStatus: boolean };
+  therapist: { documents: boolean };
+}
+
+// Installs written before role access existed have no stored value, so only
+// an explicit false removes access.
+export function roleAccess(
+  settings: AppSettingData | null | undefined,
+): RoleAccess {
+  const auth = settings?.auth as unknown as
+    | Record<string, unknown>
+    | undefined;
+  return {
+    secretary: {
+      documents: auth?.secretaryCanOpenDocuments !== false,
+      driveStatus: auth?.secretaryCanViewDriveStatus !== false,
+    },
+    therapist: {
+      documents: auth?.therapistCanOpenDocuments !== false,
+    },
+  };
+}
+
+// Admin always has full access; patients never use staff areas.
+export function roleHasAccess(
+  settings: AppSettingData | null | undefined,
+  role: string,
+  area: AccessArea,
+): boolean {
+  if (role === "admin") return true;
+  const access = roleAccess(settings) as unknown as Record<
+    string,
+    Record<string, boolean> | undefined
+  >;
+  return access[role]?.[area] === true;
+}
+
 export function isRecaptchaRequired(
   settings: AppSettingData | null | undefined,
 ): boolean {
@@ -145,6 +185,7 @@ export function publicSettings(
     phone: settings.general.phone,
     email: settings.general.email,
     termsVersion: settings.auth.termsVersion,
+    roleAccess: roleAccess(settings),
     passwordMinLength: settings.auth.passwordMinLength,
     currency: settings.general.currency,
     timezone: settings.general.timezone,
