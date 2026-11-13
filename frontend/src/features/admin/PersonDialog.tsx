@@ -306,10 +306,7 @@ export function PersonDialog({
                   <FormItem className="sm:col-span-2">
                     <FormLabel>Specializations</FormLabel>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      {[
-                        ...specializationOptions,
-                        ...customOptions,
-                      ].map((option) => {
+                      {[...specializationOptions, ...customOptions].map((option) => {
                         const checked = specialization.includes(option)
                         return (
                           <label

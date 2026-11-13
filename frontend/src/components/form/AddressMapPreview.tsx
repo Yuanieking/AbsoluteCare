@@ -51,34 +51,32 @@ export function AddressMapPreview({
     let cancelled = false
     let dispose: (() => void) | undefined
     // Leaflet is only needed here, so keep it out of the main bundle.
-    void Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]).then(
-      ([leaflet]) => {
-        if (cancelled || !container.current) return
-        const { map, tileLayer, marker, divIcon } = leaflet
-        const center: [number, number] = [point.lat, point.lng]
-        const instance = map(container.current, {
-          center,
-          zoom: 16,
-          scrollWheelZoom: false,
-        })
-        tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(instance)
-        // A CSS-drawn pin avoids Leaflet's default marker images, which
-        // bundlers cannot resolve.
-        marker(center, {
-          keyboard: false,
-          icon: divIcon({
-            className: '',
-            iconSize: [18, 18],
-            html: '<span class="block size-[18px] rounded-full border-2 border-white bg-primary shadow-md"></span>',
-          }),
-        }).addTo(instance)
-        dispose = () => instance.remove()
-      },
-    )
+    void Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]).then(([leaflet]) => {
+      if (cancelled || !container.current) return
+      const { map, tileLayer, marker, divIcon } = leaflet
+      const center: [number, number] = [point.lat, point.lng]
+      const instance = map(container.current, {
+        center,
+        zoom: 16,
+        scrollWheelZoom: false,
+      })
+      tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(instance)
+      // A CSS-drawn pin avoids Leaflet's default marker images, which
+      // bundlers cannot resolve.
+      marker(center, {
+        keyboard: false,
+        icon: divIcon({
+          className: '',
+          iconSize: [18, 18],
+          html: '<span class="block size-[18px] rounded-full border-2 border-white bg-primary shadow-md"></span>',
+        }),
+      }).addTo(instance)
+      dispose = () => instance.remove()
+    })
     return () => {
       cancelled = true
       dispose?.()

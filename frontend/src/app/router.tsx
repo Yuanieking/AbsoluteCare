@@ -276,9 +276,7 @@ export const router = createBrowserRouter([
           [
             {
               index: true,
-              element: (
-                <AreaGuard area="documents">{shellRoute(<StaffDocumentsPage />)}</AreaGuard>
-              ),
+              element: <AreaGuard area="documents">{shellRoute(<StaffDocumentsPage />)}</AreaGuard>,
             },
           ],
         ),

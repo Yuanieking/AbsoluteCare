@@ -70,7 +70,9 @@ beforeEach(() => {
 describe('Signup session', () => {
   it('Signs in the returned patient and goes straight to their dashboard without a second login', async () => {
     const user = { _id: 'patient-id', role: 'user' as const, email: values.email }
-    vi.mocked(authenticate).mockResolvedValue({ data: { user } } as Awaited<ReturnType<typeof authenticate>>)
+    vi.mocked(authenticate).mockResolvedValue({ data: { user } } as Awaited<
+      ReturnType<typeof authenticate>
+    >)
 
     await state.submit!(values)
 
@@ -85,7 +87,9 @@ describe('Signup session', () => {
     })
     expect(state.setUser).toHaveBeenCalledExactlyOnceWith(user)
     expect(state.navigate).toHaveBeenCalledExactlyOnceWith('/dashboard', { replace: true })
-    expect(state.setUser.mock.invocationCallOrder[0]).toBeLessThan(state.navigate.mock.invocationCallOrder[0]!)
+    expect(state.setUser.mock.invocationCallOrder[0]).toBeLessThan(
+      state.navigate.mock.invocationCallOrder[0]!,
+    )
   })
 
   it('Does not establish a session or navigate when approval is pending', async () => {
@@ -100,7 +104,9 @@ describe('Signup session', () => {
   })
 
   it('Does not navigate when no authenticated user is returned', async () => {
-    vi.mocked(authenticate).mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof authenticate>>)
+    vi.mocked(authenticate).mockResolvedValue({ data: {} } as Awaited<
+      ReturnType<typeof authenticate>
+    >)
 
     await state.submit!(values)
 

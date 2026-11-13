@@ -2,7 +2,10 @@ export function HeroRoom() {
   return (
     <figure className="care-room" aria-labelledby="care-room-caption">
       <svg viewBox="0 0 600 570" fill="none" role="img" aria-labelledby="care-room-title">
-        <title id="care-room-title">An illustration of a sunlit therapy room with a treatment table, exercise equipment, and a plant</title>
+        <title id="care-room-title">
+          An illustration of a sunlit therapy room with a treatment table, exercise equipment, and a
+          plant
+        </title>
         <defs>
           <clipPath id="care-room-window">
             <path d="M321 97a78 78 0 0 1 156 0v184H321V97Z" />
@@ -28,7 +31,12 @@ export function HeroRoom() {
         {[151, 181, 211, 241, 271].map((y) => (
           <g key={y}>
             <path d={`m69 ${y} 116-11`} stroke="#b09b70" strokeWidth="10" strokeLinecap="round" />
-            <path d={`m69 ${y - 2} 116-11`} stroke="#d4c3a0" strokeWidth="3" strokeLinecap="round" />
+            <path
+              d={`m69 ${y - 2} 116-11`}
+              stroke="#d4c3a0"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
           </g>
         ))}
         {/* Treatment table: upholstered top, frame, and grounded legs. */}
@@ -38,22 +46,45 @@ export function HeroRoom() {
         <path fill="#78957c" d="m151 350 246-29 91 52-245 35-92-58z" />
         <path fill="#52705c" d="m151 350 92 58v18l-92-56z" />
         <path fill="#64836a" d="m243 408 245-35v19l-245 34z" />
-        <path fill="#fffefb" d="m148 327 245-28c5-1 10 0 14 3l79 45c9 5 7 17-3 19l-238 34c-5 1-10 0-14-3l-84-49c-9-5-8-19 1-21z" />
-        <path fill="#dce5d8" d="m147 342 84 49c4 3 9 4 14 3l238-34c4-1 7-3 9-6 1 6-2 11-9 12l-238 34c-5 1-10 0-14-3l-84-49c-4-3-7-7-6-11 1 2 3 4 6 5z" />
+        <path
+          fill="#fffefb"
+          d="m148 327 245-28c5-1 10 0 14 3l79 45c9 5 7 17-3 19l-238 34c-5 1-10 0-14-3l-84-49c-9-5-8-19 1-21z"
+        />
+        <path
+          fill="#dce5d8"
+          d="m147 342 84 49c4 3 9 4 14 3l238-34c4-1 7-3 9-6 1 6-2 11-9 12l-238 34c-5 1-10 0-14-3l-84-49c-4-3-7-7-6-11 1 2 3 4 6 5z"
+        />
         <path fill="#dae3d3" d="m159 323 59-7 83 48-61 9z" />
-        <path fill="#edf0e5" d="m170 315 45-5c3 0 5 0 7 2l40 23c5 3 4 9-2 10l-43 6c-3 1-6 0-8-1l-40-24c-5-3-4-10 1-11z" />
+        <path
+          fill="#edf0e5"
+          d="m170 315 45-5c3 0 5 0 7 2l40 23c5 3 4 9-2 10l-43 6c-3 1-6 0-8-1l-40-24c-5-3-4-10 1-11z"
+        />
         <path fill="#b5c8ae" d="m324 312 49-6 68 39-49 7z" />
-        <path stroke="#91ab8d" strokeWidth="2" d="m333 316 48 28m-37-29 48 28m-37-29 48 28m-37-29 48 28" />
+        <path
+          stroke="#91ab8d"
+          strokeWidth="2"
+          d="m333 316 48 28m-37-29 48 28m-37-29 48 28m-37-29 48 28"
+        />
         {/* Storage and exercise equipment. */}
         <path fill="#9caf91" d="m45 386 62-7 39 24-63 9z" />
         <path fill="#a9bc9e" d="m45 386 38 26v65l-38-26z" />
         <path fill="#8ba480" d="m83 412 63-9v65l-63 9z" />
         <path stroke="#6e8d68" strokeWidth="2" d="m83 441 63-9" />
-        <path stroke="#55734e" strokeWidth="3" strokeLinecap="round" d="m107 423 15-2m-15 31 15-2" />
+        <path
+          stroke="#55734e"
+          strokeWidth="3"
+          strokeLinecap="round"
+          d="m107 423 15-2m-15 31 15-2"
+        />
         <path fill="#e8e8d7" d="m56 378 43-5 31 17-44 6z" />
         <path fill="#f7f6e9" d="m57 369 43-5 31 18-44 6z" />
         <circle cx="520" cy="439" r="38" fill="#9caf71" />
-        <path d="M495 412c-14 19-9 46 14 58" stroke="#b8c78d" strokeWidth="5" strokeLinecap="round" />
+        <path
+          d="M495 412c-14 19-9 46 14 58"
+          stroke="#b8c78d"
+          strokeWidth="5"
+          strokeLinecap="round"
+        />
         {/* A potted plant softens the treatment space. */}
         <ellipse cx="525" cy="354" rx="28" ry="9" fill="#b7c7ad" />
         <path fill="#e5ddc3" d="m502 317 46-3-8 39c-7 8-23 9-30 1z" />
@@ -65,8 +96,16 @@ export function HeroRoom() {
         <path fill="#829e6d" d="M520 303c-25 0-43-12-46-34 24 1 40 12 46 34Z" />
       </svg>
       <figcaption id="care-room-caption" className="care-room-caption">
-        <span>Room to move.<br />Space to grow.</span>
-        <span className="care-room-note">Physical therapy & pediatric OT<br />Malaybalay City, Bukidnon</span>
+        <span>
+          Room to move.
+          <br />
+          Space to grow.
+        </span>
+        <span className="care-room-note">
+          Physical therapy & pediatric OT
+          <br />
+          Malaybalay City, Bukidnon
+        </span>
       </figcaption>
     </figure>
   )

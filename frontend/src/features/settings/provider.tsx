@@ -77,7 +77,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         ...current,
         ...data,
         recaptchaSiteKey: data.recaptchaEnabled ? data.recaptchaSiteKey || '' : '',
-
       }))
     } catch {
       setSettings(defaults)

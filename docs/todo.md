@@ -22,7 +22,5 @@ Normalized sql
 
 7 integrations
 
-
 created at and updated at
 more middleware
-
