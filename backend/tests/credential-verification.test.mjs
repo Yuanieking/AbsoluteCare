@@ -40,4 +40,45 @@ test("Consumed verification tokens are refused and Drive checks the Google clien
     GOOGLE_DRIVE_REDIRECT_URI: "https://example.com/cb",
   });
   assert.equal(drive.ok, false);
+
+  const { keyDefinition, validateValue } =
+    await import("../src/config/integrationKeys.js");
+  const site = keyDefinition("RECAPTCHA_SITE_KEY");
+  const good = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+  assert.equal(validateValue(site, good), null);
+  assert.ok(validateValue(site, `asdc${good}`));
+  globalThis.fetch = async () => new Response("{}");
+  const recaptcha = await validateGroup("recaptcha", {
+    RECAPTCHA_SITE_KEY: `asdc${good}`,
+    RECAPTCHA_SECRET_KEY: good,
+  });
+  assert.equal(recaptcha.ok, false);
+  assert.ok(recaptcha.fields.RECAPTCHA_SITE_KEY);
+
+  // A wrong legacy GOOGLE_SECRET_KEY must not pass on the old client secret.
+  const { default: Credential } =
+    await import("../src/models/integrationCredentialModel.js");
+  const { saveCredentials } =
+    await import("../src/services/integrationCredentialService.js");
+  Credential.find = () => ({ lean: async () => [] });
+  process.env.GOOGLE_CLIENT_ID = "123456-abc.apps.googleusercontent.com";
+  process.env.GOOGLE_CLIENT_SECRET = "GOCSPX-good-secret";
+  globalThis.fetch = async (_url, { body }) =>
+    new Response(
+      JSON.stringify({
+        error:
+          body.get("client_secret") === "GOCSPX-good-secret"
+            ? "invalid_grant"
+            : "invalid_client",
+      }),
+    );
+  await assert.rejects(
+    saveCredentials({
+      group: "google",
+      values: { GOOGLE_SECRET_KEY: "GOCSPX-wrong-alias" },
+      adminId: "admin1",
+      dryRun: true,
+    }),
+    { code: "INVALID_CREDENTIALS" },
+  );
 });

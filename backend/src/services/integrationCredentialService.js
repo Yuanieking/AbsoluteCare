@@ -353,6 +353,10 @@ export async function saveCredentials({
     candidate[entry.key] =
       values[entry.key]?.trim() || getIntegrationConfig(entry.key);
   }
+  // The legacy alias overwrites the client secret below, so check it as one.
+  const alias = changes.find((change) => change.key === "GOOGLE_SECRET_KEY");
+  if (alias && !values.GOOGLE_CLIENT_SECRET)
+    candidate.GOOGLE_CLIENT_SECRET = alias.value;
   const validation = await validateGroup(group, candidate);
   if (!validation.ok)
     throw new CredentialError(
