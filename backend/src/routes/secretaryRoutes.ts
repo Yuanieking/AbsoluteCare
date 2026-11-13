@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { protectRoute, requireRole } from "../middleware/authMiddleware.js";
+import { objectIdParam } from "../middleware/validateObjectId.js";
 import {
   getAppointmentDetails,
   getProfile,
@@ -11,6 +12,7 @@ import {
 } from "../controllers/secretaryController.js";
 
 const router = Router();
+router.param("id", objectIdParam);
 router.use(protectRoute, requireRole("secretary"));
 router.get("/profile", getProfile);
 // ** PATCH /profile - update own profile. If-Match: "<profile.updatedAt>" -> 409 STALE_RECORD when stale.

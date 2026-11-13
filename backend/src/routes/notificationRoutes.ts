@@ -9,8 +9,10 @@ import {
   unreadNotificationCount,
 } from "../controllers/notificationController.js";
 import { protectRoute } from "../middleware/authMiddleware.js";
+import { objectIdParam } from "../middleware/validateObjectId.js";
 
 const router = Router();
+router.param("id", objectIdParam);
 router.use(protectRoute);
 router.get("/", listNotifications);
 router.get("/unread-count", unreadNotificationCount);

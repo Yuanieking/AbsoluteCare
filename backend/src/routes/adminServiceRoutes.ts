@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { protectRoute, requireRole } from "../middleware/authMiddleware.js";
+import { objectIdParam } from "../middleware/validateObjectId.js";
 import {
   createService,
   getServiceUsage,
@@ -9,6 +10,7 @@ import {
 } from "../controllers/adminServiceController.js";
 
 const router = Router();
+router.param("id", objectIdParam);
 router.use(protectRoute, requireRole("admin"));
 router.get("/", listServices);
 router.post("/", createService);

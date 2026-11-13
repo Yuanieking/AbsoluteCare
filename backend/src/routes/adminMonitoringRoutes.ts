@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { protectRoute, requireRole } from "../middleware/authMiddleware.js";
+import { objectIdParam } from "../middleware/validateObjectId.js";
 import {
   recordPayment,
   updatePayment,
@@ -14,6 +15,7 @@ import {
 } from "../controllers/adminMonitoringController.js";
 
 const router = Router();
+router.param("id", objectIdParam);
 router.use(protectRoute, requireRole("admin"));
 // ** Concurrency: PATCH routes accept If-Match: "<appointment.updatedAt>" -> 409 STALE_RECORD when stale.
 // ** PATCH /appointments/:id/complete - mark a past confirmed appointment completed.

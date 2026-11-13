@@ -1,9 +1,5 @@
 import "./config/integrations.js";
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
+import express from "express";
 import path from "node:path";
 import { FRONTEND_URL, PORT } from "./config/env.js";
 import { ASSETS_DIR } from "./config/paths.js";
@@ -41,9 +37,14 @@ import {
 } from "./services/integrationCredentialService.js";
 import { syncBootstrapAdmins } from "./services/adminBootstrapService.js";
 import { setHttpServer } from "./services/restartService.js";
-import { AppError, ConflictError } from "./errors/AppError.js";
+import { securityHeaders } from "./middleware/securityHeaders.js";
+import { globalRateLimit } from "./middleware/rateLimit.js";
+import { sanitizeInput } from "./middleware/sanitizeInput.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
+app.disable("x-powered-by");
+app.use(securityHeaders);
 
 app.get("/static/email/logo.png", (req, res) => {
   res.sendFile(path.join(ASSETS_DIR, "email/logo.png"));
@@ -71,8 +72,10 @@ const corsOptions: CorsOptions = {
 
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
+app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
+app.use(sanitizeInput);
 
 app.use("/auth", authRoutes);
 app.use("/integrations", calendarRoutes);
@@ -97,25 +100,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 app.use("/", patientRoutes);
 
-app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
-  if (error instanceof AppError) {
-    return res.status(error.status).json(error.payload);
-  }
-  const named = error as { name?: string; issues?: unknown; errors?: unknown };
-  // ** Concurrency: a guarded save() whose pinned updatedAt no longer matches
-  // ** (see services/concurrencyService.ts guardFresh) surfaces here as a 409.
-  if (named?.name === "DocumentNotFoundError") {
-    const stale = new ConflictError();
-    return res.status(stale.status).json(stale.payload);
-  }
-  if (named?.name === "ZodError") {
-    return res.status(400).json({
-      message: "Please correct the highlighted fields.",
-      errors: named.issues || named.errors,
-    });
-  }
-  return next(error);
-});
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
   console.log(`Server Running on port ${PORT}`);

@@ -21,9 +21,14 @@ import {
 } from "../controllers/patientController.js";
 import { protectRoute } from "../middleware/authMiddleware.js";
 import { requirePatient } from "../middleware/patientMiddleware.js";
+import { validateObjectIdParams } from "../middleware/validateObjectId.js";
 
 const router = Router();
-const patientOnly: RequestHandler[] = [protectRoute, requirePatient];
+const patientOnly: RequestHandler[] = [
+  protectRoute,
+  requirePatient,
+  validateObjectIdParams("id"),
+];
 
 router.get("/services", patientOnly, listServices);
 router.get("/dependents", patientOnly, listDependents);

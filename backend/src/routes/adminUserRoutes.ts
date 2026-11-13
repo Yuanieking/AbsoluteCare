@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { protectRoute, requireRole } from "../middleware/authMiddleware.js";
+import { objectIdParam } from "../middleware/validateObjectId.js";
 import {
   archiveUser,
   activateUser,
@@ -18,6 +19,7 @@ import {
 } from "../controllers/adminUserController.js";
 
 const router = Router();
+router.param("id", objectIdParam);
 router.use(protectRoute, requireRole("admin"));
 router.get("/", listUsers);
 router.post("/", createUser);

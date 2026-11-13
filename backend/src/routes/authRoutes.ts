@@ -16,15 +16,16 @@ import {
 } from "../controllers/authController.js";
 import { protectRoute } from "../middleware/authMiddleware.js";
 import verifyRecaptcha from "../middleware/verifyRecaptcha.js";
+import { authRateLimit } from "../middleware/rateLimit.js";
 
 const router = Router();
 
-router.post("/signup", verifyRecaptcha, signup);
-router.post("/register", verifyRecaptcha, signup);
-router.post("/login", verifyRecaptcha, login);
+router.post("/signup", authRateLimit, verifyRecaptcha, signup);
+router.post("/register", authRateLimit, verifyRecaptcha, signup);
+router.post("/login", authRateLimit, verifyRecaptcha, login);
 router.post("/logout", logout);
-router.post("/forgot-password", verifyRecaptcha, forgotPassword);
-router.post("/reset-password", resetPassword);
+router.post("/forgot-password", authRateLimit, verifyRecaptcha, forgotPassword);
+router.post("/reset-password", authRateLimit, resetPassword);
 // ** PATCH /change-password - set a new password. If-Match: "<user.updatedAt>" -> 409 when stale.
 router.patch("/change-password", protectRoute, changePassword);
 router.get("/google", googleStart);
