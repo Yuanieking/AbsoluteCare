@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env.js";
+import SettingsVerification from "../models/settingsVerificationModel.js";
 
 const STATIC_ACTIONS = new Set([
   "disable_google_auth",
@@ -34,15 +35,25 @@ export function trimValues(values) {
   );
 }
 
-export function verifySettingsToken(adminId, action, token) {
+export async function verifySettingsToken(adminId, action, token) {
+  let payload;
   try {
-    const payload = jwt.verify(String(token || ""), JWT_SECRET);
-    return payload.purpose === "settings-verification" &&
-      payload.adminId === adminId &&
-      payload.action === action
-      ? payload
-      : null;
+    payload = jwt.verify(String(token || ""), JWT_SECRET);
   } catch {
     return null;
   }
+  if (
+    payload.purpose !== "settings-verification" ||
+    payload.adminId !== adminId ||
+    payload.action !== action
+  )
+    return null;
+  // A row trimmed by the TTL index stays usable; the 2m JWT expiry bounds it.
+  const consumed =
+    payload.verificationId &&
+    (await SettingsVerification.exists({
+      _id: payload.verificationId,
+      consumedAt: { $ne: null },
+    }));
+  return consumed ? null : payload;
 }

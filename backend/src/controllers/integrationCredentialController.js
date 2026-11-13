@@ -63,7 +63,7 @@ export const patchCredentials = withCredentialErrors(async (req, res) => {
 
   const expected = digestOf(group, trimmed);
   const payload = body.verificationToken
-    ? verifySettingsToken(
+    ? await verifySettingsToken(
         req.user.userId,
         parsed.action,
         body.verificationToken,
@@ -91,14 +91,22 @@ export const patchCredentials = withCredentialErrors(async (req, res) => {
     return;
   }
 
-  const result = await saveCredentials({
-    group,
-    values: trimmed,
-    adminId: req.user.userId,
-    ip: req.ip ?? "",
-    confirmKeyRotation: Boolean(body.confirmKeyRotation),
-    bootstrap: Boolean(bootstrap),
-  });
+  let result;
+  try {
+    result = await saveCredentials({
+      group,
+      values: trimmed,
+      adminId: req.user.userId,
+      ip: req.ip ?? "",
+      confirmKeyRotation: Boolean(body.confirmKeyRotation),
+      bootstrap: Boolean(bootstrap),
+    });
+  } catch (error) {
+    // A rejected key spends the code, so the token can't be replayed.
+    if (error?.code === "INVALID_CREDENTIALS")
+      await consumeVerification(payload?.verificationId);
+    throw error;
+  }
   await consumeVerification(payload?.verificationId);
   res.json(result);
 });
@@ -106,7 +114,7 @@ export const patchCredentials = withCredentialErrors(async (req, res) => {
 export const clearCredentialKey = withCredentialErrors(async (req, res) => {
   const key = String(req.params.key ?? "");
   const body = req.body ?? {};
-  const payload = verifySettingsToken(
+  const payload = await verifySettingsToken(
     req.user.userId,
     `clearIntegrationCredential:${key}`,
     body.verificationToken,
@@ -137,7 +145,7 @@ export const clearCredentialKey = withCredentialErrors(async (req, res) => {
 export const rollbackCredentialKey = withCredentialErrors(async (req, res) => {
   const key = String(req.params.key ?? "");
   const body = req.body ?? {};
-  const payload = verifySettingsToken(
+  const payload = await verifySettingsToken(
     req.user.userId,
     `rollbackIntegrationCredential:${key}`,
     body.verificationToken,

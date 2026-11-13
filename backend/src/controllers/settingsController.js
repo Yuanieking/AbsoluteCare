@@ -262,7 +262,7 @@ export async function patchSettings(req, res) {
   let verificationIds = [];
   for (const [field, action] of disableChecks) {
     if (currentSection?.[field] === true && next[field] === false) {
-      const payload = verifySettingsToken(
+      const payload = await verifySettingsToken(
         req.user.userId,
         action,
         verificationToken,
@@ -353,7 +353,7 @@ export async function patchIntegration(req, res) {
         : null;
   let verificationId;
   if (guardedAction) {
-    const payload = verifySettingsToken(
+    const payload = await verifySettingsToken(
       req.user.userId,
       guardedAction,
       body.verificationToken,
