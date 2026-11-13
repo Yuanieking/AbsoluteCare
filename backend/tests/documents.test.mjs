@@ -2,32 +2,32 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, mock, test } from "node:test";
 import mongoose, { Types } from "mongoose";
 import jwt from "jsonwebtoken";
-import AppSetting from "../src/models/appSettingModel.ts";
-import Credential from "../src/models/integrationCredentialModel.ts";
-import Connection from "../src/models/googleDriveConnectionModel.ts";
-import Document from "../src/models/generatedDocumentModel.ts";
-import User from "../src/models/userModel.ts";
-import Dependent from "../src/models/dependentModel.ts";
-import Session from "../src/models/sessionModel.ts";
-import Appointment from "../src/models/appointmentModel.ts";
-import { encryptSecret } from "../src/utils/secretBox.ts";
-import { JWT_SECRET } from "../src/config/env.ts";
-import { invalidateRuntimeConfigCache } from "../src/config/runtimeConfig.ts";
-import { invalidateSettingsCache } from "../src/services/settingsService.ts";
+import AppSetting from "../src/models/appSettingModel.js";
+import Credential from "../src/models/integrationCredentialModel.js";
+import Connection from "../src/models/googleDriveConnectionModel.js";
+import Document from "../src/models/generatedDocumentModel.js";
+import User from "../src/models/userModel.js";
+import Dependent from "../src/models/dependentModel.js";
+import Session from "../src/models/sessionModel.js";
+import Appointment from "../src/models/appointmentModel.js";
+import { encryptSecret } from "../src/utils/secretBox.js";
+import { JWT_SECRET } from "../src/config/env.js";
+import { invalidateRuntimeConfigCache } from "../src/config/runtimeConfig.js";
+import { invalidateSettingsCache } from "../src/services/settingsService.js";
 import {
   connectDrive,
   driveCallback,
-} from "../src/controllers/googleDriveController.ts";
-import { buildDocumentPayload } from "../src/services/documentDataService.ts";
+} from "../src/controllers/googleDriveController.js";
+import { buildDocumentPayload } from "../src/services/documentDataService.js";
 import {
   attemptDriveUpload,
   retryDocument,
-} from "../src/services/documentService.ts";
+} from "../src/services/documentService.js";
 import {
   connectClinicDrive,
   disconnectClinicDrive,
   uploadDocumentFile,
-} from "../src/services/driveService.ts";
+} from "../src/services/driveService.js";
 
 mongoose.set("bufferCommands", false);
 const actor = {

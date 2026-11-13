@@ -34,7 +34,7 @@ const service = await TherapyService.create({
   fee: 0,
   isActive: false,
 });
-const server = spawn(process.execPath, ["dist/src/app.js"], {
+const server = spawn(process.execPath, ["src/app.js"], {
   env: { ...process.env, PORT: String(port) },
   stdio: ["ignore", "pipe", "pipe"],
 });

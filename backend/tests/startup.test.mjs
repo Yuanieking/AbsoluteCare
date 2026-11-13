@@ -4,22 +4,21 @@ import { test } from "node:test";
 import mongoose from "mongoose";
 import http from "node:http";
 
-// Load the real compiled ESM startup, replacing persistence and outbound HTTP.
+// Load the real native-ESM startup, replacing persistence and outbound HTTP.
 // No clinic database, email provider or Google account is contacted.
-test("Compiled native-ESM startup serves document authorization and public verification", async () => {
+test("Native-ESM startup serves document authorization and public verification", async () => {
   process.env.PORT = "0";
   process.env.NODE_ENV = "production";
   process.env.ADMIN_EMAILS = "";
   process.env.BREVO_API_KEY = "";
   process.env.MAIL_FROM = "";
-  const { default: Setting } =
-    await import("../dist/src/models/appSettingModel.js");
+  const { default: Setting } = await import("../src/models/appSettingModel.js");
   const { default: Credential } =
-    await import("../dist/src/models/integrationCredentialModel.js");
+    await import("../src/models/integrationCredentialModel.js");
   const { default: Document } =
-    await import("../dist/src/models/generatedDocumentModel.js");
-  const { default: User } = await import("../dist/src/models/userModel.js");
-  const { JWT_SECRET } = await import("../dist/src/config/env.js");
+    await import("../src/models/generatedDocumentModel.js");
+  const { default: User } = await import("../src/models/userModel.js");
+  const { JWT_SECRET } = await import("../src/config/env.js");
   const { default: jwt } = await import("jsonwebtoken");
   const settings = new Setting({
     notifications: { remindersEnabled: false },
@@ -64,7 +63,7 @@ test("Compiled native-ESM startup serves document authorization and public verif
     return originalListen.apply(this, args);
   };
   try {
-    await import("../dist/src/app.js");
+    await import("../src/app.js");
     if (!server.listening) await once(server, "listening");
     const port = server.address().port;
     async function request(path, headers = {}, method = "GET") {

@@ -1,0 +1,199 @@
+import { Types } from "mongoose";
+import Appointment from "../models/appointmentModel.js";
+import User, { WEEKDAYS } from "../models/userModel.js";
+import { notifyMany } from "./notificationService.js";
+
+const dayNames = {
+  Mon: "Monday",
+  Tue: "Tuesday",
+  Wed: "Wednesday",
+  Thu: "Thursday",
+  Fri: "Friday",
+  Sat: "Saturday",
+  Sun: "Sunday",
+};
+
+const weekdayFormat = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  timeZone: "Asia/Manila",
+});
+
+// h23 keeps midnight as 00:00; the legacy `hour12: false` can emit 24:00.
+const clockFormat = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Asia/Manila",
+});
+
+/** Clinic-local weekday for an instant, never the server's. */
+export function manilaWeekday(date) {
+  return weekdayFormat.format(date);
+}
+
+/** Clinic-local `HH:mm` for an instant, comparable to stored schedule times. */
+export function manilaClock(date) {
+  return clockFormat.format(date);
+}
+
+/**
+ * Reads the per-day schedule, falling back to the legacy global range for
+ * documents that were never migrated.
+ */
+export function scheduleOf(user) {
+  const byDay = user.workingHoursByDay;
+  if (byDay?.length) {
+    return byDay.map((entry) => ({
+      day: entry.day,
+      start: entry.start,
+      end: entry.end,
+    }));
+  }
+  const start = user.workingHours?.start || "08:00";
+  const end = user.workingHours?.end || "17:00";
+  return (user.workingDays || [])
+    .filter((day) => WEEKDAYS.includes(day))
+    .map((day) => ({ day: day, start, end }));
+}
+
+/** Derived outer bounds; written on every save and never read for scheduling. */
+export function summarize(days) {
+  const [first] = days;
+  if (!first) return { start: "08:00", end: "17:00" };
+  return days.reduce(
+    (bounds, day) => ({
+      start: day.start < bounds.start ? day.start : bounds.start,
+      end: day.end > bounds.end ? day.end : bounds.end,
+    }),
+    { start: first.start, end: first.end },
+  );
+}
+
+/** `Mon–Fri 08:00–17:00 · Sat 09:00–12:00`, collapsing consecutive equal days. */
+export function formatSchedule(days) {
+  if (!days.length) return "No working days set";
+  const order = WEEKDAYS;
+  const sorted = [...days].sort(
+    (first, second) => order.indexOf(first.day) - order.indexOf(second.day),
+  );
+  const groups = [];
+  for (const entry of sorted) {
+    const index = order.indexOf(entry.day);
+    const hours = `${entry.start}–${entry.end}`;
+    const last = groups[groups.length - 1];
+    if (last && last.hours === hours && last.to === index - 1) last.to = index;
+    else groups.push({ from: index, to: index, hours });
+  }
+  return groups
+    .map(
+      (group) =>
+        `${order[group.from]}${
+          group.from === group.to ? "" : `–${order[group.to]}`
+        } ${group.hours}`,
+    )
+    .join(" · ");
+}
+
+/**
+ * Why this therapist cannot take an appointment in that window, or null when
+ * they can. An empty schedule means "no restriction" and always passes.
+ */
+export function availabilityError(user, start, end) {
+  const days = scheduleOf(user);
+  if (!days.length) return null;
+  const day = manilaWeekday(start);
+  const window = days.find((entry) => entry.day === day);
+  if (!window) return `This therapist does not work on ${dayNames[day]}.`;
+  if (manilaClock(start) < window.start || manilaClock(end) > window.end) {
+    return `This therapist works ${window.start}–${window.end} on ${dayNames[day]}; the appointment falls outside those hours.`;
+  }
+  return null;
+}
+
+/** Pending or confirmed, still-upcoming appointments that fall outside the proposed schedule. */
+export async function findConflicts(therapistId, days) {
+  if (!days.length) return [];
+  const appointments = await Appointment.find({
+    therapist: therapistId,
+    status: { $in: ["pending", "confirmed"] },
+    scheduledStart: { $gte: new Date() },
+  })
+    .populate("patient", "firstname lastname")
+    .sort({ scheduledStart: 1 })
+    .lean();
+  const conflicts = [];
+  for (const appointment of appointments) {
+    if (!appointment.scheduledStart) continue;
+    const start = appointment.scheduledStart;
+    const end = appointment.scheduledEnd ?? start;
+    const base = {
+      appointmentId: String(appointment._id),
+      patientName:
+        `${appointment.patient?.firstname || ""} ${appointment.patient?.lastname || ""}`.trim() ||
+        "Patient",
+      startsAt: start.toISOString(),
+      endsAt: end.toISOString(),
+    };
+    const window = days.find((entry) => entry.day === manilaWeekday(start));
+    if (!window) {
+      conflicts.push({ ...base, reason: "day_not_available" });
+    } else if (manilaClock(start) < window.start) {
+      conflicts.push({ ...base, reason: "before_opening" });
+    } else if (manilaClock(end) > window.end) {
+      conflicts.push({ ...base, reason: "after_closing" });
+    }
+  }
+  return conflicts;
+}
+
+export function conflictMessage(count) {
+  return count === 1
+    ? "1 active appointment falls outside this schedule. Reschedule or cancel it first."
+    : `${count} active appointments fall outside this schedule. Reschedule or cancel them first.`;
+}
+
+export function scheduleConflictPayload(conflicts) {
+  return { message: conflictMessage(conflicts.length), conflicts };
+}
+
+/** Persists availability, audits the before/after, and tells the admins. */
+export async function saveAvailability(params) {
+  const { therapist, days, actorId, byAdmin } = params;
+  const before = formatSchedule(scheduleOf(therapist));
+  therapist.workingDays = days.map((entry) => entry.day);
+  therapist.workingHoursByDay = days;
+  therapist.workingHours = summarize(days);
+  therapist.accountAudit.push({
+    action: byAdmin ? "availability-updated:by-admin" : "availability-updated",
+    by: new Types.ObjectId(actorId),
+    at: new Date(),
+    details: `${before} → ${formatSchedule(days)}`,
+  });
+  await therapist.save();
+  await notifyAvailabilityChanged(therapist, days, actorId);
+  return days;
+}
+
+/**
+ * Notifies every active admin. `notify` already drops the actor and handles
+ * in-app plus email, and an email failure never fails the save.
+ */
+async function notifyAvailabilityChanged(therapist, days, actorId) {
+  const admins = await User.find({
+    role: "admin",
+    isActive: true,
+    isArchived: false,
+    removedAt: null,
+  }).select("_id");
+  if (!admins.length) return;
+  await notifyMany(
+    admins.map((admin) => admin._id),
+    {
+      type: "availability_updated",
+      title: "Therapist availability updated",
+      message: `${therapist.firstname} ${therapist.lastname}'s schedule is now ${formatSchedule(days)}.`,
+      link: "/staff/admin/therapists",
+      actorId,
+    },
+  );
+}

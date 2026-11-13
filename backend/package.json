@@ -2,14 +2,12 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/src/app.js",
+  "main": "src/app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:documents": "node --import tsx --test tests/documents.test.mjs",
-    "dev": "tsx watch src/app.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/src/app.js",
-    "typecheck": "tsc --noEmit",
+    "test:documents": "node --test tests/documents.test.mjs",
+    "dev": "tsx watch src/app.js",
+    "start": "node src/app.js",
     "email:preview": "tsx scripts/email-preview.ts",
     "email:test": "tsx scripts/email-test.ts",
     "seed": "tsx seed.ts",
@@ -34,14 +32,6 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.6.0",
-    "@types/cookie-parser": "^1.4.10",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^26.6.5",
-    "@types/pdfkit": "^0.17.7",
-    "@types/qrcode": "^1.5.6",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "tsx": "^4.23.15"
   }
 }

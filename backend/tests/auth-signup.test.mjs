@@ -5,24 +5,31 @@ import { test } from "node:test";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-// Boot the compiled native-ESM app and exercise the real HTTP routes. Only
+// Boot the native-ESM app and exercise the real HTTP routes. Only
 // persistence and outbound HTTP are replaced; no clinic data is written.
 test("Signup creates a patient session while preserving registration and access restrictions", async () => {
   process.env.PORT = "0";
   process.env.NODE_ENV = "production";
   process.env.ADMIN_EMAILS = "";
   process.env.BREVO_API_KEY = "";
-  const { default: Setting } = await import("../dist/src/models/appSettingModel.js");
-  const { default: Credential } = await import("../dist/src/models/integrationCredentialModel.js");
-  const { default: User } = await import("../dist/src/models/userModel.js");
-  const { default: Dependent } = await import("../dist/src/models/dependentModel.js");
-  const { invalidateSettingsCache } = await import("../dist/src/services/settingsService.js");
-  const { JWT_SECRET } = await import("../dist/src/config/env.js");
+  const { default: Setting } = await import("../src/models/appSettingModel.js");
+  const { default: Credential } =
+    await import("../src/models/integrationCredentialModel.js");
+  const { default: User } = await import("../src/models/userModel.js");
+  const { default: Dependent } =
+    await import("../src/models/dependentModel.js");
+  const { invalidateSettingsCache } =
+    await import("../src/services/settingsService.js");
+  const { JWT_SECRET } = await import("../src/config/env.js");
   const { default: jwt } = await import("jsonwebtoken");
   const settings = new Setting({
     auth: { patientRegistrationEnabled: true, passwordMinLength: 8 },
     notifications: { remindersEnabled: false },
-    integrations: { recaptchaEnabled: false, googleDriveEnabled: false, emailEnabled: false },
+    integrations: {
+      recaptchaEnabled: false,
+      googleDriveEnabled: false,
+      emailEnabled: false,
+    },
   });
   const users = new Map();
   mongoose.connect = async () => mongoose;
@@ -31,7 +38,8 @@ test("Signup creates a patient session while preserving registration and access 
     const query = { select: () => query, lean: async () => [] };
     return query;
   };
-  User.findOne = async ({ email }) => [...users.values()].find((user) => user.email === email) || null;
+  User.findOne = async ({ email }) =>
+    [...users.values()].find((user) => user.email === email) || null;
   User.create = async (input) => {
     const user = new User(input);
     await user.validate();
@@ -40,10 +48,15 @@ test("Signup creates a patient session while preserving registration and access 
   };
   User.findById = (id) => {
     const user = users.get(String(id)) || null;
-    return { select: async () => user, then: (resolve) => Promise.resolve(user).then(resolve) };
+    return {
+      select: async () => user,
+      then: (resolve) => Promise.resolve(user).then(resolve),
+    };
   };
   Dependent.exists = async () => null;
-  globalThis.fetch = async () => { throw new Error("Unexpected outbound HTTP"); };
+  globalThis.fetch = async () => {
+    throw new Error("Unexpected outbound HTTP");
+  };
 
   const intervals = [];
   const originalInterval = globalThis.setInterval;
@@ -59,29 +72,51 @@ test("Signup creates a patient session while preserving registration and access 
     return originalListen.apply(this, args);
   };
   try {
-    await import("../dist/src/app.js");
+    await import("../src/app.js");
     if (!server.listening) await once(server, "listening");
     const port = server.address().port;
     async function request(path, { body, cookie } = {}) {
       return new Promise((resolve, reject) => {
-        const req = http.request({
-          hostname: "127.0.0.1", port, path,
-          method: body ? "POST" : "GET",
-          headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
-        }, (res) => {
-          let text = "";
-          res.setEncoding("utf8");
-          res.on("data", (chunk) => { text += chunk; });
-          res.on("end", () => resolve({ status: res.statusCode, body: JSON.parse(text), headers: res.headers }));
-        });
+        const req = http.request(
+          {
+            hostname: "127.0.0.1",
+            port,
+            path,
+            method: body ? "POST" : "GET",
+            headers: {
+              "Content-Type": "application/json",
+              ...(cookie ? { Cookie: cookie } : {}),
+            },
+          },
+          (res) => {
+            let text = "";
+            res.setEncoding("utf8");
+            res.on("data", (chunk) => {
+              text += chunk;
+            });
+            res.on("end", () =>
+              resolve({
+                status: res.statusCode,
+                body: JSON.parse(text),
+                headers: res.headers,
+              }),
+            );
+          },
+        );
         req.on("error", reject);
         req.end(body ? JSON.stringify(body) : undefined);
       });
     }
     const payload = {
-      firstName: "New", lastName: "Patient", email: "new.patient@example.com",
-      phone: "09171234567", password: "SecurePass123", confirmPassword: "SecurePass123",
-      acceptedTerms: true, role: "admin", isActive: false,
+      firstName: "New",
+      lastName: "Patient",
+      email: "new.patient@example.com",
+      phone: "09171234567",
+      password: "SecurePass123",
+      confirmPassword: "SecurePass123",
+      acceptedTerms: true,
+      role: "admin",
+      isActive: false,
     };
     assert.equal((await request("/auth/me")).status, 401);
     const created = await request("/auth/signup", { body: payload });
@@ -103,7 +138,10 @@ test("Signup creates a patient session while preserving registration and access 
     assert.match(cookies[0], /Secure/);
     assert.match(cookies[0], /SameSite=None/);
     const cookie = cookies[0].split(";")[0];
-    const identity = jwt.verify(decodeURIComponent(cookie.slice("session=".length)), JWT_SECRET);
+    const identity = jwt.verify(
+      decodeURIComponent(cookie.slice("session=".length)),
+      JWT_SECRET,
+    );
     assert.equal(identity.userId, stored._id.toString());
     const current = await request("/auth/me", { cookie });
     assert.equal(current.status, 200);
@@ -118,24 +156,42 @@ test("Signup creates a patient session while preserving registration and access 
 
     settings.auth.patientRegistrationEnabled = false;
     invalidateSettingsCache();
-    const closed = await request("/auth/signup", { body: { ...payload, email: "closed@example.com" } });
+    const closed = await request("/auth/signup", {
+      body: { ...payload, email: "closed@example.com" },
+    });
     assert.equal(closed.status, 403);
     assert.equal(closed.headers["set-cookie"], undefined);
     assert.equal(users.size, 1);
     settings.auth.patientRegistrationEnabled = true;
     invalidateSettingsCache();
 
-    const mismatch = await request("/auth/signup", { body: { ...payload, email: "invalid@example.com", confirmPassword: "Mismatch123" } });
-    assert.ok(mismatch.status >= 400, "Mismatched passwords must reject signup");
+    const mismatch = await request("/auth/signup", {
+      body: {
+        ...payload,
+        email: "invalid@example.com",
+        confirmPassword: "Mismatch123",
+      },
+    });
+    assert.ok(
+      mismatch.status >= 400,
+      "Mismatched passwords must reject signup",
+    );
     assert.equal(mismatch.headers["set-cookie"], undefined);
-    const noTerms = await request("/auth/signup", { body: { ...payload, email: "terms@example.com", acceptedTerms: false } });
-    assert.ok(noTerms.status >= 400, "Missing terms consent must reject signup");
+    const noTerms = await request("/auth/signup", {
+      body: { ...payload, email: "terms@example.com", acceptedTerms: false },
+    });
+    assert.ok(
+      noTerms.status >= 400,
+      "Missing terms consent must reject signup",
+    );
     assert.equal(noTerms.headers["set-cookie"], undefined);
     assert.equal(users.size, 1);
 
     stored.isActive = false;
     assert.equal((await request("/auth/me", { cookie })).status, 403);
-    const inactiveLogin = await request("/auth/login", { body: { email: payload.email, password: payload.password } });
+    const inactiveLogin = await request("/auth/login", {
+      body: { email: payload.email, password: payload.password },
+    });
     assert.equal(inactiveLogin.status, 403);
     assert.equal(inactiveLogin.headers["set-cookie"], undefined);
     stored.isActive = true;
