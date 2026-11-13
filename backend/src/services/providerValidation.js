@@ -184,10 +184,10 @@ export async function validateGroup(group, values) {
     return { ok: true, fields: {}, warnings: [], skipped: true };
   }
 
-  // Calendar shares the Google OAuth client, which is submitted from another
-  // group, so resolve it here (and include it in the cache key).
+  // Calendar and Drive share the Google OAuth client, which is submitted from
+  // another group, so resolve it here (and include it in the cache key).
   const merged =
-    group === "googleCalendar"
+    group === "googleCalendar" || group === "googleDrive"
       ? {
           ...values,
           GOOGLE_CLIENT_ID:
@@ -205,10 +205,10 @@ export async function validateGroup(group, values) {
   let failure = null;
   let warnings = [];
   try {
-    if (group === "google") {
+    if (group === "google" || group === "googleDrive") {
       failure = await checkGoogle(
-        (values.GOOGLE_CLIENT_ID || "").trim(),
-        (values.GOOGLE_CLIENT_SECRET || "").trim(),
+        (merged.GOOGLE_CLIENT_ID || "").trim(),
+        (merged.GOOGLE_CLIENT_SECRET || "").trim(),
       );
     } else if (group === "recaptcha") {
       failure = await checkRecaptcha(
