@@ -58,6 +58,13 @@ const clean = (value) => (typeof value === "string" ? value.trim() : "");
 
 const CLIENT_ID = /^\d{6,}-[a-z0-9]+\.apps\.googleusercontent\.com$/i;
 
+// Google issues both reCAPTCHA keys as 40 characters starting with 6L.
+const RECAPTCHA_KEY = /^6L[\w-]{38}$/;
+const recaptchaKey = (value) =>
+  RECAPTCHA_KEY.test(clean(value))
+    ? null
+    : "reCAPTCHA keys are 40 characters and start with 6L. Copy it again from the reCAPTCHA admin console.";
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAIL_FROM =
   /^(?:[^<>]+<\s*[^\s@]+@[^\s@]+\.[^\s@]+>|[^\s@]+@[^\s@]+\.[^\s@]+)$/;
@@ -118,6 +125,7 @@ export const INTEGRATION_KEYS = [
     required: true,
     helpUrl: "https://www.google.com/recaptcha/admin",
     helper: "Public. Browsers receive this value, so it is shown in full.",
+    validate: recaptchaKey,
   },
   {
     key: "RECAPTCHA_SECRET_KEY",
@@ -127,6 +135,7 @@ export const INTEGRATION_KEYS = [
     required: true,
     helpUrl: "https://www.google.com/recaptcha/admin",
     helper: "Server-side only.",
+    validate: recaptchaKey,
   },
   {
     key: "GOOGLE_CALENDAR_REDIRECT_URI",

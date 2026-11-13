@@ -1,4 +1,5 @@
 import { API_BASE_URL, INTEGRATION_VALIDATION } from "../config/env.js";
+import { keyDefinition, validateValue } from "../config/integrationKeys.js";
 import { getIntegrationConfig } from "../config/runtimeConfig.js";
 
 import { classifyMailError, createMailTransport } from "./mailer.js";
@@ -65,7 +66,18 @@ async function checkGoogle(clientId, clientSecret) {
   return null;
 }
 
-async function checkRecaptcha(secret) {
+async function checkRecaptcha(secret, siteKey) {
+  // Catches a bad site key already saved, when the Test button runs.
+  const siteError = validateValue(
+    keyDefinition("RECAPTCHA_SITE_KEY"),
+    siteKey,
+  );
+  if (siteError) {
+    return {
+      fields: { RECAPTCHA_SITE_KEY: siteError },
+      message: "This reCAPTCHA site key is not valid.",
+    };
+  }
   if (!secret) {
     return {
       fields: { RECAPTCHA_SECRET_KEY: "Enter the secret key." },
@@ -213,6 +225,7 @@ export async function validateGroup(group, values) {
     } else if (group === "recaptcha") {
       failure = await checkRecaptcha(
         (values.RECAPTCHA_SECRET_KEY || "").trim(),
+        (values.RECAPTCHA_SITE_KEY || "").trim(),
       );
     } else if (group === "email") {
       failure = await checkEmail(values);
