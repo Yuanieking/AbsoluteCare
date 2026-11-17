@@ -23,6 +23,13 @@ test("Native-ESM startup serves document authorization and public verification",
   const settings = new Setting({
     notifications: { remindersEnabled: false },
     integrations: { googleDriveEnabled: false },
+    auth: {
+      permissions: {
+        secretary: {
+          documents: { create: true, read: true, update: true, delete: true },
+        },
+      },
+    },
   });
   mongoose.connect = async () => mongoose;
   Setting.findOne = async () => settings;

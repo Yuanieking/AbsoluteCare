@@ -95,15 +95,57 @@ export function isReportGenerationEnabled(settings) {
 // Installs written before role access existed have no stored value, so only
 // an explicit false removes access.
 export function roleAccess(settings) {
+  const permissions = settings?.auth?.permissions;
   const auth = settings?.auth;
+  const permissionFor = (role, area, fallbackRead = true) => {
+    const configured = permissions?.[role]?.[area];
+    if (configured && typeof configured === "object") {
+      return {
+        create: configured.create === true,
+        read: configured.read === true,
+        update: configured.update === true,
+        delete: configured.delete === true,
+      };
+    }
+    if (typeof configured === "boolean") {
+      return { create: false, read: configured, update: false, delete: false };
+    }
+    return { create: false, read: fallbackRead, update: false, delete: false };
+  };
 
   return {
     secretary: {
-      documents: auth?.secretaryCanOpenDocuments !== false,
+      dashboard: permissionFor("secretary", "dashboard"),
+      appointments: permissionFor("secretary", "appointments"),
+      services: permissionFor("secretary", "services", false),
+      sessions: permissionFor("secretary", "sessions"),
+      patients: permissionFor("secretary", "patients"),
+      payments: permissionFor("secretary", "payments"),
+      reports: permissionFor("secretary", "reports", false),
+      documents: permissionFor(
+        "secretary",
+        "documents",
+        auth?.secretaryCanOpenDocuments !== false,
+      ),
+      userManagement: permissionFor("secretary", "userManagement", false),
+      settings: permissionFor("secretary", "settings", false),
       driveStatus: auth?.secretaryCanViewDriveStatus !== false,
     },
     therapist: {
-      documents: auth?.therapistCanOpenDocuments !== false,
+      dashboard: permissionFor("therapist", "dashboard"),
+      appointments: permissionFor("therapist", "appointments"),
+      services: permissionFor("therapist", "services", false),
+      sessions: permissionFor("therapist", "sessions"),
+      patients: permissionFor("therapist", "patients"),
+      payments: permissionFor("therapist", "payments", false),
+      reports: permissionFor("therapist", "reports", false),
+      documents: permissionFor(
+        "therapist",
+        "documents",
+        auth?.therapistCanOpenDocuments !== false,
+      ),
+      userManagement: permissionFor("therapist", "userManagement", false),
+      settings: permissionFor("therapist", "settings", false),
     },
   };
 }
@@ -113,7 +155,7 @@ export function roleHasAccess(settings, role, area) {
   if (role === "admin") return true;
   const access = roleAccess(settings);
 
-  return access[role]?.[area] === true;
+  return access[role]?.[area]?.read === true;
 }
 
 export function isRecaptchaRequired(settings) {

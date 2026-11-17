@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { protectRoute, requireRole } from "../middleware/authMiddleware.js";
+import {
+  protectRoute,
+  requireAccess,
+  requireRole,
+} from "../middleware/authMiddleware.js";
 import { objectIdParam } from "../middleware/validateObjectId.js";
 import {
   getPatient,
@@ -12,7 +16,11 @@ import {
 
 const router = Router();
 router.param("id", objectIdParam);
-router.use(protectRoute, requireRole("admin"));
+router.use(
+  protectRoute,
+  requireRole("admin", "secretary", "therapist"),
+  requireAccess("patients"),
+);
 router.get("/patients/:id", getPatient);
 // ** Concurrency: every PATCH below accepts If-Match: "<user.updatedAt>" -> 409 STALE_RECORD when stale.
 // ** PATCH /patients/:id - edit a patient record.

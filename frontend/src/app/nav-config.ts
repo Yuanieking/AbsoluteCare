@@ -192,6 +192,13 @@ const adminNav: RoleNav = {
         { key: 'audit', label: 'Audit log', to: '/staff/admin/settings?section=audit' },
       ],
     },
+    {
+      key: 'permissions',
+      label: 'Permissions',
+      to: '/staff/admin/permissions',
+      icon: Settings2,
+      group: 'System',
+    },
   ],
 }
 
@@ -233,6 +240,13 @@ const therapistNav: RoleNav = {
       aliases: ['/staff/patients'],
     },
     {
+      key: 'services',
+      label: 'Therapy services',
+      to: '/staff/therapist/services',
+      icon: ClipboardList,
+      group: 'Records',
+    },
+    {
       key: 'records',
       label: 'Session records',
       to: '/staff/therapist/session-records',
@@ -246,6 +260,34 @@ const therapistNav: RoleNav = {
       to: '/staff/documents',
       icon: FileText,
       group: 'Records',
+    },
+    {
+      key: 'payments',
+      label: 'Payments',
+      to: '/staff/therapist/payments',
+      icon: CircleDollarSign,
+      group: 'Business',
+    },
+    {
+      key: 'reports',
+      label: 'Reports',
+      to: '/staff/therapist/reports',
+      icon: BarChart3,
+      group: 'Business',
+    },
+    {
+      key: 'users',
+      label: 'User management',
+      to: '/staff/therapist/users',
+      icon: UsersRound,
+      group: 'People',
+    },
+    {
+      key: 'settings',
+      label: 'Settings',
+      to: '/staff/therapist/settings',
+      icon: Settings2,
+      group: 'System',
     },
   ],
 }
@@ -280,6 +322,41 @@ const secretaryNav: RoleNav = {
       aliases: ['/staff/payments'],
     },
     {
+      key: 'services',
+      label: 'Therapy services',
+      to: '/staff/secretary/services',
+      icon: ClipboardList,
+      group: 'Clinic',
+    },
+    {
+      key: 'sessions',
+      label: 'Session history',
+      to: '/staff/secretary/sessions',
+      icon: ClipboardList,
+      group: 'Clinic',
+    },
+    {
+      key: 'patients',
+      label: 'Patients and therapists',
+      to: '/staff/secretary/patients',
+      icon: UserRound,
+      group: 'People',
+    },
+    {
+      key: 'reports',
+      label: 'Reports',
+      to: '/staff/secretary/reports',
+      icon: BarChart3,
+      group: 'Business',
+    },
+    {
+      key: 'users',
+      label: 'User management',
+      to: '/staff/secretary/users',
+      icon: UsersRound,
+      group: 'People',
+    },
+    {
       key: 'documents',
       label: 'Documents',
       to: '/staff/documents',
@@ -293,6 +370,13 @@ const secretaryNav: RoleNav = {
       icon: Settings2,
       group: 'Account',
       aliases: ['/staff/profile'],
+    },
+    {
+      key: 'settings',
+      label: 'Settings',
+      to: '/staff/secretary/settings',
+      icon: Settings2,
+      group: 'Account',
     },
   ],
 }
@@ -309,19 +393,49 @@ export function getRoleNav(role: string | null | undefined): RoleNav {
 }
 
 /** Staff areas an admin can switch on or off per role in Settings. */
-const gatedSections: Record<string, 'documents'> = { documents: 'documents' }
+type StaffPermission =
+  | 'dashboard'
+  | 'appointments'
+  | 'services'
+  | 'sessions'
+  | 'patients'
+  | 'payments'
+  | 'reports'
+  | 'documents'
+  | 'userManagement'
+  | 'settings'
+
+const gatedSections: Record<string, StaffPermission> = {
+  dashboard: 'dashboard',
+  appointments: 'appointments',
+  services: 'services',
+  sessions: 'sessions',
+  patients: 'patients',
+  payments: 'payments',
+  reports: 'reports',
+  documents: 'documents',
+  users: 'userManagement',
+  settings: 'settings',
+  records: 'sessions',
+  schedule: 'appointments',
+}
 
 export type NavRoleAccess = {
-  secretary: { documents: boolean }
-  therapist: { documents: boolean }
+  secretary: Partial<Record<StaffPermission, { read: boolean } | boolean>> & {
+    driveStatus?: boolean
+  }
+  therapist: Partial<Record<StaffPermission, { read: boolean } | boolean>>
 }
 
 export function hasAreaAccess(
   role: string | null | undefined,
-  area: 'documents',
+  area: StaffPermission,
   access: NavRoleAccess | undefined,
 ): boolean {
-  if (role === 'secretary' || role === 'therapist') return access?.[role]?.[area] !== false
+  if (role === 'secretary' || role === 'therapist') {
+    const permission = access?.[role]?.[area]
+    return typeof permission === 'boolean' ? permission : permission?.read !== false
+  }
   return true
 }
 

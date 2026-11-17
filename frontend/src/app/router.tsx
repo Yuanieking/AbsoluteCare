@@ -38,6 +38,7 @@ const AdminReportsPage = lazy(() => import('@/features/admin/ReportsPage'))
 const AdminServicesPage = lazy(() => import('@/features/admin/ServicesPage'))
 const AdminSessionsPage = lazy(() => import('@/features/admin/SessionsPage'))
 const AdminUsersPage = lazy(() => import('@/features/admin/UsersPage'))
+const AdminPermissionsPage = lazy(() => import('@/features/admin/PermissionsPage'))
 const AdminSettingsPage = lazy(() => import('@/features/admin/settings/SettingsPage'))
 const StaffDocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'))
 const VerifyDocumentPage = lazy(() => import('@/features/documents/VerifyPage'))
@@ -111,6 +112,7 @@ const patientChildren: RouteObject[] = [
 const adminChildren: RouteObject[] = [
   { index: true, element: shellRoute(<AdminDashboardPage />, 'dashboard') },
   { path: 'users', element: shellRoute(<AdminUsersPage />) },
+  { path: 'permissions', element: shellRoute(<AdminPermissionsPage />, 'form') },
   { path: 'therapists', element: shellRoute(<AdminPeoplePage role="therapist" />) },
   { path: 'patients', element: shellRoute(<AdminPeoplePage role="patient" />) },
   { path: 'appointments', element: shellRoute(<AdminAppointmentsPage />) },
@@ -128,7 +130,11 @@ const therapistChildren: RouteObject[] = [
   { path: 'my-appointments', element: shellRoute(<TherapistAppointmentsPage />) },
   { path: 'appointments/:id', element: shellRoute(<TherapistAppointmentDetailsPage />, 'form') },
   { path: 'my-patients', element: shellRoute(<TherapistPatientsPage />) },
+  { path: 'services', element: shellRoute(<AdminServicesPage />) },
   { path: 'session-records', element: shellRoute(<TherapistRecordsPage />) },
+  { path: 'payments', element: shellRoute(<AdminPaymentsPage />) },
+  { path: 'reports', element: shellRoute(<AdminReportsPage />, 'dashboard') },
+  { path: 'users', element: shellRoute(<AdminUsersPage />) },
   { path: 'availability', element: shellRoute(<TherapistAvailabilityPage />, 'form') },
   { path: 'notifications', element: shellRoute(<NotificationsPage />) },
   { path: 'settings', element: shellRoute(<TherapistSettingsPage />, 'form') },
@@ -139,6 +145,12 @@ const secretaryChildren: RouteObject[] = [
   { index: true, element: shellRoute(<SecretaryDashboardPage />, 'dashboard') },
   { path: 'schedule', element: shellRoute(<SecretarySchedulePage />) },
   { path: 'payments', element: shellRoute(<SecretaryPaymentsPage />) },
+  { path: 'services', element: shellRoute(<AdminServicesPage />) },
+  { path: 'sessions', element: shellRoute(<AdminSessionsPage />) },
+  { path: 'patients', element: shellRoute(<AdminPeoplePage role="patient" />) },
+  { path: 'therapists', element: shellRoute(<AdminPeoplePage role="therapist" />) },
+  { path: 'reports', element: shellRoute(<AdminReportsPage />, 'dashboard') },
+  { path: 'users', element: shellRoute(<AdminUsersPage />) },
   { path: 'notifications', element: shellRoute(<NotificationsPage />) },
   { path: 'settings', element: shellRoute(<SecretarySettingsPage />, 'form') },
   { path: 'profile', element: shellRoute(<SecretaryProfilePage />, 'form') },

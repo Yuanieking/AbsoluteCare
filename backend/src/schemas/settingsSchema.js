@@ -2,6 +2,28 @@ import { z } from "zod";
 
 const boolean = z.boolean();
 const bounded = (min, max) => z.number().int().min(min).max(max);
+const permissionSchema = z
+  .object({
+    create: boolean,
+    read: boolean,
+    update: boolean,
+    delete: boolean,
+  })
+  .strict();
+const rolePermissionsSchema = z
+  .object({
+    dashboard: permissionSchema,
+    appointments: permissionSchema,
+    services: permissionSchema,
+    sessions: permissionSchema,
+    patients: permissionSchema,
+    payments: permissionSchema,
+    reports: permissionSchema,
+    documents: permissionSchema,
+    userManagement: permissionSchema,
+    settings: permissionSchema,
+  })
+  .strict();
 const sectionSchemas = {
   general: z
     .object({
@@ -28,6 +50,12 @@ const sectionSchemas = {
       secretaryCanOpenDocuments: boolean,
       secretaryCanViewDriveStatus: boolean,
       therapistCanOpenDocuments: boolean,
+      permissions: z
+        .object({
+          secretary: rolePermissionsSchema,
+          therapist: rolePermissionsSchema,
+        })
+        .strict(),
     })
     .strict(),
   booking: z

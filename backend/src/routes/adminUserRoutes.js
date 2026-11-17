@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { protectRoute, requireRole } from "../middleware/authMiddleware.js";
+import {
+  protectRoute,
+  requireAccess,
+  requireRole,
+} from "../middleware/authMiddleware.js";
 import { objectIdParam } from "../middleware/validateObjectId.js";
 import {
   archiveUser,
@@ -20,7 +24,11 @@ import {
 
 const router = Router();
 router.param("id", objectIdParam);
-router.use(protectRoute, requireRole("admin"));
+router.use(
+  protectRoute,
+  requireRole("admin", "secretary", "therapist"),
+  requireAccess("userManagement"),
+);
 router.get("/", listUsers);
 router.post("/", createUser);
 router.get("/:id", getUser);

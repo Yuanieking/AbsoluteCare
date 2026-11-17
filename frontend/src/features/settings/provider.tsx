@@ -3,8 +3,14 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { getPublicSettings } from './api'
 
 export type RoleAccess = {
-  secretary: { documents: boolean; driveStatus: boolean }
-  therapist: { documents: boolean }
+  secretary: Record<
+    string,
+    { create: boolean; read: boolean; update: boolean; delete: boolean } | boolean
+  >
+  therapist: Record<
+    string,
+    { create: boolean; read: boolean; update: boolean; delete: boolean } | boolean
+  >
 }
 
 export type PublicSettings = {
@@ -57,8 +63,31 @@ const defaults: PublicSettings = {
   email: '',
   termsVersion: '1.0',
   roleAccess: {
-    secretary: { documents: true, driveStatus: true },
-    therapist: { documents: true },
+    secretary: {
+      dashboard: { create: false, read: true, update: false, delete: false },
+      appointments: { create: false, read: true, update: false, delete: false },
+      services: { create: false, read: false, update: false, delete: false },
+      sessions: { create: false, read: true, update: false, delete: false },
+      patients: { create: false, read: true, update: false, delete: false },
+      payments: { create: true, read: true, update: true, delete: false },
+      reports: { create: false, read: false, update: false, delete: false },
+      documents: { create: false, read: true, update: false, delete: false },
+      userManagement: { create: false, read: false, update: false, delete: false },
+      settings: { create: false, read: false, update: false, delete: false },
+      driveStatus: true,
+    },
+    therapist: {
+      dashboard: { create: false, read: true, update: false, delete: false },
+      appointments: { create: false, read: true, update: false, delete: false },
+      services: { create: false, read: false, update: false, delete: false },
+      sessions: { create: true, read: true, update: true, delete: false },
+      patients: { create: false, read: true, update: false, delete: false },
+      payments: { create: false, read: false, update: false, delete: false },
+      reports: { create: false, read: false, update: false, delete: false },
+      documents: { create: false, read: true, update: false, delete: false },
+      userManagement: { create: false, read: false, update: false, delete: false },
+      settings: { create: false, read: false, update: false, delete: false },
+    },
   },
   passwordMinLength: 8,
   currency: 'PHP',
