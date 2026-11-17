@@ -109,7 +109,8 @@ async function accessToken(user) {
   const body = await response.json();
   // A successful refresh must include an access token. Refuse malformed
   // responses instead of sending a request with "Bearer undefined".
-  if (!body.access_token) throw new Error("Google Calendar did not provide an access token.");
+  if (!body.access_token)
+    throw new Error("Google Calendar did not provide an access token.");
   return body.access_token;
 }
 
@@ -190,13 +191,20 @@ export async function syncConfirmedAppointment(
   const payload = eventPayload(populated);
   let event;
   try {
-    event = await calendarRequest(user, eventId ? `/${encodeURIComponent(eventId)}` : "", {
-      body: JSON.stringify(payload),
-      method: eventId ? "PUT" : "POST",
-    });
+    event = await calendarRequest(
+      user,
+      eventId ? `/${encodeURIComponent(eventId)}` : "",
+      {
+        body: JSON.stringify(payload),
+        method: eventId ? "PUT" : "POST",
+      },
+    );
   } catch (error) {
     if (!eventId || ![404, 410].includes(error.status)) throw error;
-    event = await calendarRequest(user, "", { body: JSON.stringify(payload), method: "POST" });
+    event = await calendarRequest(user, "", {
+      body: JSON.stringify(payload),
+      method: "POST",
+    });
   }
   if (event?.id) {
     if (isTherapistCalendar) populated.therapistGoogleEventId = event.id;
@@ -252,7 +260,10 @@ export async function backfillCalendar(userId, role = "patient") {
     scheduledStart: { $gte: new Date() },
   });
   for (const appointment of appointments)
-    await syncConfirmedAppointment(appointment._id, role === "therapist" ? userId : null);
+    await syncConfirmedAppointment(
+      appointment._id,
+      role === "therapist" ? userId : null,
+    );
 }
 
 export async function connectCalendarAccount(userId, tokens) {

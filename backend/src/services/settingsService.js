@@ -114,6 +114,9 @@ export function roleAccess(settings) {
   };
 
   return {
+    user: {
+      myActivity: { ...permissionFor("user", "myActivity"), create: false, update: false, delete: false },
+    },
     secretary: {
       dashboard: permissionFor("secretary", "dashboard"),
       appointments: permissionFor("secretary", "appointments"),
@@ -127,6 +130,7 @@ export function roleAccess(settings) {
         "documents",
         auth?.secretaryCanOpenDocuments !== false,
       ),
+      myActivity: { ...permissionFor("secretary", "myActivity"), create: false, update: false, delete: false },
       userManagement: permissionFor("secretary", "userManagement", false),
       settings: permissionFor("secretary", "settings", false),
       driveStatus: auth?.secretaryCanViewDriveStatus !== false,
@@ -144,6 +148,7 @@ export function roleAccess(settings) {
         "documents",
         auth?.therapistCanOpenDocuments !== false,
       ),
+      myActivity: { ...permissionFor("therapist", "myActivity"), create: false, update: false, delete: false },
       userManagement: permissionFor("therapist", "userManagement", false),
       settings: permissionFor("therapist", "settings", false),
     },

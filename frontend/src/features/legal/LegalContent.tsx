@@ -9,15 +9,15 @@ export function LegalContent() {
         Using the portal
       </h2>
       <p>
-        Provide accurate information, keep your login details private, and contact the clinic
-        when an appointment or account detail needs correction.
+        Provide accurate information, keep your login details private, and contact the clinic when
+        an appointment or account detail needs correction.
       </p>
       <h2 className="mt-4 font-display text-[22px] font-semibold tracking-[-0.015em] text-ink">
         Your information
       </h2>
       <p>
-        We use submitted information to provide therapy scheduling and care coordination. We do
-        not sell personal information.
+        We use submitted information to provide therapy scheduling and care coordination. We do not
+        sell personal information.
       </p>
     </div>
   )

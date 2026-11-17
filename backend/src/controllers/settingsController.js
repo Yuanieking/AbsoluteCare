@@ -551,19 +551,19 @@ export async function requestVerification(req, res) {
     parsed.action === "resetIntegrationCredentials"
       ? "resetting all integration credentials to the original server defaults"
       : parsed.action === "exportBackup"
-      ? "downloading a full database backup"
-      : parsed.action === "restoreBackup"
-        ? "restoring the database from a backup"
-        : parsed.kind === "rotate"
-          ? `changing the ${parsed.target} credentials`
-          : parsed.kind === "clear"
-            ? `reverting a credential to the server environment`
-            : parsed.kind === "rollback"
-              ? `restoring a previous credential value`
-              : parsed.action.includes("Recaptcha") ||
-                  parsed.action.includes("recaptcha")
-                ? "disabling reCAPTCHA"
-                : "disabling Google sign-in";
+        ? "downloading a full database backup"
+        : parsed.action === "restoreBackup"
+          ? "restoring the database from a backup"
+          : parsed.kind === "rotate"
+            ? `changing the ${parsed.target} credentials`
+            : parsed.kind === "clear"
+              ? `reverting a credential to the server environment`
+              : parsed.kind === "rollback"
+                ? `restoring a previous credential value`
+                : parsed.action.includes("Recaptcha") ||
+                    parsed.action.includes("recaptcha")
+                  ? "disabling reCAPTCHA"
+                  : "disabling Google sign-in";
   const emailPayload = await renderVerificationCode({
     email: SU_EMAIL,
     code,

@@ -51,10 +51,13 @@ export const protectRoute = async (req, res, next) => {
 
     req.user.role = user.role;
     const context = auditContext.getStore();
-    if (context) context.actor = {
-      actorId: req.user.userId, actorRole: user.role,
-      actorName: `${user.firstname || ""} ${user.lastname || ""}`.trim() || "User",
-    };
+    if (context)
+      context.actor = {
+        actorId: req.user.userId,
+        actorRole: user.role,
+        actorName:
+          `${user.firstname || ""} ${user.lastname || ""}`.trim() || "User",
+      };
     const requestPath = req.originalUrl.split("?")[0];
     const allowedDuringPasswordChange = [
       "/auth/me",
@@ -117,7 +120,10 @@ export function requirePermission(area, action) {
       const settings = await getSettings();
       if (req.user.role !== "admin") {
         const access = roleAccess(settings)[String(req.user.role)];
-        if (access?.[area]?.read !== true || access?.[area]?.[action] !== true) {
+        if (
+          access?.[area]?.read !== true ||
+          access?.[area]?.[action] !== true
+        ) {
           res.status(403).json({
             message: `Your role does not have ${action} access to this area.`,
           });

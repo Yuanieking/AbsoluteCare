@@ -68,10 +68,7 @@ async function checkGoogle(clientId, clientSecret) {
 
 async function checkRecaptcha(secret, siteKey) {
   // Catches a bad site key already saved, when the Test button runs.
-  const siteError = validateValue(
-    keyDefinition("RECAPTCHA_SITE_KEY"),
-    siteKey,
-  );
+  const siteError = validateValue(keyDefinition("RECAPTCHA_SITE_KEY"), siteKey);
   if (siteError) {
     return {
       fields: { RECAPTCHA_SITE_KEY: siteError },

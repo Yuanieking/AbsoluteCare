@@ -1,5 +1,12 @@
-import { exportBackupSchema, restoreBackupSchema } from "../schemas/backupSchema.js";
-import { authorizeBackup, createBackup, restoreBackup } from "../services/backupService.js";
+import {
+  exportBackupSchema,
+  restoreBackupSchema,
+} from "../schemas/backupSchema.js";
+import {
+  authorizeBackup,
+  createBackup,
+  restoreBackup,
+} from "../services/backupService.js";
 import { invalidateSettingsCache } from "../services/settingsService.js";
 import { invalidateRuntimeConfigCache } from "../config/runtimeConfig.js";
 
@@ -25,7 +32,8 @@ export async function importBackup(req, res) {
   res.clearCookie("session", { path: "/" });
   res.set("Cache-Control", "no-store");
   res.json({
-    message: "Backup restored. Maintenance mode remains on. Sign in with a restored administrator account to verify the data.",
+    message:
+      "Backup restored. Maintenance mode remains on. Sign in with a restored administrator account to verify the data.",
     ...result,
   });
 }

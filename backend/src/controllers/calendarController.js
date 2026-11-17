@@ -1,8 +1,5 @@
 import jwt from "jsonwebtoken";
-import {
-  FRONTEND_URL,
-  JWT_SECRET,
-} from "../config/env.js";
+import { FRONTEND_URL, JWT_SECRET } from "../config/env.js";
 import {
   backfillCalendar,
   calendarAuthorizationUrl,

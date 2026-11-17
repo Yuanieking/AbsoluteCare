@@ -3,7 +3,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { LoaderCircle } from 'lucide-react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { LegalContent } from '@/features/legal/LegalContent'
 import RecaptchaField from '@/features/auth/RecaptchaField'
 import { Button } from '@/components/ui/button'
@@ -153,10 +159,17 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
         <NetworkAlert message={networkError} onDismiss={() => setNetworkError('')} />
       ) : null}
       {error && !networkError ? <AuthAlert>{error}</AuthAlert> : null}
-      <Dialog open={legal !== null} onOpenChange={(open) => { if (!open) setLegal(null) }}>
+      <Dialog
+        open={legal !== null}
+        onOpenChange={(open) => {
+          if (!open) setLegal(null)
+        }}
+      >
         <DialogContent className="max-h-[85dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{legal === 'privacy' ? 'Privacy Policy' : 'Terms and Conditions'}</DialogTitle>
+            <DialogTitle>
+              {legal === 'privacy' ? 'Privacy Policy' : 'Terms and Conditions'}
+            </DialogTitle>
             <DialogDescription>Review without leaving your signup form.</DialogDescription>
           </DialogHeader>
           <LegalContent />
@@ -302,11 +315,25 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
                 <div className="grid gap-1">
                   <FormLabel className="text-[12px] font-normal leading-relaxed">
                     I agree to the{' '}
-                    <button type="button" className="font-semibold underline" onClick={(event) => { event.preventDefault(); setLegal('terms') }}>
+                    <button
+                      type="button"
+                      className="font-semibold underline"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        setLegal('terms')
+                      }}
+                    >
                       Terms and Conditions
                     </button>{' '}
                     and{' '}
-                    <button type="button" className="font-semibold underline" onClick={(event) => { event.preventDefault(); setLegal('privacy') }}>
+                    <button
+                      type="button"
+                      className="font-semibold underline"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        setLegal('privacy')
+                      }}
+                    >
                       Privacy Policy
                     </button>
                     .

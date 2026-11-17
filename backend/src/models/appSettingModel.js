@@ -33,6 +33,7 @@ const rolePermissionsSchema = new mongoose.Schema(
     payments: { type: permissionSchema, default: () => ({}) },
     reports: { type: permissionSchema, default: () => ({}) },
     documents: { type: permissionSchema, default: () => ({}) },
+    myActivity: { type: permissionSchema, default: () => ({}) },
     userManagement: { type: permissionSchema, default: () => ({}) },
     settings: { type: permissionSchema, default: () => ({}) },
   },
@@ -59,6 +60,9 @@ const appSettingSchema = new mongoose.Schema(
       permissions: {
         secretary: { type: rolePermissionsSchema, default: () => ({}) },
         therapist: { type: rolePermissionsSchema, default: () => ({}) },
+        user: {
+          myActivity: { type: permissionSchema, default: () => ({}) },
+        },
       },
     },
     booking: {

@@ -76,12 +76,16 @@ export function BackupSection({ section }: { section: SettingsSectionConfig }) {
       >
         <div className="grid gap-3 px-5 py-4">
           <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
-            <AlertTriangle size={15} className="mt-0.5 shrink-0 text-destructive" aria-hidden="true" />
+            <AlertTriangle
+              size={15}
+              className="mt-0.5 shrink-0 text-destructive"
+              aria-hidden="true"
+            />
             <p className="text-[12.5px] text-ink-soft">
-              Documents are replaced atomically; failures roll back the replacement.
-              Enable <strong className="text-ink">Maintenance mode</strong> first; it stays on
-              afterward so you can verify the data. Requires a MongoDB replica set or sharded
-              cluster. Sign in with a restored administrator after recovery.
+              Documents are replaced atomically; failures roll back the replacement. Enable{' '}
+              <strong className="text-ink">Maintenance mode</strong> first; it stays on afterward so
+              you can verify the data. Requires a MongoDB replica set or sharded cluster. Sign in
+              with a restored administrator after recovery.
             </p>
           </div>
 
@@ -136,9 +140,9 @@ export function BackupSection({ section }: { section: SettingsSectionConfig }) {
 
       <InlineNote>
         Includes all database collections, password hashes, and credential ciphertext (32 MiB max).
-        Server environment values and external Drive files are separate: retain your server .env
-        and encryption keys, including CREDENTIAL_ENCRYPTION_KEY, GOOGLE_CALENDAR_ENCRYPTION_KEY,
-        and JWT_SECRET as configured.
+        Server environment values and external Drive files are separate: retain your server .env and
+        encryption keys, including CREDENTIAL_ENCRYPTION_KEY, GOOGLE_CALENDAR_ENCRYPTION_KEY, and
+        JWT_SECRET as configured.
       </InlineNote>
 
       {verifying ? (

@@ -10,6 +10,15 @@ const permissionSchema = z
     delete: boolean,
   })
   .strict();
+const activityPermissionSchema = z
+  .object({
+    create: z.literal(false),
+    read: boolean,
+    update: z.literal(false),
+    delete: z.literal(false),
+  })
+  .strict()
+  .default({ create: false, read: true, update: false, delete: false });
 const rolePermissionsSchema = z
   .object({
     dashboard: permissionSchema,
@@ -20,6 +29,7 @@ const rolePermissionsSchema = z
     payments: permissionSchema,
     reports: permissionSchema,
     documents: permissionSchema,
+    myActivity: activityPermissionSchema,
     userManagement: permissionSchema,
     settings: permissionSchema,
   })
@@ -54,6 +64,17 @@ const sectionSchemas = {
         .object({
           secretary: rolePermissionsSchema,
           therapist: rolePermissionsSchema,
+          user: z
+            .object({ myActivity: activityPermissionSchema })
+            .strict()
+            .default({
+              myActivity: {
+                create: false,
+                read: true,
+                update: false,
+                delete: false,
+              },
+            }),
         })
         .strict(),
     })
@@ -140,10 +161,12 @@ const sectionSchemas = {
     .strict(),
 };
 
-export const resetIntegrationCredentialsSchema = z.object({
-  verificationToken: z.string().min(1),
-  confirmKeyRotation: z.literal(true),
-}).strict();
+export const resetIntegrationCredentialsSchema = z
+  .object({
+    verificationToken: z.string().min(1),
+    confirmKeyRotation: z.literal(true),
+  })
+  .strict();
 
 export const settingsSections = Object.keys(sectionSchemas);
 

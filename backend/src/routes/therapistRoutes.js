@@ -32,14 +32,34 @@ router.patch("/profile", updateProfile);
 router.patch("/availability", updateAvailability);
 router.get("/appointments", requireAccess("appointments"), listAppointments);
 router.get("/appointments/:id", requireAccess("appointments"), getAppointment);
-router.post("/appointments/:id/reschedule-request", requirePermission("appointments", "update"), requestReschedule);
-router.patch("/appointments/:id/no-show", requirePermission("appointments", "update"), markNoShow);
-router.post("/appointments/:id/session", requirePermission("sessions", "create"), createSession);
-router.post("/appointments/:id/calendar-sync", requirePermission("appointments", "update"), syncCalendarAppointment);
+router.post(
+  "/appointments/:id/reschedule-request",
+  requirePermission("appointments", "update"),
+  requestReschedule,
+);
+router.patch(
+  "/appointments/:id/no-show",
+  requirePermission("appointments", "update"),
+  markNoShow,
+);
+router.post(
+  "/appointments/:id/session",
+  requirePermission("sessions", "create"),
+  createSession,
+);
+router.post(
+  "/appointments/:id/calendar-sync",
+  requirePermission("appointments", "update"),
+  syncCalendarAppointment,
+);
 router.get("/patients", requireAccess("patients"), listPatients);
 router.get("/sessions", requireAccess("sessions"), listSessions);
 router.get("/sessions/:id", requireAccess("sessions"), getSession);
-router.patch("/sessions/:id", requirePermission("sessions", "update"), updateSession);
+router.patch(
+  "/sessions/:id",
+  requirePermission("sessions", "update"),
+  updateSession,
+);
 router.get("/calendar/status", calendarStatus);
 
 export default router;

@@ -36,6 +36,8 @@ export async function registerSpecializations(names) {
       },
     }));
   for (const { updateOne } of operations) {
-    await Specialization.updateOne(updateOne.filter, updateOne.update, { upsert: true });
+    await Specialization.updateOne(updateOne.filter, updateOne.update, {
+      upsert: true,
+    });
   }
 }

@@ -40,7 +40,9 @@ export default function BookAppointmentPage() {
 
   const onSubmit = form.handleSubmit(async (values) => {
     if (!availableTimes.data?.includes(values.requestedTime)) {
-      form.setError('requestedTime', { message: 'Choose an available time for this service and date.' })
+      form.setError('requestedTime', {
+        message: 'Choose an available time for this service and date.',
+      })
       return
     }
     const request = bookMutation.mutateAsync({
@@ -150,11 +152,15 @@ export default function BookAppointmentPage() {
 
           {selectedService && selectedDate ? (
             <p role="status" className="text-[12px] text-ink-soft">
-              {availableTimes.isFetching ? 'Checking available times…' : availableTimes.error
-                ? 'Could not load availability. Please try again.'
-                : !availableTimes.data?.length ? 'No therapist is available for this service on this date.'
-                : selectedTime && !availableTimes.data.includes(selectedTime) ? 'Choose a new time for this service and date.'
-                : 'Only times that fit the full session are shown.'}
+              {availableTimes.isFetching
+                ? 'Checking available times…'
+                : availableTimes.error
+                  ? 'Could not load availability. Please try again.'
+                  : !availableTimes.data?.length
+                    ? 'No therapist is available for this service on this date.'
+                    : selectedTime && !availableTimes.data.includes(selectedTime)
+                      ? 'Choose a new time for this service and date.'
+                      : 'Only times that fit the full session are shown.'}
             </p>
           ) : null}
 
@@ -188,7 +194,15 @@ export default function BookAppointmentPage() {
             </p>
           ) : null}
 
-          <Button type="submit" disabled={bookMutation.isPending || availableTimes.isFetching || !availableTimes.data?.includes(selectedTime)} className="justify-self-start">
+          <Button
+            type="submit"
+            disabled={
+              bookMutation.isPending ||
+              availableTimes.isFetching ||
+              !availableTimes.data?.includes(selectedTime)
+            }
+            className="justify-self-start"
+          >
             <CalendarPlus size={16} aria-hidden="true" />
             {bookMutation.isPending ? 'Sending request…' : 'Request appointment'}
           </Button>

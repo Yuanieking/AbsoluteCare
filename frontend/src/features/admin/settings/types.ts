@@ -38,6 +38,7 @@ export type AuthValues = {
   permissions: {
     secretary: RolePermissions
     therapist: RolePermissions
+    user: Pick<RolePermissions, 'myActivity'>
   }
 }
 
@@ -52,6 +53,7 @@ export type PermissionKey =
   | 'documents'
   | 'userManagement'
   | 'settings'
+  | 'myActivity'
 
 export type CrudPermission = {
   create: boolean

@@ -21,19 +21,48 @@ import Verification from "../src/models/settingsVerificationModel.js";
 const id = "111111111111111111111111";
 
 test("Staff write routes reject read-only roles before touching persistence; backup authenticates cookies and validates confirmation", async () => {
-  const oldUser = User.findById, oldSetting = Setting.findOne;
-  const oldExists = Verification.exists, oldSpend = Verification.findOneAndUpdate;
+  const oldUser = User.findById,
+    oldSetting = Setting.findOne;
+  const oldExists = Verification.exists,
+    oldSpend = Verification.findOneAndUpdate;
   let role = "secretary";
   let spends = 0;
   let consumed = false;
   User.findById = () => ({ select: async () => ({ role, isActive: true }) });
-  const settings = new Setting({ auth: { permissions: {
-    secretary: Object.fromEntries(["appointments", "patients", "userManagement", "services", "payments"].map((area) => [area, { read: true, create: false, update: false, delete: false }])),
-    therapist: { appointments: { read: true, create: false, update: false, delete: false } },
-  } } });
+  const settings = new Setting({
+    auth: {
+      permissions: {
+        secretary: Object.fromEntries(
+          [
+            "appointments",
+            "patients",
+            "userManagement",
+            "services",
+            "payments",
+          ].map((area) => [
+            area,
+            { read: true, create: false, update: false, delete: false },
+          ]),
+        ),
+        therapist: {
+          appointments: {
+            read: true,
+            create: false,
+            update: false,
+            delete: false,
+          },
+        },
+      },
+    },
+  });
   Setting.findOne = async () => settings;
   Verification.exists = async () => consumed;
-  Verification.findOneAndUpdate = async () => { spends += 1; if (consumed) return null; consumed = true; return {}; };
+  Verification.findOneAndUpdate = async () => {
+    spends += 1;
+    if (consumed) return null;
+    consumed = true;
+    return {};
+  };
   invalidateSettingsCache();
   const app = express();
   app.use(cookieParser());
@@ -49,55 +78,139 @@ test("Staff write routes reject read-only roles before touching persistence; bac
   await new Promise((resolve) => server.on("listening", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   const session = jwt.sign({ userId: id }, JWT_SECRET);
-  const request = (path, method = "PATCH", body = {}, signedIn = true) => fetch(base + path, {
-    method, headers: { "Content-Type": "application/json", ...(signedIn ? { Cookie: `session=${session}` } : {}) }, body: JSON.stringify(body),
-  });
+  const request = (path, method = "PATCH", body = {}, signedIn = true) =>
+    fetch(base + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(signedIn ? { Cookie: `session=${session}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
   try {
     for (const [method, path] of [
-      ["PATCH", `/admin/appointments/${id}/confirm`], ["PATCH", `/admin/appointments/${id}/cancel`],
-      ["POST", `/admin/appointments/${id}/notification`], ["POST", `/admin/appointments/${id}/payment`],
-      ["PATCH", `/admin/appointments/${id}/payment`], ["PATCH", `/admin/appointments/${id}/complete`],
-      ["PATCH", `/admin/appointments/${id}/no-show`], ["PATCH", `/admin/patients/${id}`],
-      ["PATCH", `/admin/therapists/${id}/working-days`], ["PATCH", `/admin/users/patients/${id}`],
-      ["PATCH", `/admin/users/therapists/${id}/working-hours`], ["POST", "/admin/users"],
-      ["PATCH", `/admin/users/${id}/activate`], ["DELETE", `/admin/users/${id}`],
-      ["POST", "/admin/services"], ["PATCH", `/admin/services/${id}`], ["DELETE", `/admin/services/${id}`],
-    ]) assert.equal((await request(path, method)).status, 403, `${method} ${path}`);
+      ["PATCH", `/admin/appointments/${id}/confirm`],
+      ["PATCH", `/admin/appointments/${id}/cancel`],
+      ["POST", `/admin/appointments/${id}/notification`],
+      ["POST", `/admin/appointments/${id}/payment`],
+      ["PATCH", `/admin/appointments/${id}/payment`],
+      ["PATCH", `/admin/appointments/${id}/complete`],
+      ["PATCH", `/admin/appointments/${id}/no-show`],
+      ["PATCH", `/admin/patients/${id}`],
+      ["PATCH", `/admin/therapists/${id}/working-days`],
+      ["PATCH", `/admin/users/patients/${id}`],
+      ["PATCH", `/admin/users/therapists/${id}/working-hours`],
+      ["POST", "/admin/users"],
+      ["PATCH", `/admin/users/${id}/activate`],
+      ["DELETE", `/admin/users/${id}`],
+      ["POST", "/admin/services"],
+      ["PATCH", `/admin/services/${id}`],
+      ["DELETE", `/admin/services/${id}`],
+    ])
+      assert.equal(
+        (await request(path, method)).status,
+        403,
+        `${method} ${path}`,
+      );
     role = "therapist";
-    for (const [method, suffix] of [["POST", "reschedule-request"], ["PATCH", "no-show"], ["POST", "calendar-sync"]]) {
-      assert.equal((await request(`/therapist/appointments/${id}/${suffix}`, method)).status, 403);
+    for (const [method, suffix] of [
+      ["POST", "reschedule-request"],
+      ["PATCH", "no-show"],
+      ["POST", "calendar-sync"],
+    ]) {
+      assert.equal(
+        (await request(`/therapist/appointments/${id}/${suffix}`, method))
+          .status,
+        403,
+      );
     }
-    assert.equal((await request("/admin/backup/export", "POST", {}, false)).status, 401);
+    assert.equal(
+      (await request("/admin/backup/export", "POST", {}, false)).status,
+      401,
+    );
     assert.equal((await request("/admin/backup/export", "POST")).status, 403);
     role = "admin";
     assert.equal((await request("/admin/backup/export", "POST")).status, 400);
-    assert.equal((await request("/admin/backup/restore", "POST", { confirmation: "wrong", backup: "{}", verificationToken: "fake" })).status, 400);
+    assert.equal(
+      (
+        await request("/admin/backup/restore", "POST", {
+          confirmation: "wrong",
+          backup: "{}",
+          verificationToken: "fake",
+        })
+      ).status,
+      400,
+    );
     assert.equal(spends, 0);
-    assert.equal((await request("/admin/backup/export", "POST", { verificationToken: "invalid" })).status, 403);
-    const token = jwt.sign({ purpose: "settings-verification", adminId: id, action: "restoreBackup", verificationId: id }, JWT_SECRET);
-    assert.equal((await request("/admin/backup/restore", "POST", { confirmation: "RESTORE", backup: "not a backup", verificationToken: token })).status, 400);
+    assert.equal(
+      (
+        await request("/admin/backup/export", "POST", {
+          verificationToken: "invalid",
+        })
+      ).status,
+      403,
+    );
+    const token = jwt.sign(
+      {
+        purpose: "settings-verification",
+        adminId: id,
+        action: "restoreBackup",
+        verificationId: id,
+      },
+      JWT_SECRET,
+    );
+    assert.equal(
+      (
+        await request("/admin/backup/restore", "POST", {
+          confirmation: "RESTORE",
+          backup: "not a backup",
+          verificationToken: token,
+        })
+      ).status,
+      400,
+    );
     assert.equal(spends, 1);
-    assert.equal((await request("/admin/backup/restore", "POST", { confirmation: "RESTORE", backup: "not a backup", verificationToken: token })).status, 403);
+    assert.equal(
+      (
+        await request("/admin/backup/restore", "POST", {
+          confirmation: "RESTORE",
+          backup: "not a backup",
+          verificationToken: token,
+        })
+      ).status,
+      403,
+    );
     // Explicit grant works; denied read still prevents writes; unknown areas fail closed.
     settings.auth.permissions.secretary.services.update = true;
     settings.auth.permissions.secretary.patients.read = false;
     settings.auth.permissions.secretary.patients.update = true;
     invalidateSettingsCache();
     for (const [actor, area, action, allowed] of [
-      ["unknown", "services", "update", false], ["therapist", "unknown", "read", false],
-      ["secretary", "services", "read", true], ["admin", "services", "delete", true],
-      ["secretary", "services", "update", true], ["secretary", "patients", "update", false],
+      ["unknown", "services", "update", false],
+      ["therapist", "unknown", "read", false],
+      ["secretary", "services", "read", true],
+      ["admin", "services", "delete", true],
+      ["secretary", "services", "update", true],
+      ["secretary", "patients", "update", false],
     ]) {
       let next = false;
       const res = { status: () => res, json: () => {} };
-      await requirePermission(area, action)({ user: { role: actor } }, res, () => { next = true; });
+      await requirePermission(area, action)(
+        { user: { role: actor } },
+        res,
+        () => {
+          next = true;
+        },
+      );
       assert.equal(next, allowed);
     }
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
-    User.findById = oldUser; Setting.findOne = oldSetting;
-    Verification.exists = oldExists; Verification.findOneAndUpdate = oldSpend;
+    User.findById = oldUser;
+    Setting.findOne = oldSetting;
+    Verification.exists = oldExists;
+    Verification.findOneAndUpdate = oldSpend;
     invalidateSettingsCache();
   }
 });

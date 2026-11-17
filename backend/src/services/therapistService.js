@@ -142,12 +142,23 @@ export async function requestReschedule(therapistId, appointmentId, input) {
       message: "Choose a future reschedule date and time.",
     };
   const service = await TherapyService.findById(appointment.service);
-  const times = service ? await bookingTimes({
-    name: appointment.serviceSnapshot?.name || service.name,
-    duration: appointment.serviceSnapshot?.duration || service.duration,
-  }, input.proposedDate, therapistId, { time: input.proposedTime, excludeId: appointment._id }) : [];
+  const times = service
+    ? await bookingTimes(
+        {
+          name: appointment.serviceSnapshot?.name || service.name,
+          duration: appointment.serviceSnapshot?.duration || service.duration,
+        },
+        input.proposedDate,
+        therapistId,
+        { time: input.proposedTime, excludeId: appointment._id },
+      )
+    : [];
   if (!times.includes(input.proposedTime)) {
-    return { ok: false, status: 400, message: "Choose an available time within therapist working hours." };
+    return {
+      ok: false,
+      status: 400,
+      message: "Choose an available time within therapist working hours.",
+    };
   }
   appointment.rescheduleRequest = {
     status: "requested",

@@ -100,7 +100,9 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
   )
   const [savedNotice, setSavedNotice] = useState(false)
 
-  const isDirty = JSON.stringify(days) !== JSON.stringify(saved) || JSON.stringify(dateOverrides) !== JSON.stringify(savedOverrides)
+  const isDirty =
+    JSON.stringify(days) !== JSON.stringify(saved) ||
+    JSON.stringify(dateOverrides) !== JSON.stringify(savedOverrides)
   const rowErrors = scheduleErrors(days)
 
   function edit(next: typeof days) {
@@ -117,9 +119,7 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
 
   async function save() {
     if (!days.length) {
-      setSummary(
-        'Choose at least one recurring working day.',
-      )
+      setSummary('Choose at least one recurring working day.')
       return
     }
     if (Object.keys(rowErrors).length) {
@@ -127,8 +127,12 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
       focusFirstInvalid(rowErrors)
       return
     }
-    if (dateOverrides.some((entry) => !entry.date || (!entry.unavailable && entry.start >= entry.end)) ||
-      new Set(dateOverrides.map((entry) => entry.date)).size !== dateOverrides.length) {
+    if (
+      dateOverrides.some(
+        (entry) => !entry.date || (!entry.unavailable && entry.start >= entry.end),
+      ) ||
+      new Set(dateOverrides.map((entry) => entry.date)).size !== dateOverrides.length
+    ) {
       setSummary('Choose unique override dates and valid start/end times.')
       return
     }
@@ -272,31 +276,104 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
         ) : null}
       </section>
 
-      <section aria-labelledby="date-overrides" className="mt-4 rounded-lg border border-hairline bg-card p-5">
-        <h2 id="date-overrides" className="text-[15px] font-semibold">Date-specific availability</h2>
-        <p className="mt-1 text-[12.5px] text-ink-soft">Override weekly hours or take a day off. All times use Asia/Manila.</p>
+      <section
+        aria-labelledby="date-overrides"
+        className="mt-4 rounded-lg border border-hairline bg-card p-5"
+      >
+        <h2 id="date-overrides" className="text-[15px] font-semibold">
+          Date-specific availability
+        </h2>
+        <p className="mt-1 text-[12.5px] text-ink-soft">
+          Override weekly hours or take a day off. All times use Asia/Manila.
+        </p>
         <fieldset disabled={saveMutation.isPending} className="mt-3 grid gap-3">
           {dateOverrides.map((entry, index) => (
             <div key={index} className="flex flex-wrap items-end gap-2">
-              <label className="grid gap-1 text-xs">Date
-                <Input type="date" value={entry.date} onChange={(event) => setDateOverrides(dateOverrides.map((item, i) => i === index ? { ...item, date: event.target.value } : item))} />
+              <label className="grid gap-1 text-xs">
+                Date
+                <Input
+                  type="date"
+                  value={entry.date}
+                  onChange={(event) =>
+                    setDateOverrides(
+                      dateOverrides.map((item, i) =>
+                        i === index ? { ...item, date: event.target.value } : item,
+                      ),
+                    )
+                  }
+                />
               </label>
               <label className="flex h-9 items-center gap-2 text-xs">
-                <input type="checkbox" checked={entry.unavailable} onChange={(event) => setDateOverrides(dateOverrides.map((item, i) => i === index ? { ...item, unavailable: event.target.checked } : item))} />
+                <input
+                  type="checkbox"
+                  checked={entry.unavailable}
+                  onChange={(event) =>
+                    setDateOverrides(
+                      dateOverrides.map((item, i) =>
+                        i === index ? { ...item, unavailable: event.target.checked } : item,
+                      ),
+                    )
+                  }
+                />
                 Day off
               </label>
-              {!entry.unavailable ? <>
-                <label className="grid gap-1 text-xs">Start
-                  <Input type="time" required value={entry.start} onChange={(event) => setDateOverrides(dateOverrides.map((item, i) => i === index ? { ...item, start: event.target.value } : item))} />
-                </label>
-                <label className="grid gap-1 text-xs">End
-                  <Input type="time" required value={entry.end} onChange={(event) => setDateOverrides(dateOverrides.map((item, i) => i === index ? { ...item, end: event.target.value } : item))} />
-                </label>
-              </> : null}
-              <Button type="button" variant="outline" aria-label={`Remove override ${entry.date || index + 1}`} onClick={() => setDateOverrides(dateOverrides.filter((_, i) => i !== index))}>Remove</Button>
+              {!entry.unavailable ? (
+                <>
+                  <label className="grid gap-1 text-xs">
+                    Start
+                    <Input
+                      type="time"
+                      required
+                      value={entry.start}
+                      onChange={(event) =>
+                        setDateOverrides(
+                          dateOverrides.map((item, i) =>
+                            i === index ? { ...item, start: event.target.value } : item,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <label className="grid gap-1 text-xs">
+                    End
+                    <Input
+                      type="time"
+                      required
+                      value={entry.end}
+                      onChange={(event) =>
+                        setDateOverrides(
+                          dateOverrides.map((item, i) =>
+                            i === index ? { ...item, end: event.target.value } : item,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                </>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                aria-label={`Remove override ${entry.date || index + 1}`}
+                onClick={() => setDateOverrides(dateOverrides.filter((_, i) => i !== index))}
+              >
+                Remove
+              </Button>
             </div>
           ))}
-          <Button type="button" variant="outline" className="justify-self-start" onClick={() => setDateOverrides([...dateOverrides, { date: '', unavailable: false, start: '08:00', end: '17:00' }])}>Add date</Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="justify-self-start"
+            onClick={() =>
+              setDateOverrides([
+                ...dateOverrides,
+                { date: '', unavailable: false, start: '08:00', end: '17:00' },
+              ])
+            }
+          >
+            Add date
+          </Button>
         </fieldset>
       </section>
 

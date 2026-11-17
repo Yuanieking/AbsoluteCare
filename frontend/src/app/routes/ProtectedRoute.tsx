@@ -55,8 +55,10 @@ type StaffArea =
   | 'documents'
   | 'userManagement'
   | 'settings'
+  | 'myActivity'
 
 function areaForPath(pathname: string): StaffArea | undefined {
+  if (pathname.endsWith('/my-activity') || pathname.includes('/my-activity/')) return 'myActivity'
   if (pathname.startsWith('/staff/documents')) return 'documents'
   if (pathname.includes('/appointments') || pathname.includes('/schedule')) return 'appointments'
   if (pathname.includes('/services')) return 'services'

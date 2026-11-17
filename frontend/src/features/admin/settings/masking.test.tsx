@@ -24,11 +24,42 @@ const group: CredentialGroup = {
   status: { configured: true, missing: [] },
   redirectUri: 'https://private.example/calendar/callback',
   keys: [
-    { key: 'GOOGLE_CLIENT_ID', label: 'Client ID', kind: 'identifier', masked: '12345••••••••', source: 'env' },
-    { key: 'GOOGLE_CLIENT_SECRET', label: 'Secret', kind: 'secret', masked: 'GOCSP••••••••', source: 'app' },
-    { key: 'MAIL_FROM', label: 'Sender', kind: 'public', masked: 'private@clinic.example', source: 'app' },
-    { key: 'GOOGLE_CALENDAR_REDIRECT_URI', label: 'Redirect URI', kind: 'config', masked: 'https://private.example/calendar/callback', source: 'env' },
-    { key: 'RECAPTCHA_SITE_KEY', label: 'Site key', kind: 'public', masked: '6L-private-site-key', source: 'app', helper: 'Public. Browsers receive this value, so it is shown in full.' },
+    {
+      key: 'GOOGLE_CLIENT_ID',
+      label: 'Client ID',
+      kind: 'identifier',
+      masked: '12345••••••••',
+      source: 'env',
+    },
+    {
+      key: 'GOOGLE_CLIENT_SECRET',
+      label: 'Secret',
+      kind: 'secret',
+      masked: 'GOCSP••••••••',
+      source: 'app',
+    },
+    {
+      key: 'MAIL_FROM',
+      label: 'Sender',
+      kind: 'public',
+      masked: 'private@clinic.example',
+      source: 'app',
+    },
+    {
+      key: 'GOOGLE_CALENDAR_REDIRECT_URI',
+      label: 'Redirect URI',
+      kind: 'config',
+      masked: 'https://private.example/calendar/callback',
+      source: 'env',
+    },
+    {
+      key: 'RECAPTCHA_SITE_KEY',
+      label: 'Site key',
+      kind: 'public',
+      masked: '6L-private-site-key',
+      source: 'app',
+      helper: 'Public. Browsers receive this value, so it is shown in full.',
+    },
   ],
 }
 
@@ -56,13 +87,28 @@ describe('integration value masking', () => {
       expect(html).not.toContain('<button')
       expect(html).toContain('Leave blank to keep the current value')
     }
-    const html = renderToStaticMarkup(<CredentialField entry={{ key: 'EMPTY', label: 'Empty', masked: 'Not set' }} value="" onChange={noop} />)
+    const html = renderToStaticMarkup(
+      <CredentialField
+        entry={{ key: 'EMPTY', label: 'Empty', masked: 'Not set' }}
+        value=""
+        onChange={noop}
+      />,
+    )
     expect(html).toContain('Empty, not set')
   })
 
   it('hides values in both setup views while keeping variable names readable', () => {
-    const guide = renderToStaticMarkup(<IntegrationSetupGuide groups={[group]} onEdit={noop} onDownload={noop} downloading={false} />)
-    const dialog = renderToStaticMarkup(<IntegrationSetupDialog group={group} onEdit={noop} onClose={noop} />)
+    const guide = renderToStaticMarkup(
+      <IntegrationSetupGuide
+        groups={[group]}
+        onEdit={noop}
+        onDownload={noop}
+        downloading={false}
+      />,
+    )
+    const dialog = renderToStaticMarkup(
+      <IntegrationSetupDialog group={group} onEdit={noop} onClose={noop} />,
+    )
     expectHidden(guide)
     expectHidden(dialog)
     for (const html of [guide, dialog]) {
@@ -72,19 +118,40 @@ describe('integration value masking', () => {
 
   it('hides editable values repeated in integration card summaries', () => {
     const value: IntegrationValues = {
-      googleAuthEnabled: true, recaptchaEnabled: true, googleCalendarEnabled: true,
-      googleDriveEnabled: true, googleMapsEnabled: true, emailEnabled: true, reportGenerationEnabled: true,
+      googleAuthEnabled: true,
+      recaptchaEnabled: true,
+      googleCalendarEnabled: true,
+      googleDriveEnabled: true,
+      googleMapsEnabled: true,
+      emailEnabled: true,
+      reportGenerationEnabled: true,
     }
-    const html = renderToStaticMarkup(<IntegrationsSection
-      value={value} integrations={{}} health={{
-        google: { configured: true, details: { clientIdMasked: group.keys[0]?.masked } },
-        calendar: { configured: true, details: { redirectUri: group.redirectUri } },
-        email: { configured: true, details: { senderAddress: group.keys[2]?.masked } },
-      }} saving={false} credentials={{ groups: [group] }} restartPhase="idle" restartMessage=""
-      downloadingHandover={false} refreshing={false} onCommit={async () => {}}
-      onTestEmail={async () => {}} onTestIntegration={async () => {}} onRefresh={noop}
-      onEditCredentials={noop} onRestart={noop} onDismissRestart={noop} onResetDefaults={noop} onDownloadHandover={noop}
-    />)
+    const html = renderToStaticMarkup(
+      <IntegrationsSection
+        value={value}
+        integrations={{}}
+        health={{
+          google: { configured: true, details: { clientIdMasked: group.keys[0]?.masked } },
+          calendar: { configured: true, details: { redirectUri: group.redirectUri } },
+          email: { configured: true, details: { senderAddress: group.keys[2]?.masked } },
+        }}
+        saving={false}
+        credentials={{ groups: [group] }}
+        restartPhase="idle"
+        restartMessage=""
+        downloadingHandover={false}
+        refreshing={false}
+        onCommit={async () => {}}
+        onTestEmail={async () => {}}
+        onTestIntegration={async () => {}}
+        onRefresh={noop}
+        onEditCredentials={noop}
+        onRestart={noop}
+        onDismissRestart={noop}
+        onResetDefaults={noop}
+        onDownloadHandover={noop}
+      />,
+    )
     expectHidden(html)
   })
 })

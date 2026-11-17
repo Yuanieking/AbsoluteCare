@@ -480,35 +480,47 @@ export async function resetCredentials({ adminId, ip }) {
   const rotates = changed.some((key) => LOAD_BEARING_KEYS.has(key));
   let affectedAccounts = 0;
   if (rotates) {
-    affectedAccounts = await User.countDocuments({ "googleCalendar.connected": true });
+    affectedAccounts = await User.countDocuments({
+      "googleCalendar.connected": true,
+    });
     await User.updateMany(
       { "googleCalendar.connected": true },
       { $set: { "googleCalendar.needsReconnect": true } },
     );
   }
   // Tombstones also suppress CUSTOM_ values supplied by a read-only environment.
-  await IntegrationCredential.bulkWrite([...MANAGED_KEYS].map((key) => ({
-    updateOne: {
-      filter: { key },
-      update: { $set: {
-        group: keyDefinition(key).group,
-        valueEncrypted: "",
-        valueHash: "",
-        fingerprint: "",
-        previousEncrypted: null,
-        clearedAt: now,
-        updatedBy: objectId(adminId),
-        verifiedAt: null,
-      } },
-      upsert: true,
-    },
-  })));
+  await IntegrationCredential.bulkWrite(
+    [...MANAGED_KEYS].map((key) => ({
+      updateOne: {
+        filter: { key },
+        update: {
+          $set: {
+            group: keyDefinition(key).group,
+            valueEncrypted: "",
+            valueHash: "",
+            fingerprint: "",
+            previousEncrypted: null,
+            clearedAt: now,
+            updatedBy: objectId(adminId),
+            verifiedAt: null,
+          },
+        },
+        upsert: true,
+      },
+    })),
+  );
   const envResult = await syncEnvRewrite();
   await writeAudit({
-    adminId, key: "resetIntegrationCredentials", ip,
+    adminId,
+    key: "resetIntegrationCredentials",
+    ip,
     oldValue: "custom integration credentials",
     newValue: "original server defaults",
-    meta: { changedKeys: changed, affectedAccounts, envWrite: envResult.outcome },
+    meta: {
+      changedKeys: changed,
+      affectedAccounts,
+      envWrite: envResult.outcome,
+    },
   });
   await markRestartPending(adminId);
   const warning = envOutcomeWarning(envResult.outcome);
@@ -516,7 +528,8 @@ export async function resetCredentials({ adminId, ip }) {
     restartRequired: true,
     envWrite: envResult.outcome,
     warnings: warning ? [warning] : [],
-    message: "All integration credentials reset to server defaults. Restart the server to apply them.",
+    message:
+      "All integration credentials reset to server defaults. Restart the server to apply them.",
   };
 }
 

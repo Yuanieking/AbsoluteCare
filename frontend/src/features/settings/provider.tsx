@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { getPublicSettings } from './api'
 
 export type RoleAccess = {
+  user?: { myActivity?: { create: boolean; read: boolean; update: boolean; delete: boolean } }
   secretary: Record<
     string,
     { create: boolean; read: boolean; update: boolean; delete: boolean } | boolean
@@ -64,6 +65,7 @@ const defaults: PublicSettings = {
   termsVersion: '1.0',
   roleAccess: {
     secretary: {
+      myActivity: { create: false, read: true, update: false, delete: false },
       dashboard: { create: false, read: true, update: false, delete: false },
       appointments: { create: false, read: true, update: false, delete: false },
       services: { create: false, read: false, update: false, delete: false },
@@ -76,7 +78,9 @@ const defaults: PublicSettings = {
       settings: { create: false, read: false, update: false, delete: false },
       driveStatus: true,
     },
+    user: { myActivity: { create: false, read: true, update: false, delete: false } },
     therapist: {
+      myActivity: { create: false, read: true, update: false, delete: false },
       dashboard: { create: false, read: true, update: false, delete: false },
       appointments: { create: false, read: true, update: false, delete: false },
       services: { create: false, read: false, update: false, delete: false },

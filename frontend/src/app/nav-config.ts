@@ -84,6 +84,13 @@ const patientNav: RoleNav = {
       group: 'Family',
       aliases: ['/dependents'],
     },
+    {
+      key: 'myActivity',
+      label: 'My activity',
+      to: '/dashboard/my-activity',
+      icon: Activity,
+      group: 'Account',
+    },
   ],
 }
 
@@ -389,6 +396,21 @@ const secretaryNav: RoleNav = {
   ],
 }
 
+therapistNav.sections.push({
+  key: 'myActivity',
+  label: 'My activity',
+  to: '/staff/therapist/my-activity',
+  icon: Activity,
+  group: 'System',
+})
+secretaryNav.sections.push({
+  key: 'myActivity',
+  label: 'My activity',
+  to: '/staff/secretary/my-activity',
+  icon: Activity,
+  group: 'Account',
+})
+
 const roleNavs: Record<NavRole, RoleNav> = {
   patient: patientNav,
   admin: adminNav,
@@ -412,6 +434,7 @@ type StaffPermission =
   | 'documents'
   | 'userManagement'
   | 'settings'
+  | 'myActivity'
 
 const gatedSections: Record<string, StaffPermission> = {
   dashboard: 'dashboard',
@@ -426,6 +449,7 @@ const gatedSections: Record<string, StaffPermission> = {
   settings: 'settings',
   records: 'sessions',
   schedule: 'appointments',
+  myActivity: 'myActivity',
 }
 
 export type NavRoleAccess = {
@@ -433,6 +457,7 @@ export type NavRoleAccess = {
     driveStatus?: boolean
   }
   therapist: Partial<Record<StaffPermission, { read: boolean } | boolean>>
+  user?: { myActivity?: { read: boolean } | boolean }
 }
 
 export function hasAreaAccess(
@@ -440,6 +465,10 @@ export function hasAreaAccess(
   area: StaffPermission,
   access: NavRoleAccess | undefined,
 ): boolean {
+  if ((role === 'patient' || role === 'user') && area === 'myActivity') {
+    const permission = access?.user?.myActivity
+    return typeof permission === 'boolean' ? permission : permission?.read !== false
+  }
   if (role === 'secretary' || role === 'therapist') {
     const permission = access?.[role]?.[area]
     return typeof permission === 'boolean' ? permission : permission?.read !== false

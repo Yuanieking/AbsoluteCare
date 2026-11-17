@@ -27,7 +27,8 @@ export function ageLabel(dateOfBirth?: string) {
   let age = today.getUTCFullYear() - birthDate.getUTCFullYear()
   const birthdayPassed =
     today.getUTCMonth() > birthDate.getUTCMonth() ||
-    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate())
+    (today.getUTCMonth() === birthDate.getUTCMonth() &&
+      today.getUTCDate() >= birthDate.getUTCDate())
   if (!birthdayPassed) age -= 1
   return `${Math.max(age, 0)} ${age === 1 ? 'year' : 'years'}`
 }
@@ -98,7 +99,15 @@ export function monthlySessionSeries(sessions: { sessionDate: string }[], now = 
     month: '2-digit',
   })
   const months = Array.from({ length: 6 }, (_, index) =>
-    new Date(Date.UTC(Number(clinicDay(now).slice(0, 4)), Number(clinicDay(now).slice(5, 7)) - 1 - (5 - index), 1)).toISOString().slice(0, 7),
+    new Date(
+      Date.UTC(
+        Number(clinicDay(now).slice(0, 4)),
+        Number(clinicDay(now).slice(5, 7)) - 1 - (5 - index),
+        1,
+      ),
+    )
+      .toISOString()
+      .slice(0, 7),
   )
   return months.map((month) => ({
     label: month,

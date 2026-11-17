@@ -118,7 +118,10 @@ export default function AdminDashboardPage() {
       <PageHeader
         eyebrow="Admin overview"
         title="Clinic today"
-        description={new Intl.DateTimeFormat('en-PH', { dateStyle: 'full', timeZone: 'Asia/Manila' }).format(new Date())}
+        description={new Intl.DateTimeFormat('en-PH', {
+          dateStyle: 'full',
+          timeZone: 'Asia/Manila',
+        }).format(new Date())}
         actions={
           <Button asChild>
             <Link to="/staff/admin/users">

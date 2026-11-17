@@ -78,7 +78,10 @@ export const serviceSchema = z.object({
   duration: z
     .string()
     .trim()
-    .refine((value) => Number.isInteger(Number(value)) && Number(value) >= 30, 'Enter at least 30 whole minutes.'),
+    .refine(
+      (value) => Number.isInteger(Number(value)) && Number(value) >= 30,
+      'Enter at least 30 whole minutes.',
+    ),
   fee: z
     .string()
     .trim()

@@ -40,6 +40,9 @@ const AdminSessionsPage = lazy(() => import('@/features/admin/SessionsPage'))
 const AdminUsersPage = lazy(() => import('@/features/admin/UsersPage'))
 const AdminPermissionsPage = lazy(() => import('@/features/admin/PermissionsPage'))
 const AdminAuditLogPage = lazy(() => import('@/features/audit/AuditTrail'))
+const MyActivityPage = lazy(() =>
+  import('@/features/audit/AuditTrail').then((module) => ({ default: module.MyActivityPage })),
+)
 const AdminSettingsPage = lazy(() => import('@/features/admin/settings/SettingsPage'))
 const StaffDocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'))
 const VerifyDocumentPage = lazy(() => import('@/features/documents/VerifyPage'))
@@ -100,6 +103,7 @@ function NotificationsRedirect() {
 }
 
 const patientChildren: RouteObject[] = [
+  { path: 'my-activity', element: shellRoute(<MyActivityPage />) },
   { index: true, element: shellRoute(<PatientDashboardPage />, 'dashboard') },
   { path: 'appointments', element: shellRoute(<AppointmentsPage />) },
   { path: 'appointments/:id', element: shellRoute(<AppointmentDetailsPage />, 'form') },
@@ -128,6 +132,7 @@ const adminChildren: RouteObject[] = [
 ]
 
 const therapistChildren: RouteObject[] = [
+  { path: 'my-activity', element: shellRoute(<MyActivityPage />) },
   { index: true, element: shellRoute(<TherapistDashboardPage />, 'dashboard') },
   { path: 'my-appointments', element: shellRoute(<TherapistAppointmentsPage />) },
   { path: 'appointments/:id', element: shellRoute(<TherapistAppointmentDetailsPage />, 'form') },
@@ -144,6 +149,7 @@ const therapistChildren: RouteObject[] = [
 ]
 
 const secretaryChildren: RouteObject[] = [
+  { path: 'my-activity', element: shellRoute(<MyActivityPage />) },
   { index: true, element: shellRoute(<SecretaryDashboardPage />, 'dashboard') },
   { path: 'schedule', element: shellRoute(<SecretarySchedulePage />) },
   { path: 'payments', element: shellRoute(<SecretaryPaymentsPage />) },
@@ -317,6 +323,9 @@ export const router = createBrowserRouter([
 ])
 
 const pageTitles: [string, string][] = [
+  ['/dashboard/my-activity', 'My activity'],
+  ['/staff/therapist/my-activity', 'My activity'],
+  ['/staff/secretary/my-activity', 'My activity'],
   ['/staff/admin/appointments', 'Appointments'],
   ['/staff/admin/users', 'User management'],
   ['/staff/admin/therapists', 'Therapist records'],

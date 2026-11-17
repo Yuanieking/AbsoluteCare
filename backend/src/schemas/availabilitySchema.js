@@ -25,15 +25,17 @@ export const dayHoursSchema = z
     path: ["end"],
   });
 
-export const dateOverrideSchema = z.object({
-  date: z.iso.date(),
-  unavailable: z.boolean().default(false),
-  start: z.string().regex(clockPattern).default("08:00"),
-  end: z.string().regex(clockPattern).default("17:00"),
-}).refine((value) => value.unavailable || value.start < value.end, {
-  message: "End time must be after the start time.",
-  path: ["end"],
-});
+export const dateOverrideSchema = z
+  .object({
+    date: z.iso.date(),
+    unavailable: z.boolean().default(false),
+    start: z.string().regex(clockPattern).default("08:00"),
+    end: z.string().regex(clockPattern).default("17:00"),
+  })
+  .refine((value) => value.unavailable || value.start < value.end, {
+    message: "End time must be after the start time.",
+    path: ["end"],
+  });
 
 export const availabilitySchema = z
   .object({
@@ -56,11 +58,22 @@ export const availabilitySchema = z
     }
     const dates = value.dateOverrides?.map((entry) => entry.date) || [];
     if (new Set(dates).size !== dates.length) {
-      ctx.addIssue({ code: "custom", path: ["dateOverrides"], message: "Choose each date only once." });
+      ctx.addIssue({
+        code: "custom",
+        path: ["dateOverrides"],
+        message: "Choose each date only once.",
+      });
     }
     const hours = value.workingHoursByDay;
-    if (hours && new Set(hours.map((entry) => entry.day)).size !== hours.length) {
-      ctx.addIssue({ code: "custom", path: ["workingHoursByDay"], message: "Choose each weekday only once." });
+    if (
+      hours &&
+      new Set(hours.map((entry) => entry.day)).size !== hours.length
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["workingHoursByDay"],
+        message: "Choose each weekday only once.",
+      });
     }
     if (!hours) return;
     for (const entry of hours) {

@@ -174,7 +174,10 @@ export async function rewriteEnvFile(overrides = new Map()) {
 
     const unmanagedInOrder = originalOrder.filter(
       (key) =>
-        !MANAGED_KEYS.has(key) && !customKeys.has(key) && !RETIRED_KEYS.has(key) && key in existing,
+        !MANAGED_KEYS.has(key) &&
+        !customKeys.has(key) &&
+        !RETIRED_KEYS.has(key) &&
+        key in existing,
     );
     // Include unmanaged keys that dotenv parsed but whose line shape the
     // order scanner missed (defensive; keeps values untouched).

@@ -25,7 +25,11 @@ router.use(
   requireRole("admin", "secretary", "therapist"),
   requireAccess("documents"),
 );
-router.post("/", requirePermission("documents", "create"), asyncRoute(createDocumentHandler));
+router.post(
+  "/",
+  requirePermission("documents", "create"),
+  asyncRoute(createDocumentHandler),
+);
 router.get("/", asyncRoute(listDocumentsHandler));
 router.get("/:id", asyncRoute(getDocumentHandler));
 router.get("/:id/file", asyncRoute(downloadDocumentHandler));

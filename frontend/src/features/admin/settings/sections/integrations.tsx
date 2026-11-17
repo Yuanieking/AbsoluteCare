@@ -37,7 +37,9 @@ import type {
 
 function lastChanged(record?: IntegrationHealthRecord) {
   if (!record?.updatedBy?.name) return 'Never changed'
-  const when = record.updatedAt ? new Date(record.updatedAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' }) : ''
+  const when = record.updatedAt
+    ? new Date(record.updatedAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })
+    : ''
   return `Last changed by ${record.updatedBy.name}${when ? ` · ${when}` : ''}`
 }
 
@@ -401,10 +403,22 @@ export function IntegrationsSection({
       section={sectionMap.integrations!}
       actions={
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={saving || !credentials} onClick={onResetDefaults}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={saving || !credentials}
+            onClick={onResetDefaults}
+          >
             Reset to Default
           </Button>
-          <Button type="button" variant="outline" size="sm" disabled={refreshing} onClick={onRefresh}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={refreshing}
+            onClick={onRefresh}
+          >
             {refreshing ? (
               <LoaderCircle className="animate-spin" size={14} aria-hidden="true" />
             ) : (

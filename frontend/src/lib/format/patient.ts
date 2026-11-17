@@ -34,7 +34,6 @@ export function formatAppointmentDate(value: DateValue): string {
 
 export function todayInManila(): string {
   return clinicDay()
-
 }
 
 export function formatAppointmentTime(start: DateValue, end?: DateValue, fallback = ''): string {

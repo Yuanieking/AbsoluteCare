@@ -11,7 +11,12 @@ describe('Manila wall-clock and UTC conversion', () => {
     expect(clinicDate('2026-03-02').toISOString()).toBe('2026-03-01T16:00:00.000Z')
     expect(clinicDate('2026-03-02T09:30Z').toISOString()).toBe('2026-03-02T09:30:00.000Z')
     expect(formatRequestedDateTimeManila('2026-03-02', '09:30')).toContain('9:30 AM')
-    const appointment = { _id: 'a', status: 'pending', requestedDate: '2026-03-02', requestedTime: '09:30' }
+    const appointment = {
+      _id: 'a',
+      status: 'pending',
+      requestedDate: '2026-03-02',
+      requestedTime: '09:30',
+    }
     expect(therapistMoment(appointment)?.toISOString()).toBe('2026-03-02T01:30:00.000Z')
     expect(secretaryMoment(appointment)?.toISOString()).toBe('2026-03-02T01:30:00.000Z')
   })
@@ -19,7 +24,10 @@ describe('Manila wall-clock and UTC conversion', () => {
     const now = new Date('2026-12-31T16:30Z')
     expect(clinicDay(now)).toBe('2027-01-01')
     expect(presetRange('month', now)).toEqual({ from: '2027-01-01', to: '2027-01-01' })
-    expect(clinicRange('2027-01-01', '2027-01-01')).toEqual({ from: '2026-12-31T16:00:00.000Z', to: '2027-01-01T15:59:59.999Z' })
+    expect(clinicRange('2027-01-01', '2027-01-01')).toEqual({
+      from: '2026-12-31T16:00:00.000Z',
+      to: '2027-01-01T15:59:59.999Z',
+    })
     expect(clinicMonthRange('2024-02-16').to).toBe('2024-02-29T15:59:59.999Z')
   })
 })

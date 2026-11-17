@@ -175,31 +175,37 @@ export const rollbackCredentialKey = withCredentialErrors(async (req, res) => {
   res.json(result);
 });
 
-export const resetCredentialDefaults = withCredentialErrors(async (req, res) => {
-  const parsed = resetIntegrationCredentialsSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ message: "Confirm the reset and provide a verification token." });
-    return;
-  }
-  const payload = await verifySettingsToken(
-    req.user.userId,
-    "resetIntegrationCredentials",
-    parsed.data.verificationToken,
-  );
-  if (!payload) {
-    res.status(409).json({
-      code: "VERIFICATION_REQUIRED",
-      message: "This change needs a verification code.",
+export const resetCredentialDefaults = withCredentialErrors(
+  async (req, res) => {
+    const parsed = resetIntegrationCredentialsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res
+        .status(400)
+        .json({
+          message: "Confirm the reset and provide a verification token.",
+        });
+      return;
+    }
+    const payload = await verifySettingsToken(
+      req.user.userId,
+      "resetIntegrationCredentials",
+      parsed.data.verificationToken,
+    );
+    if (!payload) {
+      res.status(409).json({
+        code: "VERIFICATION_REQUIRED",
+        message: "This change needs a verification code.",
+      });
+      return;
+    }
+    const result = await resetCredentials({
+      adminId: req.user.userId,
+      ip: req.ip ?? "",
     });
-    return;
-  }
-  const result = await resetCredentials({
-    adminId: req.user.userId,
-    ip: req.ip ?? "",
-  });
-  await consumeVerification(payload.verificationId);
-  res.json(result);
-});
+    await consumeVerification(payload.verificationId);
+    res.json(result);
+  },
+);
 
 export const testCredentialGroup = withCredentialErrors(async (req, res) => {
   const result = await testGroup(String(req.params.group ?? ""));

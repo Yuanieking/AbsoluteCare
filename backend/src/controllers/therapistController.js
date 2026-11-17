@@ -270,9 +270,17 @@ export async function syncCalendarAppointment(req, res) {
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
-  const event = await syncConfirmedAppointment(appointment._id, therapistId(req));
+  const event = await syncConfirmedAppointment(
+    appointment._id,
+    therapistId(req),
+  );
   if (!event) {
-    res.status(409).json({ message: "Connect Google Calendar and choose a confirmed appointment before syncing." });
+    res
+      .status(409)
+      .json({
+        message:
+          "Connect Google Calendar and choose a confirmed appointment before syncing.",
+      });
     return;
   }
   res.json({ message: "Calendar sync requested." });

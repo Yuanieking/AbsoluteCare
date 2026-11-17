@@ -96,8 +96,10 @@ export function getIntegrationSource(key) {
   for (const candidate of chainFor(key)) {
     if (
       overrides.has(candidate) ||
-      (!clearedKeys.has(candidate) && process.env[`CUSTOM_${candidate}`]?.trim())
-    ) return "app";
+      (!clearedKeys.has(candidate) &&
+        process.env[`CUSTOM_${candidate}`]?.trim())
+    )
+      return "app";
   }
   for (const candidate of chainFor(key)) {
     const fromEnv = process.env[candidate];

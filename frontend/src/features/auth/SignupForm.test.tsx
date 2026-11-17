@@ -69,7 +69,11 @@ beforeEach(() => {
 
 describe('Signup session', () => {
   it('Uses non-submitting legal buttons without navigating away from signup', () => {
-    const html = renderToStaticMarkup(<MemoryRouter><SignupForm isStaffAlias={false} /></MemoryRouter>)
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <SignupForm isStaffAlias={false} />
+      </MemoryRouter>,
+    )
     expect(html).toMatch(/<button[^>]*type="button"[^>]*>Terms and Conditions<\/button>/)
     expect(html).toMatch(/<button[^>]*type="button"[^>]*>Privacy Policy<\/button>/)
     expect(html).not.toContain('href="/terms"')

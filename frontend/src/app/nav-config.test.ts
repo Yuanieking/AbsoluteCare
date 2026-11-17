@@ -12,6 +12,20 @@ import {
 const off = { secretary: { documents: false }, therapist: { documents: false } }
 const on = { secretary: { documents: true }, therapist: { documents: true } }
 
+test('personal activity navigation follows role read permission without gating patient care', () => {
+  const access = { secretary: { myActivity: { read: false } }, therapist: { myActivity: { read: false } }, user: { myActivity: { read: false } } }
+  for (const role of ['patient', 'secretary', 'therapist']) {
+    const nav = getRoleNav(role)
+    const activity = nav.sections.find((section) => section.key === 'myActivity')
+    expect(activity?.label).toBe('My activity')
+    expect(matchSection(nav, activity!.to)?.key).toBe('myActivity')
+    expect(filterNavByAccess(nav, role, access).sections.some((section) => section.key === 'myActivity')).toBe(false)
+    expect(hasAreaAccess(role, 'myActivity', undefined)).toBe(true)
+  }
+  expect(hasAreaAccess('patient', 'appointments', access)).toBe(true)
+  expect(hasAreaAccess('admin', 'myActivity', access)).toBe(true)
+})
+
 test('switched-off areas disappear from staff navigation only', () => {
   const keys = (role: string, access: typeof on) =>
     filterNavByAccess(getRoleNav(role), role, access).sections.map((section) => section.key)

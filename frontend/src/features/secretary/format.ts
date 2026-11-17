@@ -99,7 +99,15 @@ export function collectedSeries(appointments: SecretaryAppointment[], now = new 
     month: '2-digit',
   })
   const months = Array.from({ length: 6 }, (_, index) =>
-    new Date(Date.UTC(Number(manilaDayKey(now).slice(0, 4)), Number(manilaDayKey(now).slice(5, 7)) - 1 - (5 - index), 1)).toISOString().slice(0, 7),
+    new Date(
+      Date.UTC(
+        Number(manilaDayKey(now).slice(0, 4)),
+        Number(manilaDayKey(now).slice(5, 7)) - 1 - (5 - index),
+        1,
+      ),
+    )
+      .toISOString()
+      .slice(0, 7),
   )
   const totals = new Map(months.map((month) => [month, 0]))
   for (const appointment of appointments) {

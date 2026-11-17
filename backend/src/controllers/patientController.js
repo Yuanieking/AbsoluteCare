@@ -31,7 +31,10 @@ export async function listServices(req, res) {
 export async function listBookingTimes(req, res) {
   const parsed = bookingAvailabilitySchema.parse(req.query);
   const service = await patientService.findService(parsed.service);
-  if (!service) return res.status(400).json({ message: "That therapy service is not available." });
+  if (!service)
+    return res
+      .status(400)
+      .json({ message: "That therapy service is not available." });
   res.json({ times: await bookingTimes(service, parsed.date) });
 }
 
@@ -110,9 +113,15 @@ export async function requestAppointment(req, res) {
     return;
   }
 
-  const times = await bookingTimes(service, parsed.requestedDate, null, { time: parsed.requestedTime });
+  const times = await bookingTimes(service, parsed.requestedDate, null, {
+    time: parsed.requestedTime,
+  });
   if (!times.includes(parsed.requestedTime)) {
-    res.status(400).json({ message: "Choose an available time within therapist working hours." });
+    res
+      .status(400)
+      .json({
+        message: "Choose an available time within therapist working hours.",
+      });
     return;
   }
 
@@ -221,12 +230,22 @@ export async function requestReschedule(req, res) {
     return;
   }
 
-  const times = await bookingTimes({
-    name: appointment.serviceSnapshot?.name || appointment.service.name,
-    duration: appointment.serviceSnapshot?.duration || appointment.service.duration,
-  }, parsed.proposedDate, appointment.therapist?._id || appointment.therapist, { time: parsed.proposedTime, excludeId: appointment._id });
+  const times = await bookingTimes(
+    {
+      name: appointment.serviceSnapshot?.name || appointment.service.name,
+      duration:
+        appointment.serviceSnapshot?.duration || appointment.service.duration,
+    },
+    parsed.proposedDate,
+    appointment.therapist?._id || appointment.therapist,
+    { time: parsed.proposedTime, excludeId: appointment._id },
+  );
   if (!times.includes(parsed.proposedTime)) {
-    res.status(400).json({ message: "Choose an available time within therapist working hours." });
+    res
+      .status(400)
+      .json({
+        message: "Choose an available time within therapist working hours.",
+      });
     return;
   }
 
@@ -317,7 +336,12 @@ export async function syncAppointmentCalendar(req, res) {
   try {
     const event = await syncConfirmedAppointment(appointment._id);
     if (!event) {
-      res.status(409).json({ message: "Enable Google Calendar sync and connect your Google account before adding this appointment." });
+      res
+        .status(409)
+        .json({
+          message:
+            "Enable Google Calendar sync and connect your Google account before adding this appointment.",
+        });
       return;
     }
     const refreshed = await patientService.findAppointmentCalendarFields(
