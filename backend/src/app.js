@@ -1,3 +1,4 @@
+import "./config/audit.js";
 import "./config/integrations.js";
 import express from "express";
 import path from "node:path";
@@ -40,11 +41,15 @@ import { setHttpServer } from "./services/restartService.js";
 import { securityHeaders } from "./middleware/securityHeaders.js";
 import { globalRateLimit } from "./middleware/rateLimit.js";
 import { sanitizeInput } from "./middleware/sanitizeInput.js";
+import { auditRequest } from "./middleware/auditMiddleware.js";
+import auditRoutes from "./routes/auditRoutes.js";
+import { importLegacyAudit } from "./services/auditService.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 app.disable("x-powered-by");
 app.use(securityHeaders);
+app.use(auditRequest);
 
 app.get("/static/email/logo.png", (req, res) => {
   res.sendFile(path.join(ASSETS_DIR, "email/logo.png"));
@@ -77,6 +82,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(sanitizeInput);
 
+app.use("/audit", auditRoutes);
 app.use("/auth", authRoutes);
 app.use("/integrations", calendarRoutes);
 app.use("/integrations", googleDriveRoutes);
@@ -109,6 +115,7 @@ const server = app.listen(PORT, () => {
   void verifyMailer();
   connectDB()
     .then(async () => {
+      await importLegacyAudit();
       await refreshRuntimeConfig();
       await syncBootstrapAdmins();
       await markRestartApplied();

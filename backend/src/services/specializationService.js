@@ -35,5 +35,7 @@ export async function registerSpecializations(names) {
         upsert: true,
       },
     }));
-  if (operations.length) await Specialization.bulkWrite(operations);
+  for (const { updateOne } of operations) {
+    await Specialization.updateOne(updateOne.filter, updateOne.update, { upsert: true });
+  }
 }

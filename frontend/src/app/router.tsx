@@ -39,6 +39,7 @@ const AdminServicesPage = lazy(() => import('@/features/admin/ServicesPage'))
 const AdminSessionsPage = lazy(() => import('@/features/admin/SessionsPage'))
 const AdminUsersPage = lazy(() => import('@/features/admin/UsersPage'))
 const AdminPermissionsPage = lazy(() => import('@/features/admin/PermissionsPage'))
+const AdminAuditLogPage = lazy(() => import('@/features/audit/AuditTrail'))
 const AdminSettingsPage = lazy(() => import('@/features/admin/settings/SettingsPage'))
 const StaffDocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'))
 const VerifyDocumentPage = lazy(() => import('@/features/documents/VerifyPage'))
@@ -113,6 +114,7 @@ const adminChildren: RouteObject[] = [
   { index: true, element: shellRoute(<AdminDashboardPage />, 'dashboard') },
   { path: 'users', element: shellRoute(<AdminUsersPage />) },
   { path: 'permissions', element: shellRoute(<AdminPermissionsPage />, 'form') },
+  { path: 'audit', element: shellRoute(<AdminAuditLogPage />) },
   { path: 'therapists', element: shellRoute(<AdminPeoplePage role="therapist" />) },
   { path: 'patients', element: shellRoute(<AdminPeoplePage role="patient" />) },
   { path: 'appointments', element: shellRoute(<AdminAppointmentsPage />) },

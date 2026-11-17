@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { auditContext } from "../services/auditCapture.js";
 
 import { JWT_SECRET } from "../config/env.js";
 import User from "../models/userModel.js";
@@ -32,7 +33,7 @@ export const protectRoute = async (req, res, next) => {
     }
 
     const user = await User.findById(req.user.userId).select(
-      "role isActive isArchived removedAt mustChangePassword",
+      "role firstname lastname isActive isArchived removedAt mustChangePassword",
     );
     if (!user || user.removedAt) {
       res.status(403).json({
@@ -48,6 +49,12 @@ export const protectRoute = async (req, res, next) => {
       return;
     }
 
+    req.user.role = user.role;
+    const context = auditContext.getStore();
+    if (context) context.actor = {
+      actorId: req.user.userId, actorRole: user.role,
+      actorName: `${user.firstname || ""} ${user.lastname || ""}`.trim() || "User",
+    };
     const requestPath = req.originalUrl.split("?")[0];
     const allowedDuringPasswordChange = [
       "/auth/me",

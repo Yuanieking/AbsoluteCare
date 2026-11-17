@@ -193,6 +193,13 @@ const adminNav: RoleNav = {
       ],
     },
     {
+      key: 'audit',
+      label: 'Audit log',
+      to: '/staff/admin/audit',
+      icon: FileText,
+      group: 'System',
+    },
+    {
       key: 'permissions',
       label: 'Permissions',
       to: '/staff/admin/permissions',
