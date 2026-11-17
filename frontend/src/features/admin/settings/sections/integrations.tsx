@@ -24,6 +24,7 @@ import { sectionMap } from '../config'
 import { InlineNote, SettingsSection } from '../fields'
 import { IntegrationSetupDialog } from '../IntegrationSetupDialog'
 import { IntegrationSetupGuide } from '../IntegrationSetupGuide'
+import { maskCredential } from '../maskCredential'
 import { RestartBanner, type RestartPhase } from '../RestartBanner'
 import type {
   CredentialsResponse,
@@ -448,7 +449,7 @@ export function IntegrationsSection({
           title="Google sign-in"
           description="Let patients log in and sign up with their Google account."
           configured={googleConfigured}
-          meta={`${googleRecord.details?.clientIdMasked ? `Client ID ${googleRecord.details.clientIdMasked}` : 'Client ID not set'} · ${lastChanged(googleRecord)}`}
+          meta={`Client ID ${maskCredential(googleRecord.details?.clientIdMasked)} · ${lastChanged(googleRecord)}`}
           setupHint={!googleConfigured ? missingNote(googleRecord) : undefined}
           switchControl={toggle(
             'googleAuthEnabled',
@@ -546,7 +547,7 @@ export function IntegrationsSection({
           title="Google Calendar"
           description="Sync confirmed appointments to users' Google Calendars. Turning this off pauses syncing but keeps existing connections."
           configured={calendarConfigured}
-          meta={`${calendarRecord.details?.redirectUri || 'Calendar redirect URI not set'} · ${lastChanged(calendarRecord)}`}
+          meta={`Calendar redirect URI ${maskCredential(calendarRecord.details?.redirectUri)} · ${lastChanged(calendarRecord)}`}
           setupHint={!calendarConfigured ? missingNote(calendarRecord) : undefined}
           switchControl={toggle(
             'googleCalendarEnabled',
@@ -588,7 +589,7 @@ export function IntegrationsSection({
                   ? 'Login rejected'
                   : undefined
           }
-          meta={`${emailRecord.details?.senderAddress || 'Sender address not set'} · ${lastChanged(emailRecord)}`}
+          meta={`Sender address ${maskCredential(emailRecord.details?.senderAddress)} · ${lastChanged(emailRecord)}`}
           setupHint={!emailConfigured ? missingNote(emailRecord) : undefined}
           switchControl={toggle('emailEnabled', 'Email provider', value.emailEnabled)}
           footer={
