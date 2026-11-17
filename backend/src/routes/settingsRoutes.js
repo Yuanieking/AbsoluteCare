@@ -21,6 +21,7 @@ import {
   getCredentialGroups,
   patchCredentials,
   rollbackCredentialKey,
+  resetCredentialDefaults,
   testCredentialGroup,
 } from "../controllers/integrationCredentialController.js";
 
@@ -57,6 +58,11 @@ router.patch(
   "/integrations/credentials",
   jsonOnly,
   asyncRoute(patchCredentials),
+);
+router.post(
+  "/integrations/credentials/reset",
+  jsonOnly,
+  asyncRoute(resetCredentialDefaults),
 );
 router.post(
   "/integrations/credentials/:key/clear",

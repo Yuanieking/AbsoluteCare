@@ -91,6 +91,14 @@ export async function saveIntegrationCredentials(payload: {
   return response.data as CredentialsResponse
 }
 
+export async function resetIntegrationCredentials(verificationToken: string) {
+  const response = await axiosInstance.post('/admin/settings/integrations/credentials/reset', {
+    verificationToken,
+    confirmKeyRotation: true,
+  })
+  return response.data as { message: string; envWrite: string; warnings: string[] }
+}
+
 export async function clearIntegrationCredential(
   key: string,
   payload: { verificationToken: string },

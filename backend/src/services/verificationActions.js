@@ -11,6 +11,7 @@ const STATIC_ACTIONS = new Set([
   // ** download and the restore need the superuser password and emailed code.
   "exportBackup",
   "restoreBackup",
+  "resetIntegrationCredentials",
 ]);
 
 const CREDENTIAL_ACTION =

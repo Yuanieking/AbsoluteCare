@@ -307,6 +307,7 @@ export function IntegrationsSection({
   onEditCredentials,
   onRestart,
   onDismissRestart,
+  onResetDefaults,
   onDownloadHandover,
 }: {
   value: IntegrationValues
@@ -325,6 +326,7 @@ export function IntegrationsSection({
   onEditCredentials: (group: string) => void
   onRestart: () => void
   onDismissRestart: () => void
+  onResetDefaults: () => void
   onDownloadHandover: () => void
 }) {
   const [testing, setTesting] = useState('')
@@ -397,14 +399,19 @@ export function IntegrationsSection({
     <SettingsSection
       section={sectionMap.integrations!}
       actions={
-        <Button type="button" variant="outline" size="sm" disabled={refreshing} onClick={onRefresh}>
-          {refreshing ? (
-            <LoaderCircle className="animate-spin" size={14} aria-hidden="true" />
-          ) : (
-            <RefreshCw size={14} aria-hidden="true" />
-          )}
-          {refreshing ? 'Re-checking...' : 'Re-check status'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" disabled={saving || !credentials} onClick={onResetDefaults}>
+            Reset to Default
+          </Button>
+          <Button type="button" variant="outline" size="sm" disabled={refreshing} onClick={onRefresh}>
+            {refreshing ? (
+              <LoaderCircle className="animate-spin" size={14} aria-hidden="true" />
+            ) : (
+              <RefreshCw size={14} aria-hidden="true" />
+            )}
+            {refreshing ? 'Re-checking...' : 'Re-check status'}
+          </Button>
+        </div>
       }
     >
       {!googleConfigured || !recaptchaConfigured || !emailConfigured ? (

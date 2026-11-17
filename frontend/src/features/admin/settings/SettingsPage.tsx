@@ -50,6 +50,7 @@ export default function SettingsPage() {
   const [drafts, setDrafts] = useState<Partial<Record<SettingsSectionKey, SectionValue>>>({})
   const [saving, setSaving] = useState(false)
   const [credentialGroup, setCredentialGroup] = useState('')
+  const [resettingCredentials, setResettingCredentials] = useState(false)
   const [pendingDisable, setPendingDisable] = useState<keyof IntegrationValues | null>(null)
   const [restartPhase, setRestartPhase] = useState<RestartPhase>('idle')
   const [restartMessage, setRestartMessage] = useState('')
@@ -399,6 +400,7 @@ export default function SettingsPage() {
                 onTestIntegration={testIntegration}
                 onRefresh={() => void refreshIntegrationStatus()}
                 onEditCredentials={setCredentialGroup}
+                onResetDefaults={() => setResettingCredentials(true)}
                 onRestart={() => void restartNow()}
                 onDismissRestart={() => {
                   setRestartPhase('idle')
@@ -432,6 +434,27 @@ export default function SettingsPage() {
           </>
         )}
       </div>
+
+      {resettingCredentials ? (
+        <SuperuserVerifyDialog
+          action="resetIntegrationCredentials"
+          title="Reset to Default"
+          description="Reset all integration credentials to the original server defaults? This removes every custom override. Integrations without defaults become unconfigured. Calendar accounts may need to reconnect. Integration switches stay unchanged."
+          onClose={() => setResettingCredentials(false)}
+          onVerified={async (token) => {
+            const result = await api.resetIntegrationCredentials(token)
+            setResettingCredentials(false)
+            setRestartPhase('idle')
+            showSuccess(result.message)
+            for (const warning of result.warnings) showError(warning)
+            try {
+              await bundle.refetch()
+            } catch {
+              showError('Reset saved, but the page could not refresh. Reload to see it.')
+            }
+          }}
+        />
+      ) : null}
 
       {pendingDisable ? (
         <SuperuserVerifyDialog

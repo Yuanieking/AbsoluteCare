@@ -548,7 +548,9 @@ export async function requestVerification(req, res) {
     expiresAt,
   });
   const actionLabel =
-    parsed.action === "exportBackup"
+    parsed.action === "resetIntegrationCredentials"
+      ? "resetting all integration credentials to the original server defaults"
+      : parsed.action === "exportBackup"
       ? "downloading a full database backup"
       : parsed.action === "restoreBackup"
         ? "restoring the database from a backup"

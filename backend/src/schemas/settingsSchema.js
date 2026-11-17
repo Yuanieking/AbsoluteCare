@@ -140,6 +140,11 @@ const sectionSchemas = {
     .strict(),
 };
 
+export const resetIntegrationCredentialsSchema = z.object({
+  verificationToken: z.string().min(1),
+  confirmKeyRotation: z.literal(true),
+}).strict();
+
 export const settingsSections = Object.keys(sectionSchemas);
 
 export function validateSettingsSection(section, body) {
