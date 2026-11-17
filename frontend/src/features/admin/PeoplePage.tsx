@@ -17,12 +17,10 @@ import {
 import { useAdminUsers } from './queries'
 import { PersonDialog } from './PersonDialog'
 import type { UserAccount } from './types'
+import { clinicMonthRange } from '@/lib/format/clinic-time'
 
 function monthRange() {
-  const now = new Date()
-  const from = new Date(now.getFullYear(), now.getMonth(), 1)
-  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-  return { from: from.toISOString(), to: to.toISOString() }
+  return clinicMonthRange()
 }
 
 export default function PeoplePage({ role }: { role: 'patient' | 'therapist' }) {

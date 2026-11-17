@@ -25,6 +25,7 @@ import { availabilityError } from "../services/availabilityService.js";
 import { adminNotificationSchema } from "../schemas/appointmentSchema.js";
 import { manilaDateTime } from "../utils/appointmentDates.js";
 import { guardFresh } from "../services/concurrencyService.js";
+import { clinicDate } from "../utils/appointmentDates.js";
 
 function scheduleFor(appointment, date, time) {
   const start = manilaDateTime(date, time);
@@ -131,8 +132,8 @@ export async function listAppointments(req, res) {
   }
   if (req.query.from || req.query.to) {
     query.scheduledStart = {
-      ...(req.query.from ? { $gte: new Date(String(req.query.from)) } : {}),
-      ...(req.query.to ? { $lte: new Date(String(req.query.to)) } : {}),
+      ...(req.query.from ? { $gte: clinicDate(req.query.from) } : {}),
+      ...(req.query.to ? { $lte: clinicDate(req.query.to, true) } : {}),
     };
   }
   if (typeof req.query.therapist === "string" && req.query.therapist)

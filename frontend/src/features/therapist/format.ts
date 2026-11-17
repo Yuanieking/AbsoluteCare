@@ -1,4 +1,5 @@
 import { formatDateManila, formatDateTimeManila, formatTimeManila } from '@/lib/format/patient'
+import { clinicDate } from '@/lib/format/clinic-time'
 import type {
   Appointment,
   DependentRef,
@@ -45,7 +46,7 @@ export function appointmentMoment(appointment: Appointment) {
   const value = appointment.scheduledStart || appointment.requestedDate
   if (!value) return null
   const time = appointment.scheduledStart ? undefined : appointment.requestedTime || '00:00'
-  const date = new Date(time ? `${value}T${time}` : value)
+  const date = clinicDate(time ? `${value}T${time}` : value)
   return Number.isNaN(date.getTime()) ? null : date
 }
 
@@ -150,7 +151,7 @@ export function monthlySeries<T>(
     month: '2-digit',
   })
   const months = Array.from({ length: 6 }, (_, index) =>
-    formatter.format(new Date(now.getFullYear(), now.getMonth() - (5 - index), 1)).slice(0, 7),
+    new Date(Date.UTC(Number(manilaDayKey(now).slice(0, 4)), Number(manilaDayKey(now).slice(5, 7)) - 1 - (5 - index), 1)).toISOString().slice(0, 7),
   )
   const counts = new Map(months.map((month) => [month, 0]))
   for (const item of items) {

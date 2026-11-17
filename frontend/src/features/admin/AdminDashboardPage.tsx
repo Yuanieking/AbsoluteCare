@@ -24,19 +24,20 @@ import {
 import { useConfirmAppointment } from './mutations'
 import { useAdminAppointments, useAdminReports } from './queries'
 import type { AdminAppointment } from './types'
+import { clinicDay, clinicRange, clinicMonthRange } from '@/lib/format/clinic-time'
 
 function dayBounds() {
   const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const start = new Date(clinicRange(clinicDay(now), clinicDay(now)).from)
   const end = new Date(start)
-  end.setDate(end.getDate() + 1)
+  end.setTime(end.getTime() + 24 * 60 * 60 * 1000 - 1)
   return { from: start.toISOString(), to: end.toISOString() }
 }
 
 function monthBounds() {
   const now = new Date()
   return {
-    from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+    from: clinicMonthRange(now).from,
     to: now.toISOString(),
   }
 }
@@ -117,7 +118,7 @@ export default function AdminDashboardPage() {
       <PageHeader
         eyebrow="Admin overview"
         title="Clinic today"
-        description={new Intl.DateTimeFormat('en-PH', { dateStyle: 'full' }).format(new Date())}
+        description={new Intl.DateTimeFormat('en-PH', { dateStyle: 'full', timeZone: 'Asia/Manila' }).format(new Date())}
         actions={
           <Button asChild>
             <Link to="/staff/admin/users">

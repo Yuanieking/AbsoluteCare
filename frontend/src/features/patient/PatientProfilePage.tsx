@@ -262,7 +262,7 @@ export default function PatientProfilePage() {
               {profile?.createdAt ? (
                 <Detail
                   label="Account created"
-                  value={new Date(profile.createdAt).toLocaleDateString()}
+                  value={new Date(profile.createdAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })}
                 />
               ) : null}
             </dl>

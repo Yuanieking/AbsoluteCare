@@ -36,7 +36,7 @@ import type {
 
 function lastChanged(record?: IntegrationHealthRecord) {
   if (!record?.updatedBy?.name) return 'Never changed'
-  const when = record.updatedAt ? new Date(record.updatedAt).toLocaleDateString() : ''
+  const when = record.updatedAt ? new Date(record.updatedAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' }) : ''
   return `Last changed by ${record.updatedBy.name}${when ? ` · ${when}` : ''}`
 }
 
@@ -609,7 +609,8 @@ export function IntegrationsSection({
               {results.email ||
                 `${emailRecord.lastTest?.ok ? 'Last test passed' : 'Last test failed'} · ${
                   emailRecord.lastTest?.checkedAt
-                    ? new Date(emailRecord.lastTest.checkedAt).toLocaleTimeString([], {
+                    ? new Date(emailRecord.lastTest.checkedAt).toLocaleTimeString('en-PH', {
+                        timeZone: 'Asia/Manila',
                         hour: 'numeric',
                         minute: '2-digit',
                       })

@@ -17,16 +17,14 @@ import {
 import { formatDate, formatDuration, personName } from './format'
 import { useAdminServices, useAdminSessions } from './queries'
 import type { SessionRecord } from './types'
+import { clinicMonthRange } from '@/lib/format/clinic-time'
 
 function sessionService(session: SessionRecord) {
   return session.service?.name || 'Therapy session'
 }
 
 function monthRange(value?: string) {
-  const date = value ? new Date(value) : new Date()
-  const from = new Date(date.getFullYear(), date.getMonth(), 1)
-  const to = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
-  return { from: from.toISOString(), to: to.toISOString() }
+  return clinicMonthRange(value)
 }
 
 export default function SessionsPage() {

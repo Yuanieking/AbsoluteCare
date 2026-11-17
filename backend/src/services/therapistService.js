@@ -4,6 +4,7 @@ import Session from "../models/sessionModel.js";
 import User from "../models/userModel.js";
 import {
   isValidFutureDate,
+  clinicDate,
   manilaDateTime,
 } from "../utils/appointmentDates.js";
 import {
@@ -207,7 +208,7 @@ export async function createSessionForAppointment(
       message:
         "Sessions can be recorded after a confirmed appointment has passed.",
     };
-  const sessionDate = new Date(input.sessionDate);
+  const sessionDate = clinicDate(input.sessionDate);
   const durationMinutes = Number(input.durationMinutes);
   if (
     Number.isNaN(sessionDate.getTime()) ||
@@ -263,7 +264,7 @@ export async function updateSession(therapistId, sessionId, changes, ifMatch) {
   // ** Concurrency: reject if the session notes changed since the client read them.
   guardFresh(session, ifMatch);
   if (changes.sessionDate !== undefined)
-    session.sessionDate = new Date(changes.sessionDate);
+    session.sessionDate = clinicDate(changes.sessionDate);
   if (changes.durationMinutes !== undefined)
     session.durationMinutes = Number(changes.durationMinutes);
   if (changes.patientVisibleNotes !== undefined)
