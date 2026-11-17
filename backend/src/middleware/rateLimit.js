@@ -21,8 +21,16 @@ export function createRateLimiter({ windowMs, limit, body }) {
       return;
     }
     if (entry.count >= limit) {
+      const remainingMinutes = Math.max(
+        1,
+        Math.ceil((entry.resetAt - now) / 60_000),
+      );
       res.set("Retry-After", retryAfter);
-      res.status(429).json(body);
+      const message = body.message || "Too many requests.";
+      res.status(429).json({
+        ...body,
+        message: `${message} Retry in ${remainingMinutes} minute(s).`,
+      });
       return;
     }
     entry.count += 1;
@@ -32,8 +40,8 @@ export function createRateLimiter({ windowMs, limit, body }) {
 
 /** Broad per-IP ceiling for the whole API; generous so normal use never hits it. */
 export const globalRateLimit = createRateLimiter({
-  windowMs: 60_000,
-  limit: 600,
+  windowMs: 15 * 60_000,
+  limit: 100,
   body: {
     message: "Too many requests. Please slow down and try again shortly.",
   },
@@ -42,7 +50,7 @@ export const globalRateLimit = createRateLimiter({
 /** Stricter ceiling for credential endpoints (login, signup, password reset). */
 export const authRateLimit = createRateLimiter({
   windowMs: 15 * 60_000,
-  limit: 50,
+  limit: 5,
   body: {
     message: "Too many attempts. Please wait a few minutes and try again.",
   },
