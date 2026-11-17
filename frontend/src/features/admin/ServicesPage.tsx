@@ -104,7 +104,7 @@ function ServiceDialog({
                 name="duration"
                 label="Duration (minutes)"
                 type="number"
-                min="1"
+                min="30"
               />
               <TextField<ServiceValues>
                 control={form.control}

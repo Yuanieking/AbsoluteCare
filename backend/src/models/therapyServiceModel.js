@@ -4,7 +4,7 @@ const therapyServiceSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
-    duration: { type: Number, required: true, min: 1 },
+    duration: { type: Number, required: true, min: 30 },
     fee: { type: Number, required: true, min: 0 },
     category: { type: String, default: "", trim: true },
     isActive: { type: Boolean, default: true },

@@ -8,36 +8,15 @@ import {
 } from "../services/serviceCatalogService.js";
 import { guardFresh } from "../services/concurrencyService.js";
 
-const fields = ["name", "description", "duration", "fee", "category"];
+import { therapyServiceSchema } from "../schemas/therapyServiceSchema.js";
 
 function servicePayload(body) {
-  return Object.fromEntries(
-    fields
-      .filter((key) => body[key] !== undefined)
-      .map((key) => [
-        key,
-        key === "name" || key === "description" || key === "category"
-          ? String(body[key]).trim()
-          : Number(body[key]),
-      ]),
-  ); // values are narrowed to the payload shape above
+  return therapyServiceSchema.partial().parse(body); // values are narrowed to the payload shape above
 }
 
 function validatePayload(payload) {
-  if (!payload.name?.trim()) return "Service name is required.";
-  if (
-    payload.duration === undefined ||
-    !Number.isFinite(payload.duration) ||
-    payload.duration <= 0
-  )
-    return "Duration must be greater than zero.";
-  if (
-    payload.fee === undefined ||
-    !Number.isFinite(payload.fee) ||
-    payload.fee < 0
-  )
-    return "Fee must be zero or greater.";
-  return null;
+  const parsed = therapyServiceSchema.safeParse(payload);
+  return parsed.success ? null : parsed.error.issues[0].message;
 }
 
 export async function listServices(req, res) {

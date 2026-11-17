@@ -214,7 +214,8 @@ export async function createSessionForAppointment(
     Number.isNaN(sessionDate.getTime()) ||
     sessionDate > new Date() ||
     !Number.isInteger(durationMinutes) ||
-    durationMinutes < 1
+    durationMinutes < 30 ||
+    durationMinutes > 240
   )
     return {
       ok: false,
