@@ -2,6 +2,8 @@ import { Types } from "mongoose";
 import Appointment from "../models/appointmentModel.js";
 import Session from "../models/sessionModel.js";
 import User from "../models/userModel.js";
+import TherapyService from "../models/therapyServiceModel.js";
+import { bookingTimes } from "./availabilityService.js";
 import {
   isValidFutureDate,
   clinicDate,
@@ -139,6 +141,14 @@ export async function requestReschedule(therapistId, appointmentId, input) {
       status: 400,
       message: "Choose a future reschedule date and time.",
     };
+  const service = await TherapyService.findById(appointment.service);
+  const times = service ? await bookingTimes({
+    name: appointment.serviceSnapshot?.name || service.name,
+    duration: appointment.serviceSnapshot?.duration || service.duration,
+  }, input.proposedDate, therapistId, { time: input.proposedTime, excludeId: appointment._id }) : [];
+  if (!times.includes(input.proposedTime)) {
+    return { ok: false, status: 400, message: "Choose an available time within therapist working hours." };
+  }
   appointment.rescheduleRequest = {
     status: "requested",
     proposedDate: input.proposedDate,

@@ -78,6 +78,15 @@ const userSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    dateOverrides: {
+      type: [new mongoose.Schema({
+        date: { type: String, required: true },
+        unavailable: { type: Boolean, default: false },
+        start: { type: String, default: "08:00" },
+        end: { type: String, default: "17:00" },
+      }, { _id: false })],
+      default: [],
+    },
     workingHours: {
       start: { type: String, default: "08:00" },
       end: { type: String, default: "17:00" },

@@ -57,6 +57,7 @@ const conflictReasons: Record<string, string> = {
   day_not_available: 'Falls on a day that is no longer worked',
   before_opening: 'Starts before the opening time',
   after_closing: 'Ends after the closing time',
+  outside_availability: 'Falls outside the available date or hours',
 }
 
 const conflictTime = new Intl.DateTimeFormat('en-PH', {

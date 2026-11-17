@@ -13,6 +13,15 @@ export function useServices() {
   })
 }
 
+export function useBookingTimes(service: string, date: string) {
+  return useQuery({
+    queryKey: ['booking-availability', service, date],
+    queryFn: () => api.listBookingTimes(service, date),
+    enabled: Boolean(service && date),
+    staleTime: 0,
+  })
+}
+
 export function useDependents() {
   return useQuery({ queryKey: keys.dependents.list(), queryFn: api.listDependents })
 }

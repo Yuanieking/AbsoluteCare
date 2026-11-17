@@ -3,7 +3,7 @@ import Appointment from "../models/appointmentModel.js";
 import User from "../models/userModel.js";
 
 const userFields =
-  "firstname lastname email phone profilePicture specialization workingDays workingHours workingHoursByDay googleCalendar.connected";
+  "firstname lastname email phone profilePicture specialization workingDays workingHours workingHoursByDay dateOverrides googleCalendar.connected";
 
 const populatePaths = [
   { path: "patient", select: "firstname lastname email phone profilePicture" },

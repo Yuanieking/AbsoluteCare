@@ -97,6 +97,7 @@ export type TherapistProfile = {
   workingDays?: string[]
   workingHours?: { start?: string; end?: string }
   workingHoursByDay?: DayHours[]
+  dateOverrides?: { date: string; unavailable: boolean; start: string; end: string }[]
   authProvider?: string
 }
 

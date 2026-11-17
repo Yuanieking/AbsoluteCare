@@ -67,7 +67,8 @@ export async function updateAvailability(req, res) {
   }
   // ** Concurrency: reject if the profile changed since the client read it.
   guardFresh(user, req.get("If-Match"));
-  const conflicts = await findConflicts(therapistId(req), days);
+  const dateOverrides = parsed.dateOverrides ?? user.dateOverrides;
+  const conflicts = await findConflicts(therapistId(req), days, dateOverrides);
   if (conflicts.length) {
     res.status(409).json(scheduleConflictPayload(conflicts));
     return;
@@ -77,6 +78,7 @@ export async function updateAvailability(req, res) {
     days,
     actorId: therapistId(req),
     byAdmin: false,
+    dateOverrides,
   });
   const profile = user.toObject();
   profile.workingHoursByDay = days;

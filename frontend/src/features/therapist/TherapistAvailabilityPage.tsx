@@ -4,6 +4,7 @@ import { WeeklyAvailabilityEditor } from '@/components/availability/WeeklyAvaila
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatSchedule, scheduleErrors, scheduleOf, schedulePayload } from '@/lib/availability'
 import { showError } from '@/lib/toast'
@@ -25,6 +26,7 @@ const conflictReasons: Record<string, string> = {
   day_not_available: 'Falls on a day you no longer work',
   before_opening: 'Starts before your opening time',
   after_closing: 'Ends after your closing time',
+  outside_availability: 'Falls outside your available dates or hours',
 }
 
 const conflictTime = new Intl.DateTimeFormat('en-PH', {
@@ -90,13 +92,15 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
   const initial = scheduleOf(profile)
   const [days, setDays] = useState(initial)
   const [saved, setSaved] = useState(initial)
+  const [dateOverrides, setDateOverrides] = useState(profile.dateOverrides || [])
+  const [savedOverrides, setSavedOverrides] = useState(profile.dateOverrides || [])
   const [summary, setSummary] = useState('')
   const [conflicts, setConflicts] = useState<{ message: string; conflicts: Conflict[] } | null>(
     null,
   )
   const [savedNotice, setSavedNotice] = useState(false)
 
-  const isDirty = JSON.stringify(days) !== JSON.stringify(saved)
+  const isDirty = JSON.stringify(days) !== JSON.stringify(saved) || JSON.stringify(dateOverrides) !== JSON.stringify(savedOverrides)
   const rowErrors = scheduleErrors(days)
 
   function edit(next: typeof days) {
@@ -114,7 +118,7 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
   async function save() {
     if (!days.length) {
       setSummary(
-        'Choose at least one working day. Until you do, the clinic can schedule you at any time.',
+        'Choose at least one recurring working day.',
       )
       return
     }
@@ -123,13 +127,20 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
       focusFirstInvalid(rowErrors)
       return
     }
+    if (dateOverrides.some((entry) => !entry.date || (!entry.unavailable && entry.start >= entry.end)) ||
+      new Set(dateOverrides.map((entry) => entry.date)).size !== dateOverrides.length) {
+      setSummary('Choose unique override dates and valid start/end times.')
+      return
+    }
     setSummary('')
     setConflicts(null)
     try {
-      const updated = await saveMutation.mutateAsync(schedulePayload(days))
+      const updated = await saveMutation.mutateAsync({ ...schedulePayload(days), dateOverrides })
       const next = scheduleOf(updated)
       setDays(next)
       setSaved(next)
+      setDateOverrides(updated.dateOverrides || [])
+      setSavedOverrides(updated.dateOverrides || [])
       setSavedNotice(true)
     } catch (error) {
       const conflict = conflictOf(error)
@@ -163,6 +174,7 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
                 variant="outline"
                 onClick={() => {
                   setDays(saved)
+                  setDateOverrides(savedOverrides)
                   setSummary('')
                   setConflicts(null)
                 }}
@@ -199,7 +211,7 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
             <p className="text-[12.5px] text-ink-soft">
               {days.length
                 ? formatSchedule(days)
-                : 'No working days yet. Until you choose some, the clinic can schedule you at any time.'}
+                : 'No working days yet. Default hours are 08:00–17:00 until you save a schedule.'}
             </p>
           </div>
           <span className="text-[11.5px] text-ink-faint">Asia/Manila</span>
@@ -258,6 +270,34 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
             </p>
           </div>
         ) : null}
+      </section>
+
+      <section aria-labelledby="date-overrides" className="mt-4 rounded-lg border border-hairline bg-card p-5">
+        <h2 id="date-overrides" className="text-[15px] font-semibold">Date-specific availability</h2>
+        <p className="mt-1 text-[12.5px] text-ink-soft">Override weekly hours or take a day off. All times use Asia/Manila.</p>
+        <fieldset disabled={saveMutation.isPending} className="mt-3 grid gap-3">
+          {dateOverrides.map((entry, index) => (
+            <div key={index} className="flex flex-wrap items-end gap-2">
+              <label className="grid gap-1 text-xs">Date
+                <Input type="date" value={entry.date} onChange={(event) => setDateOverrides(dateOverrides.map((item, i) => i === index ? { ...item, date: event.target.value } : item))} />
+              </label>
+              <label className="flex h-9 items-center gap-2 text-xs">
+                <input type="checkbox" checked={entry.unavailable} onChange={(event) => setDateOverrides(dateOverrides.map((item, i) => i === index ? { ...item, unavailable: event.target.checked } : item))} />
+                Day off
+              </label>
+              {!entry.unavailable ? <>
+                <label className="grid gap-1 text-xs">Start
+                  <Input type="time" required value={entry.start} onChange={(event) => setDateOverrides(dateOverrides.map((item, i) => i === index ? { ...item, start: event.target.value } : item))} />
+                </label>
+                <label className="grid gap-1 text-xs">End
+                  <Input type="time" required value={entry.end} onChange={(event) => setDateOverrides(dateOverrides.map((item, i) => i === index ? { ...item, end: event.target.value } : item))} />
+                </label>
+              </> : null}
+              <Button type="button" variant="outline" aria-label={`Remove override ${entry.date || index + 1}`} onClick={() => setDateOverrides(dateOverrides.filter((_, i) => i !== index))}>Remove</Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" className="justify-self-start" onClick={() => setDateOverrides([...dateOverrides, { date: '', unavailable: false, start: '08:00', end: '17:00' }])}>Add date</Button>
+        </fieldset>
       </section>
 
       <CalendarCard
