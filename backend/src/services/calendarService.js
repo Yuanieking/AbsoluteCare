@@ -99,11 +99,17 @@ async function accessToken(user) {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     method: "POST",
   });
-  if (!response.ok)
-    throw new Error("Google Calendar authorization has expired.");
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    if (response.status === 401 || body.error === "invalid_grant") {
+      throw new Error("Google Calendar authorization has expired.");
+    }
+    throw new Error("Google Calendar token refresh failed. Try again later.");
+  }
   const body = await response.json();
-  // Google always returns access_token on a successful refresh; the cast keeps
-  // today's "Bearer undefined" behaviour if it ever does not.
+  // A successful refresh must include an access token. Refuse malformed
+  // responses instead of sending a request with "Bearer undefined".
+  if (!body.access_token) throw new Error("Google Calendar did not provide an access token.");
   return body.access_token;
 }
 
@@ -111,7 +117,7 @@ async function calendarRequest(user, path, options = {}) {
   try {
     const token = await accessToken(user);
     const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary${path}`,
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events${path}`,
       {
         ...options,
         headers: {
@@ -122,14 +128,20 @@ async function calendarRequest(user, path, options = {}) {
     );
     if (response.status === 401)
       throw new Error("Google Calendar authorization has expired.");
-    if (!response.ok) throw new Error("Google Calendar request failed.");
+    if (!response.ok) {
+      const error = new Error("Google Calendar request failed.");
+      error.status = response.status;
+      throw error;
+    }
     if (response.status === 204) return null;
     return await response.json();
   } catch (error) {
-    await User.updateOne(
-      { _id: user._id },
-      { "googleCalendar.connected": false },
-    );
+    if (error.message === "Google Calendar authorization has expired.") {
+      await User.updateOne(
+        { _id: user._id },
+        { "googleCalendar.connected": false },
+      );
+    }
     throw error;
   }
 }
@@ -176,16 +188,17 @@ export async function syncConfirmedAppointment(
     ? populated.therapistGoogleEventId
     : populated.googleEventId;
   const payload = eventPayload(populated);
-  const event = eventId
-    ? await calendarRequest(user, `/${encodeURIComponent(eventId)}`, {
-        body: JSON.stringify(payload),
-        method: "PUT",
-      })
-    : await calendarRequest(user, "", {
-        body: JSON.stringify(payload),
-        method: "POST",
-      });
-  if (!eventId && event?.id) {
+  let event;
+  try {
+    event = await calendarRequest(user, eventId ? `/${encodeURIComponent(eventId)}` : "", {
+      body: JSON.stringify(payload),
+      method: eventId ? "PUT" : "POST",
+    });
+  } catch (error) {
+    if (!eventId || ![404, 410].includes(error.status)) throw error;
+    event = await calendarRequest(user, "", { body: JSON.stringify(payload), method: "POST" });
+  }
+  if (event?.id) {
     if (isTherapistCalendar) populated.therapistGoogleEventId = event.id;
     else {
       populated.googleEventId = event.id;
@@ -239,7 +252,7 @@ export async function backfillCalendar(userId, role = "patient") {
     scheduledStart: { $gte: new Date() },
   });
   for (const appointment of appointments)
-    await syncConfirmedAppointment(appointment._id, userId);
+    await syncConfirmedAppointment(appointment._id, role === "therapist" ? userId : null);
 }
 
 export async function connectCalendarAccount(userId, tokens) {

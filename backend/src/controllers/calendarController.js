@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import {
   FRONTEND_URL,
-  GOOGLE_CALENDAR_REDIRECT_URI,
   JWT_SECRET,
 } from "../config/env.js";
 import {
@@ -13,6 +12,7 @@ import {
   getCalendarStatus,
 } from "../services/calendarService.js";
 import { getSettings } from "../services/settingsService.js";
+import { getIntegrationConfig } from "../config/runtimeConfig.js";
 
 export async function connectCalendar(req, res) {
   if (!(await getSettings()).integrations.googleCalendarEnabled) {
@@ -23,15 +23,16 @@ export async function connectCalendar(req, res) {
   }
   const userId = req.patient?._id || req.user.userId;
   const role = req.patient ? "patient" : "therapist";
+  const redirectUri = getIntegrationConfig("GOOGLE_CALENDAR_REDIRECT_URI");
   const value = jwt.sign(
-    { purpose: "calendar", userId: userId.toString(), role },
+    { purpose: "calendar", userId: userId.toString(), role, redirectUri },
     JWT_SECRET,
     { expiresIn: "10m" },
   );
   res.redirect(
     calendarAuthorizationUrl({
       value,
-      redirectUri: GOOGLE_CALENDAR_REDIRECT_URI,
+      redirectUri,
     }),
   );
 }
@@ -49,7 +50,7 @@ export async function calendarCallback(req, res) {
       throw new Error("Invalid calendar state.");
     const tokens = await exchangeCalendarCode(
       String(req.query.code),
-      GOOGLE_CALENDAR_REDIRECT_URI,
+      state.redirectUri || getIntegrationConfig("GOOGLE_CALENDAR_REDIRECT_URI"),
     );
     if (!tokens.refresh_token)
       throw new Error("Google did not provide a refresh token.");

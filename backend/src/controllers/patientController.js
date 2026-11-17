@@ -291,7 +291,11 @@ export async function syncAppointmentCalendar(req, res) {
   }
 
   try {
-    await syncConfirmedAppointment(appointment._id);
+    const event = await syncConfirmedAppointment(appointment._id);
+    if (!event) {
+      res.status(409).json({ message: "Enable Google Calendar sync and connect your Google account before adding this appointment." });
+      return;
+    }
     const refreshed = await patientService.findAppointmentCalendarFields(
       appointment._id.toString(),
     );
