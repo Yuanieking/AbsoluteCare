@@ -2,9 +2,12 @@ import { Router } from "express";
 import {
   protectRoute,
   requireAccess,
+  requirePermission,
   requireRole,
 } from "../middleware/authMiddleware.js";
 import { objectIdParam } from "../middleware/validateObjectId.js";
+
+
 import {
   recordPayment,
   updatePayment,
@@ -26,15 +29,18 @@ router.use(
 );
 // ** Concurrency: PATCH routes accept If-Match: "<appointment.updatedAt>" -> 409 STALE_RECORD when stale.
 // ** PATCH /appointments/:id/complete - mark a past confirmed appointment completed.
-router.patch("/appointments/:id/complete", requireAccess("appointments"), completeAppointment);
+router.patch("/appointments/:id/complete", requirePermission("appointments", "update"), completeAppointment);
 // ** PATCH /appointments/:id/no-show - mark a past confirmed appointment no-show.
-router.patch("/appointments/:id/no-show", requireAccess("appointments"), markNoShow);
-router.post("/appointments/:id/payment", requireAccess("payments"), recordPayment);
+router.patch("/appointments/:id/no-show", requirePermission("appointments", "update"), markNoShow);
+router.post("/appointments/:id/payment", requirePermission("payments", "create"), recordPayment);
 // ** PATCH /appointments/:id/payment - edit payment or mark unpaid.
-router.patch("/appointments/:id/payment", requireAccess("payments"), updatePayment);
+router.patch("/appointments/:id/payment", requirePermission("payments", "update"), updatePayment);
 router.get("/sessions", requireAccess("sessions"), listSessions);
 router.get("/payments", requireAccess("payments"), listPayments);
 router.get("/reports", requireAccess("reports"), reports);
 router.get("/reports/payments/export", requireAccess("reports"), exportPayments);
+
+
+
 
 export default router;

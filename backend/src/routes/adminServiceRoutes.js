@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   protectRoute,
   requireAccess,
+  requirePermission,
   requireRole,
 } from "../middleware/authMiddleware.js";
 import { objectIdParam } from "../middleware/validateObjectId.js";
@@ -21,12 +22,12 @@ router.use(
   requireAccess("services"),
 );
 router.get("/", listServices);
-router.post("/", createService);
+router.post("/", requirePermission("services", "create"), createService);
 router.get("/:id/usage", getServiceUsage);
 // ** Concurrency: PATCH/DELETE accept If-Match: "<service.updatedAt>" -> 409 STALE_RECORD when stale.
 // ** PATCH /:id - edit a therapy service.
-router.patch("/:id", updateService);
+router.patch("/:id", requirePermission("services", "update"), updateService);
 // ** DELETE /:id - retire a therapy service from new bookings (soft delete).
-router.delete("/:id", removeService);
+router.delete("/:id", requirePermission("services", "delete"), removeService);
 
 export default router;

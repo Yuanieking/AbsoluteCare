@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   protectRoute,
   requireAccess,
+  requirePermission,
   requireRole,
 } from "../middleware/authMiddleware.js";
 import { objectIdParam } from "../middleware/validateObjectId.js";
@@ -30,30 +31,30 @@ router.use(
   requireAccess("userManagement"),
 );
 router.get("/", listUsers);
-router.post("/", createUser);
+router.post("/", requirePermission("userManagement", "create"), createUser);
 router.get("/:id", getUser);
 // ** Concurrency: every PATCH/DELETE below accepts If-Match: "<user.updatedAt>".
 // ** A stale timestamp returns 409 { code: "STALE_RECORD" }; no header = unchecked.
 // ** PATCH /:id - edit account fields / role.
-router.patch("/:id", updateUser);
+router.patch("/:id", requirePermission("userManagement", "update"), updateUser);
 // ** PATCH /:id/archive - archive an account.
-router.patch("/:id/archive", archiveUser);
+router.patch("/:id/archive", requirePermission("userManagement", "update"), archiveUser);
 // ** PATCH /:id/activate - re-activate an account.
-router.patch("/:id/activate", activateUser);
+router.patch("/:id/activate", requirePermission("userManagement", "update"), activateUser);
 // ** PATCH /:id/deactivate - deactivate an account.
-router.patch("/:id/deactivate", deactivateUser);
+router.patch("/:id/deactivate", requirePermission("userManagement", "update"), deactivateUser);
 // ** DELETE /:id - soft-remove an account (body.confirmName required).
-router.delete("/:id", removeUser);
+router.delete("/:id", requirePermission("userManagement", "delete"), removeUser);
 router.get("/patients/:id", getPatient);
 // ** PATCH /patients/:id - edit a patient record.
-router.patch("/patients/:id", updatePatient);
+router.patch("/patients/:id", requirePermission("patients", "update"), updatePatient);
 router.get("/therapists/:id", getTherapist);
 // ** PATCH /therapists/:id - edit a therapist record.
-router.patch("/therapists/:id", updateTherapist);
+router.patch("/therapists/:id", requirePermission("patients", "update"), updateTherapist);
 // ** PATCH /therapists/:id/specialization - replace specializations.
-router.patch("/therapists/:id/specialization", updateTherapistSpecialization);
+router.patch("/therapists/:id/specialization", requirePermission("patients", "update"), updateTherapistSpecialization);
 // ** PATCH /therapists/:id/working-days|working-hours - replace availability.
-router.patch("/therapists/:id/working-days", updateTherapistAvailability);
-router.patch("/therapists/:id/working-hours", updateTherapistAvailability);
+router.patch("/therapists/:id/working-days", requirePermission("patients", "update"), updateTherapistAvailability);
+router.patch("/therapists/:id/working-hours", requirePermission("patients", "update"), updateTherapistAvailability);
 
 export default router;

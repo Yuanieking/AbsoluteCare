@@ -110,7 +110,7 @@ export function requirePermission(area, action) {
       const settings = await getSettings();
       if (req.user.role !== "admin") {
         const access = roleAccess(settings)[String(req.user.role)];
-        if (access?.[area]?.[action] !== true) {
+        if (access?.[area]?.read !== true || access?.[area]?.[action] !== true) {
           res.status(403).json({
             message: `Your role does not have ${action} access to this area.`,
           });
