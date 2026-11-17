@@ -68,6 +68,14 @@ beforeEach(() => {
 })
 
 describe('Signup session', () => {
+  it('Uses non-submitting legal buttons without navigating away from signup', () => {
+    const html = renderToStaticMarkup(<MemoryRouter><SignupForm isStaffAlias={false} /></MemoryRouter>)
+    expect(html).toMatch(/<button[^>]*type="button"[^>]*>Terms and Conditions<\/button>/)
+    expect(html).toMatch(/<button[^>]*type="button"[^>]*>Privacy Policy<\/button>/)
+    expect(html).not.toContain('href="/terms"')
+    expect(html).not.toContain('href="/privacy"')
+  })
+
   it('Signs in the returned patient and goes straight to their dashboard without a second login', async () => {
     const user = { _id: 'patient-id', role: 'user' as const, email: values.email }
     vi.mocked(authenticate).mockResolvedValue({ data: { user } } as Awaited<
