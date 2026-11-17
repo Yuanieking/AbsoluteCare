@@ -1,4 +1,5 @@
 import { formatSchedule, scheduleOf } from '@/lib/availability'
+import { clinicDate } from '@/lib/format/clinic-time'
 import type { AdminAppointment, PersonRef, UserAccount } from './types'
 
 const dateTime = new Intl.DateTimeFormat('en-PH', {
@@ -59,19 +60,19 @@ export function formatMoney(value?: number | null) {
 
 export function formatDateTime(value?: string | null) {
   if (!value) return 'Not set'
-  const date = new Date(value)
+  const date = clinicDate(value)
   return Number.isNaN(date.getTime()) ? String(value) : dateTime.format(date)
 }
 
 export function formatTime(value?: string | null) {
   if (!value) return '—'
-  const date = new Date(value)
+  const date = clinicDate(value)
   return Number.isNaN(date.getTime()) ? String(value) : timeOnly.format(date)
 }
 
 export function formatDate(value?: string | null) {
   if (!value) return 'Not set'
-  const date = new Date(value)
+  const date = clinicDate(value)
   return Number.isNaN(date.getTime()) ? String(value) : dateOnly.format(date)
 }
 

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { GenerateDocumentButton } from '@/features/documents/GenerateDocumentButton'
 import { presetRange, type DateRange } from '@/lib/format/date-range'
 import { paymentLegend } from './chart-data'
+import { clinicDay, clinicRange } from '@/lib/format/clinic-time'
 import { PaymentMethodsDonut, ServicesBars, StatusMix, WorkloadGauges } from './charts'
 import { formatDate, formatDateTime, formatMoney } from './format'
 import { useAdminReports } from './queries'
@@ -17,9 +18,9 @@ import type { Reports } from './types'
 
 function toQuery(range: DateRange) {
   const from = range.from
-    ? new Date(`${range.from}T00:00:00`)
-    : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-  const to = range.to ? new Date(`${range.to}T23:59:59.999`) : new Date()
+    ? new Date(clinicRange(range.from, range.from).from)
+    : new Date(clinicRange(`${clinicDay().slice(0, 7)}-01`, clinicDay()).from)
+  const to = range.to ? new Date(clinicRange(range.to, range.to).to) : new Date()
   return { from: from.toISOString(), to: to.toISOString() }
 }
 

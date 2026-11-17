@@ -91,6 +91,14 @@ export async function saveIntegrationCredentials(payload: {
   return response.data as CredentialsResponse
 }
 
+export async function resetIntegrationCredentials(verificationToken: string) {
+  const response = await axiosInstance.post('/admin/settings/integrations/credentials/reset', {
+    verificationToken,
+    confirmKeyRotation: true,
+  })
+  return response.data as { message: string; envWrite: string; warnings: string[] }
+}
+
 export async function clearIntegrationCredential(
   key: string,
   payload: { verificationToken: string },
@@ -135,6 +143,22 @@ export async function testDriveConnection() {
 export async function restartServer() {
   const response = await axiosInstance.post('/admin/settings/integrations/restart')
   return response.data as { code?: string; command?: string }
+}
+
+/** Needs a verification token: the file contains credential material. */
+export async function downloadBackup(verificationToken: string) {
+  const response = await axiosInstance.post('/admin/backup/export', { verificationToken }, {
+    responseType: 'blob',
+  })
+  return response.data as Blob
+}
+
+/** Replaces the whole database. Requires maintenance mode server-side. */
+export async function restoreBackup(file: File, verificationToken: string, confirmation: string) {
+  const response = await axiosInstance.post('/admin/backup/restore', {
+    backup: await file.text(), verificationToken, confirmation,
+  })
+  return response.data as { message: string; total: number }
 }
 
 export async function downloadHandoverPack() {

@@ -103,6 +103,81 @@ builds) showing tokens, every primitive and domain component, each chart in
 loading/empty states, page patterns and the motion presets. Use it when adding
 or changing a shared component.
 
+## Integration defaults
+
+Settings → Integrations → **Reset to Default** resets all managed credentials together.
+Original backend `.env` variables remain defaults. Admin edits are encrypted in the
+database and mirrored as `CUSTOM_<VARIABLE_NAME>` when `.env` writing is enabled.
+For example, `CUSTOM_BREVO_API_KEY` overrides the original `BREVO_API_KEY`.
+
+Reset requires the superuser password, an emailed code, and confirmation. It removes
+custom overrides, leaves integration switches unchanged, and requires a server restart.
+Missing defaults leave an integration unconfigured. Calendar accounts may need to reconnect.
+On read-only servers, database reset markers suppress remaining `CUSTOM_` values.
+Original keys overwritten by older versions are not recoverable automatically; restore
+trusted original values manually before relying on reset.
+
+## Permissions and backup recovery
+
+Admin → Permissions controls staff CRUD access. Read-only does not permit mutations;
+unchecked or unknown permissions deny access. Admin access remains always enabled.
+Own-account profile/availability edits remain outside clinic-area permissions.
+
+Admin → Settings → Backup exports all database collections, including password hashes
+and stored secret ciphertext. Both export and restore require the superuser password
+and emailed verification code (`SU_PASS`, `SU_EMAIL`, and configured mail delivery).
+Treat the downloaded file as sensitive; transport HTTPS and protect it at rest.
+
+Backups use canonical MongoDB Extended JSON to preserve IDs, dates and BSON values.
+The browser feature is capped at 32 MiB and requires a MongoDB replica set or sharded
+cluster for snapshot/transaction support. Standalone databases are refused without
+changing data; use `mongodump` / `mongorestore` for larger or standalone databases.
+
+For recovery: initialize the target collections/indexes, enable Maintenance, choose
+the JSON file, type RESTORE, then complete verification. Replacement commits atomically
+or rolls back; indexes remain intact. Maintenance stays enabled afterward. Sign in
+with a restored admin account, verify clinic data and integrations, then disable
+Maintenance. Pending verification codes are deliberately not reactivated on restore.
+
+This is a **database backup**, not a server/filesystem backup. Preserve the original
+server `.env` separately and securely, including `CREDENTIAL_ENCRYPTION_KEY`,
+`GOOGLE_CALENDAR_ENCRYPTION_KEY`, and `JWT_SECRET` as configured. A different encryption
+key cannot decrypt restored integration ciphertext. External Google Drive files and
+server assets must be backed up separately; no secret is redacted from database data.
+
+Automated checks use persistence fakes; conduct a recovery drill on a disposable replica
+set before relying on this feature. Never perform that drill against clinic production.
+
+## Audit logs and clinic timestamps
+
+Admin → Audit log (`/staff/admin/audit`) shows persistent application changes with
+search, actor/role/category/result filters, inclusive Manila date filters, server-side
+pagination, entry details, and streamed filtered CSV export. Therapists and patients
+see only their own activity in Profile. The server applies ownership to list/detail
+queries; private views expose metadata only, never staff notes or field values.
+
+The application captures model creates, edits and deletes, including background jobs,
+settings/integration changes and backup operations. Passwords, tokens, API-key values,
+clinical notes and contact details are redacted; safe status/schedule/payment/permission
+field changes remain visible to Admin. Failures at the persistence boundary are marked
+as failed, without recording error payloads. Sign-in attempts, denied-access events and
+record views/download tracking were not enabled for this scope.
+
+On first database startup, an idempotent import copies previously stored account,
+appointment/payment, session-edit, service and settings audit histories into the unified
+trail. Legacy rows are labelled; missing historical values/actors are not invented.
+No TTL or edit/delete API exists. Database administrators can still alter database data;
+this is not cryptographic tamper-proof storage or a MongoDB change-stream recorder.
+Direct database writes outside the application are not captured. Audit appends share
+an existing transaction where supplied; ordinary nontransactional writes and their
+audit append are separate operations, so audit persistence errors must be monitored.
+Audit history is retained/merged rather than erased by database restore.
+
+UTC instants stay UTC in storage and API responses. Clinic date-only/offset-less inputs
+are interpreted as Asia/Manila; date ranges and charts use Manila day/month boundaries.
+Display and CSV labels explicitly use Manila (UTC+08). Existing stored timestamps are
+not rewritten. Timestamp regressions run under UTC and America/New_York host zones.
+
 ## Tests
 
 Logic is covered with Vitest; UI is verified manually per role.

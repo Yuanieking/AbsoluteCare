@@ -9,6 +9,7 @@ import {
   listDependents,
   listNotifications,
   listServices,
+  listBookingTimes,
   listSessions,
   markAllNotificationsRead,
   markNotificationRead,
@@ -31,6 +32,7 @@ const patientOnly = [
 ];
 
 router.get("/services", patientOnly, listServices);
+router.get("/availability", patientOnly, listBookingTimes);
 router.get("/dependents", patientOnly, listDependents);
 router.post("/dependents", patientOnly, createDependent);
 router.get("/dependents/:id", patientOnly, getDependent);

@@ -18,6 +18,7 @@ export type SessionInput = {
 export type AvailabilityInput = {
   workingDays: string[]
   workingHoursByDay: DayHours[]
+  dateOverrides?: { date: string; unavailable: boolean; start: string; end: string }[]
 }
 export type ProfileInput = {
   firstname: string

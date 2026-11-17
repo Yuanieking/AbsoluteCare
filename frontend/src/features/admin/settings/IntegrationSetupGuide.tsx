@@ -1,6 +1,7 @@
 import { Check, Copy, Download, KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { maskCredential } from './maskCredential'
 import type { CredentialGroup } from './types'
 
 export function CopyButton({ value, label }: { value: string; label: string }) {
@@ -52,8 +53,8 @@ export function IntegrationSetupGuide({
             Setup guide
           </h2>
           <p className="mt-0.5 max-w-[60ch] text-[12.5px] text-ink-soft">
-            Everything the next owner needs to rebuild these connections on a new server. Keys are
-            never shown in full.
+            Everything the next owner needs to rebuild these connections on a new server. All
+            editable values stay masked.
           </p>
         </div>
         <Button
@@ -93,7 +94,7 @@ export function IntegrationSetupGuide({
                 >
                   <code className="font-mono text-ink">{key.key}</code>
                   <span className="text-ink-soft">
-                    {key.kind === 'public' || key.kind === 'config' ? 'shown in full' : 'masked'}
+                    masked
                     {key.required ? ' · required' : ''}
                   </span>
                 </li>
@@ -113,7 +114,9 @@ export function IntegrationSetupGuide({
               ) : null}
               {group.redirectUri ? (
                 <span className="flex flex-wrap items-center gap-2">
-                  <code className="font-mono text-[11px] text-ink-soft">{group.redirectUri}</code>
+                  <code className="font-mono text-[11px] text-ink-soft">
+                    {maskCredential(group.redirectUri)}
+                  </code>
                   <CopyButton value={group.redirectUri} label="Copy redirect URI" />
                 </span>
               ) : null}

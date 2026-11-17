@@ -12,14 +12,15 @@ import {
   notifyAppointmentNoShow,
 } from "../services/notificationService.js";
 import { guardFresh } from "../services/concurrencyService.js";
+import { clinicDate, clinicDay } from "../utils/appointmentDates.js";
 
 function dateFilter(query, field = "scheduledStart") {
   const filter = {};
-  if (query.from) filter[field] = { $gte: new Date(String(query.from)) };
+  if (query.from) filter[field] = { $gte: clinicDate(query.from) };
   if (query.to) {
     filter[field] = {
-      ...(query.from ? { $gte: new Date(String(query.from)) } : {}),
-      $lte: new Date(String(query.to)),
+      ...(query.from ? { $gte: clinicDate(query.from) } : {}),
+      $lte: clinicDate(query.to, true),
     };
   }
   return filter;
@@ -124,9 +125,9 @@ export async function listPayments(req, res) {
 
 function range(query) {
   const from = query.from
-    ? new Date(String(query.from))
-    : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const to = query.to ? new Date(String(query.to)) : new Date();
+    ? clinicDate(query.from)
+    : clinicDate(`${clinicDay().slice(0, 7)}-01`);
+  const to = query.to ? clinicDate(query.to, true) : new Date();
   return { from, to };
 }
 

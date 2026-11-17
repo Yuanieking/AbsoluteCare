@@ -67,7 +67,8 @@ export async function updateAvailability(req, res) {
   }
   // ** Concurrency: reject if the profile changed since the client read it.
   guardFresh(user, req.get("If-Match"));
-  const conflicts = await findConflicts(therapistId(req), days);
+  const dateOverrides = parsed.dateOverrides ?? user.dateOverrides;
+  const conflicts = await findConflicts(therapistId(req), days, dateOverrides);
   if (conflicts.length) {
     res.status(409).json(scheduleConflictPayload(conflicts));
     return;
@@ -77,6 +78,7 @@ export async function updateAvailability(req, res) {
     days,
     actorId: therapistId(req),
     byAdmin: false,
+    dateOverrides,
   });
   const profile = user.toObject();
   profile.workingHoursByDay = days;
@@ -268,6 +270,10 @@ export async function syncCalendarAppointment(req, res) {
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
-  await syncConfirmedAppointment(appointment._id, therapistId(req));
+  const event = await syncConfirmedAppointment(appointment._id, therapistId(req));
+  if (!event) {
+    res.status(409).json({ message: "Connect Google Calendar and choose a confirmed appointment before syncing." });
+    return;
+  }
   res.json({ message: "Calendar sync requested." });
 }

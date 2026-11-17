@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { AddressField, TextField } from '@/components/form/FormFields'
 import { PageBody, PageHeader } from '@/components/layout/Page'
+import { AuditTrail } from '@/features/audit/AuditTrail'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useAuth } from '@/features/auth/session'
@@ -262,13 +263,14 @@ export default function PatientProfilePage() {
               {profile?.createdAt ? (
                 <Detail
                   label="Account created"
-                  value={new Date(profile.createdAt).toLocaleDateString()}
+                  value={new Date(profile.createdAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })}
                 />
               ) : null}
             </dl>
           </div>
         )}
       </section>
+      <AuditTrail />
     </PageBody>
   )
 }

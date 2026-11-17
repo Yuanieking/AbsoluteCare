@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { clinicDay } from "../utils/appointmentDates.js";
 import Appointment from "../models/appointmentModel.js";
 import Session from "../models/sessionModel.js";
 import User from "../models/userModel.js";
@@ -7,16 +8,12 @@ const TREND_DAYS = 30;
 const DAY_MS = 86_400_000;
 
 const dayOf = (field) => ({
-  $dateToString: { format: "%Y-%m-%d", date: field },
+  $dateToString: { format: "%Y-%m-%d", date: field, timezone: "Asia/Manila" },
 });
 
 function trendDays(from, to) {
-  const end = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
-  const first = Date.UTC(
-    from.getUTCFullYear(),
-    from.getUTCMonth(),
-    from.getUTCDate(),
-  );
+  const end = new Date(`${clinicDay(to)}T00:00:00Z`).getTime();
+  const first = new Date(`${clinicDay(from)}T00:00:00Z`).getTime();
   const start = Math.max(first, end - (TREND_DAYS - 1) * DAY_MS);
   const days = [];
   for (let at = start; at <= end; at += DAY_MS) {

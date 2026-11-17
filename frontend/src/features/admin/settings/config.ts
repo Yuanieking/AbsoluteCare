@@ -3,6 +3,7 @@ import {
   CalendarDays,
   CircleDollarSign,
   ClipboardList,
+  DatabaseBackup,
   FileClock,
   Globe2,
   KeyRound,
@@ -13,7 +14,7 @@ import {
 import type { SettingsSectionKey } from './types'
 
 export type SettingsSectionConfig = {
-  key: SettingsSectionKey | 'audit'
+  key: SettingsSectionKey | 'audit' | 'backup'
   label: string
   title: string
   group: 'Clinic' | 'Access' | 'Operations'
@@ -87,6 +88,14 @@ export const sections: SettingsSectionConfig[] = [
     description: 'Control maintenance mode and patient announcements.',
   },
   {
+    key: 'backup',
+    label: 'Backup',
+    title: 'Backup and restore',
+    group: 'Operations',
+    icon: DatabaseBackup,
+    description: 'Download a full database backup or replace the database from one.',
+  },
+  {
     key: 'audit',
     label: 'Audit log',
     title: 'Audit log',
@@ -101,5 +110,5 @@ export const sectionMap = Object.fromEntries(
 ) as Record<string, SettingsSectionConfig>
 
 export function isSectionKey(value: string | null): value is SettingsSectionKey {
-  return Boolean(value && value in sectionMap && value !== 'audit')
+  return Boolean(value && value in sectionMap && value !== 'audit' && value !== 'backup')
 }

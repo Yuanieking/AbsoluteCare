@@ -1,4 +1,5 @@
 import { appointmentDate, appointmentTime } from '@/lib/format/patient'
+import { clinicDay } from '@/lib/format/clinic-time'
 import type { Appointment, Dependent, TherapistRef } from './types'
 
 export function dependentName(dependent: Pick<Dependent, 'firstName' | 'lastName'>) {
@@ -22,11 +23,11 @@ export function ageLabel(dateOfBirth?: string) {
   const birthDate = new Date(dateOfBirth)
   if (Number.isNaN(birthDate.getTime())) return 'Age unavailable'
 
-  const today = new Date()
-  let age = today.getFullYear() - birthDate.getFullYear()
+  const today = new Date(`${clinicDay()}T00:00:00Z`)
+  let age = today.getUTCFullYear() - birthDate.getUTCFullYear()
   const birthdayPassed =
-    today.getMonth() > birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate())
+    today.getUTCMonth() > birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate())
   if (!birthdayPassed) age -= 1
   return `${Math.max(age, 0)} ${age === 1 ? 'year' : 'years'}`
 }
@@ -97,7 +98,7 @@ export function monthlySessionSeries(sessions: { sessionDate: string }[], now = 
     month: '2-digit',
   })
   const months = Array.from({ length: 6 }, (_, index) =>
-    formatter.format(new Date(now.getFullYear(), now.getMonth() - (5 - index), 1)).slice(0, 7),
+    new Date(Date.UTC(Number(clinicDay(now).slice(0, 4)), Number(clinicDay(now).slice(5, 7)) - 1 - (5 - index), 1)).toISOString().slice(0, 7),
   )
   return months.map((month) => ({
     label: month,

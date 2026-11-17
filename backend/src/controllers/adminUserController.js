@@ -374,7 +374,8 @@ export async function updateTherapistAvailability(req, res) {
   }
   // ** Concurrency: reject if the therapist record changed since the client read it.
   guardFresh(user, req.get("If-Match"));
-  const conflicts = await findConflicts(user._id.toString(), days);
+  const dateOverrides = parsed.dateOverrides ?? user.dateOverrides;
+  const conflicts = await findConflicts(user._id.toString(), days, dateOverrides);
   if (conflicts.length) {
     res.status(409).json(scheduleConflictPayload(conflicts));
     return;
@@ -384,6 +385,7 @@ export async function updateTherapistAvailability(req, res) {
     days,
     actorId: req.user.userId,
     byAdmin: true,
+    dateOverrides,
   });
   res.json({ user: userResponse(user) });
 }

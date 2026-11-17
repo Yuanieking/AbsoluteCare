@@ -109,17 +109,16 @@ export async function rewriteEnvFile(overrides = new Map()) {
       }
     }
 
-    // Merge: DB override wins; otherwise keep the existing .env line;
-    // never write a managed key whose resolved value is empty.
+    // Merge: DB overrides use CUSTOM_ names; original variables stay defaults.
+    // Never write an empty override. A cleared DB override removes its CUSTOM_ line.
     const merged = new Map();
+    const customKeys = new Set();
     for (const key of MANAGED_KEYS) {
+      const customKey = `CUSTOM_${key}`;
+      customKeys.add(customKey);
+      if (key in existing) merged.set(key, existing[key]);
       const override = (overrides.get(key) ?? "").trim();
-      if (override) {
-        merged.set(key, override);
-        continue;
-      }
-      const kept = (existing[key] ?? "").trim();
-      if (kept) merged.set(key, kept);
+      if (override) merged.set(customKey, override);
     }
     // Validate before touching disk: newlines are rejected per spec.
     for (const [key, value] of merged) {
@@ -150,8 +149,8 @@ export async function rewriteEnvFile(overrides = new Map()) {
 
     const lines = [
       "# AbsoluteCare environment",
-      "# Managed by the admin integration settings page. Manual edits to the keys below",
-      "# will be overwritten the next time credentials are saved in the app.",
+      "# Original variables are defaults. Admin edits are stored in CUSTOM_ variables.",
+      "# CUSTOM_ variables are managed by the app and removed by Reset to Default.",
       `# Generated ${new Date().toISOString()}`,
       "",
     ];
@@ -164,22 +163,25 @@ export async function rewriteEnvFile(overrides = new Map()) {
         (entry) => entry.group === groupId,
       ).map((entry) => entry.key);
       for (const key of keysInGroup) {
-        if (!merged.has(key)) continue;
-        lines.push(`${key}=${formatEnvValue(merged.get(key))}`);
-        managedWritten += 1;
+        for (const name of [key, `CUSTOM_${key}`]) {
+          if (!merged.has(name)) continue;
+          lines.push(`${name}=${formatEnvValue(merged.get(name))}`);
+          managedWritten += 1;
+        }
       }
       lines.push("");
     }
 
     const unmanagedInOrder = originalOrder.filter(
       (key) =>
-        !MANAGED_KEYS.has(key) && !RETIRED_KEYS.has(key) && key in existing,
+        !MANAGED_KEYS.has(key) && !customKeys.has(key) && !RETIRED_KEYS.has(key) && key in existing,
     );
     // Include unmanaged keys that dotenv parsed but whose line shape the
     // order scanner missed (defensive; keeps values untouched).
     for (const key of Object.keys(existing)) {
       if (
         !MANAGED_KEYS.has(key) &&
+        !customKeys.has(key) &&
         !RETIRED_KEYS.has(key) &&
         !unmanagedInOrder.includes(key)
       ) {
@@ -196,8 +198,9 @@ export async function rewriteEnvFile(overrides = new Map()) {
 
     let changed = 0;
     for (const key of MANAGED_KEYS) {
-      const before = (existing[key] ?? "").trim();
-      const after = merged.has(key) ? merged.get(key) : "";
+      const customKey = `CUSTOM_${key}`;
+      const before = (existing[customKey] ?? "").trim();
+      const after = merged.get(customKey) ?? "";
       if (before !== after) changed += 1;
     }
 

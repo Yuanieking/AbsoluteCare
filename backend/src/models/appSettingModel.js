@@ -13,6 +13,32 @@ const settingSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const permissionSchema = new mongoose.Schema(
+  {
+    create: { type: Boolean, default: false },
+    read: { type: Boolean, default: true },
+    update: { type: Boolean, default: false },
+    delete: { type: Boolean, default: false },
+  },
+  { _id: false },
+);
+
+const rolePermissionsSchema = new mongoose.Schema(
+  {
+    dashboard: { type: permissionSchema, default: () => ({}) },
+    appointments: { type: permissionSchema, default: () => ({}) },
+    services: { type: permissionSchema, default: () => ({}) },
+    sessions: { type: permissionSchema, default: () => ({}) },
+    patients: { type: permissionSchema, default: () => ({}) },
+    payments: { type: permissionSchema, default: () => ({}) },
+    reports: { type: permissionSchema, default: () => ({}) },
+    documents: { type: permissionSchema, default: () => ({}) },
+    userManagement: { type: permissionSchema, default: () => ({}) },
+    settings: { type: permissionSchema, default: () => ({}) },
+  },
+  { _id: false },
+);
+
 const appSettingSchema = new mongoose.Schema(
   {
     key: { type: String, default: "singleton", unique: true, immutable: true },
@@ -30,6 +56,10 @@ const appSettingSchema = new mongoose.Schema(
       secretaryCanOpenDocuments: { type: Boolean, default: true },
       secretaryCanViewDriveStatus: { type: Boolean, default: true },
       therapistCanOpenDocuments: { type: Boolean, default: true },
+      permissions: {
+        secretary: { type: rolePermissionsSchema, default: () => ({}) },
+        therapist: { type: rolePermissionsSchema, default: () => ({}) },
+      },
     },
     booking: {
       onlineBookingEnabled: { type: Boolean, default: true },

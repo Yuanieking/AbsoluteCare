@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { todayInManila } from '@/lib/format/patient'
 import { showPromise } from '@/lib/toast'
 import { useBookAppointment } from './mutations'
-import { useDependents, useServices } from './queries'
+import { useBookingTimes, useDependents, useServices } from './queries'
 import { bookingSchema, type BookingValues } from './schemas'
 
 export default function BookAppointmentPage() {
@@ -32,10 +32,17 @@ export default function BookAppointmentPage() {
   })
 
   const selectedService = useWatch({ control: form.control, name: 'service' })
+  const selectedDate = useWatch({ control: form.control, name: 'requestedDate' })
+  const selectedTime = useWatch({ control: form.control, name: 'requestedTime' })
+  const availableTimes = useBookingTimes(selectedService, selectedDate)
   const serviceList = services.data ?? []
   const dependentList = dependents.data ?? []
 
   const onSubmit = form.handleSubmit(async (values) => {
+    if (!availableTimes.data?.includes(values.requestedTime)) {
+      form.setError('requestedTime', { message: 'Choose an available time for this service and date.' })
+      return
+    }
     const request = bookMutation.mutateAsync({
       ...values,
       dependent: values.dependent || null,
@@ -133,13 +140,23 @@ export default function BookAppointmentPage() {
               type="date"
               min={todayInManila()}
             />
-            <TextField<BookingValues>
+            <SelectField<BookingValues>
               control={form.control}
               name="requestedTime"
-              label="Preferred time"
-              type="time"
+              label="Available time (Asia/Manila)"
+              options={(availableTimes.data || []).map((time) => ({ value: time, label: time }))}
             />
           </div>
+
+          {selectedService && selectedDate ? (
+            <p role="status" className="text-[12px] text-ink-soft">
+              {availableTimes.isFetching ? 'Checking available times…' : availableTimes.error
+                ? 'Could not load availability. Please try again.'
+                : !availableTimes.data?.length ? 'No therapist is available for this service on this date.'
+                : selectedTime && !availableTimes.data.includes(selectedTime) ? 'Choose a new time for this service and date.'
+                : 'Only times that fit the full session are shown.'}
+            </p>
+          ) : null}
 
           {dependentList.length > 0 ? (
             <SelectField<BookingValues>
@@ -171,7 +188,7 @@ export default function BookAppointmentPage() {
             </p>
           ) : null}
 
-          <Button type="submit" disabled={bookMutation.isPending} className="justify-self-start">
+          <Button type="submit" disabled={bookMutation.isPending || availableTimes.isFetching || !availableTimes.data?.includes(selectedTime)} className="justify-self-start">
             <CalendarPlus size={16} aria-hidden="true" />
             {bookMutation.isPending ? 'Sending request…' : 'Request appointment'}
           </Button>

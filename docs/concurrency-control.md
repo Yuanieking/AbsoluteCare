@@ -66,7 +66,7 @@ The check script is `backend/scripts/concurrencyCheck.ts`. It needs a running Mo
 
 ```bash
 npm run build
-npx tsx scripts/concurrencyCheck.ts
+npx tsx scripts/concurrencyCheck.js
 ```
 
 The script checks successful updates, outdated timestamps, invalid or missing headers, deletion, and browser permission to send the header.

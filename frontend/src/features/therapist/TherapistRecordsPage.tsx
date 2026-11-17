@@ -210,7 +210,7 @@ function SessionEditDialog({
               name="durationMinutes"
               label="Duration (minutes)"
               type="number"
-              min={1}
+              min={30}
               max={240}
             />
             <TextareaField<SessionValues>

@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { clinicDate, clinicDay } from "../utils/appointmentDates.js";
 import Appointment from "../models/appointmentModel.js";
 import User from "../models/userModel.js";
 import { assertNotStale, freshFilter } from "./concurrencyService.js";
@@ -21,7 +22,7 @@ function dateRange(filters) {
     const value = today.toLocaleDateString("en-CA", {
       timeZone: "Asia/Manila",
     });
-    return [`${value}T00:00:00+08:00`, `${value}T23:59:59+08:00`];
+    return [`${value}T00:00:00+08:00`, `${value}T23:59:59.999+08:00`];
   }
   if (filters.date === "week") {
     const weekday = new Intl.DateTimeFormat("en-US", {
@@ -31,11 +32,11 @@ function dateRange(filters) {
     const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
       weekday,
     );
-    const start = new Date(today);
-    start.setDate(today.getDate() - ((day + 6) % 7));
+    const start = clinicDate(clinicDay(today));
+    start.setTime(start.getTime() - ((day + 6) % 7) * 86400000);
     return [
       start.toISOString(),
-      new Date(start.getTime() + 7 * 86400000).toISOString(),
+      new Date(start.getTime() + 7 * 86400000 - 1).toISOString(),
     ];
   }
   return [filters.from, filters.to];
@@ -49,8 +50,8 @@ function scheduleQuery(filters) {
   const [from, to] = dateRange(filters);
   if (from || to)
     query.scheduledStart = {
-      ...(from ? { $gte: new Date(from) } : {}),
-      ...(to ? { $lte: new Date(to) } : {}),
+      ...(from ? { $gte: clinicDate(from) } : {}),
+      ...(to ? { $lte: clinicDate(to, true) } : {}),
     };
   return query;
 }

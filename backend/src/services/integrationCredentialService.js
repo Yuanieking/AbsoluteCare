@@ -15,6 +15,7 @@ import {
 import { getIntegrationStatus } from "../config/integrations.js";
 import {
   getIntegrationConfig,
+  getIntegrationDefault,
   getIntegrationSource,
   invalidateRuntimeConfigCache,
 } from "../config/runtimeConfig.js";
@@ -212,13 +213,19 @@ async function markRestartPending(adminId) {
 
 async function loadDecryptedOverrides() {
   // Credential rows store the encrypted override per key.
-  const docs = await IntegrationCredential.find({
-    clearedAt: null,
-    valueEncrypted: { $ne: "" },
-  }).lean();
+  const docs = await IntegrationCredential.find({}).lean();
 
   const map = new Map();
+  for (const key of MANAGED_KEYS) {
+    const value = process.env[`CUSTOM_${key}`]?.trim();
+    if (value) map.set(key, value);
+  }
   for (const doc of docs ?? []) {
+    if (!MANAGED_KEYS.has(doc.key)) continue;
+    if (doc.clearedAt) {
+      map.delete(doc.key);
+      continue;
+    }
     const value = decryptSecret(doc.valueEncrypted);
     if (value) map.set(doc.key, value);
   }
@@ -461,6 +468,55 @@ export async function saveCredentials({
     restartRequired: true,
     envWrite: envResult.outcome,
     warnings,
+  };
+}
+
+export async function resetCredentials({ adminId, ip }) {
+  await invalidateRuntimeConfigCache();
+  const now = new Date();
+  const changed = [...MANAGED_KEYS].filter(
+    (key) => getIntegrationConfig(key) !== getIntegrationDefault(key),
+  );
+  const rotates = changed.some((key) => LOAD_BEARING_KEYS.has(key));
+  let affectedAccounts = 0;
+  if (rotates) {
+    affectedAccounts = await User.countDocuments({ "googleCalendar.connected": true });
+    await User.updateMany(
+      { "googleCalendar.connected": true },
+      { $set: { "googleCalendar.needsReconnect": true } },
+    );
+  }
+  // Tombstones also suppress CUSTOM_ values supplied by a read-only environment.
+  await IntegrationCredential.bulkWrite([...MANAGED_KEYS].map((key) => ({
+    updateOne: {
+      filter: { key },
+      update: { $set: {
+        group: keyDefinition(key).group,
+        valueEncrypted: "",
+        valueHash: "",
+        fingerprint: "",
+        previousEncrypted: null,
+        clearedAt: now,
+        updatedBy: objectId(adminId),
+        verifiedAt: null,
+      } },
+      upsert: true,
+    },
+  })));
+  const envResult = await syncEnvRewrite();
+  await writeAudit({
+    adminId, key: "resetIntegrationCredentials", ip,
+    oldValue: "custom integration credentials",
+    newValue: "original server defaults",
+    meta: { changedKeys: changed, affectedAccounts, envWrite: envResult.outcome },
+  });
+  await markRestartPending(adminId);
+  const warning = envOutcomeWarning(envResult.outcome);
+  return {
+    restartRequired: true,
+    envWrite: envResult.outcome,
+    warnings: warning ? [warning] : [],
+    message: "All integration credentials reset to server defaults. Restart the server to apply them.",
   };
 }
 

@@ -9,6 +9,7 @@ import { getDashboardPath, isReturnablePath } from '@/lib/dashboard-path'
 export function ProtectedRoute({ allowedRoles }: { allowedRoles?: string[] }) {
   const { user, loading } = useAuth()
   const location = useLocation()
+  const { settings } = useSettings()
 
   if (loading) {
     return (
@@ -36,7 +37,36 @@ export function ProtectedRoute({ allowedRoles }: { allowedRoles?: string[] }) {
     return <Navigate replace to={getDashboardPath(user)} />
   }
 
+  const area = areaForPath(location.pathname)
+  if (area && !hasAreaAccess(user.role, area, settings.roleAccess)) {
+    return <Navigate replace to={getDashboardPath(user)} />
+  }
+
   return <Outlet />
+}
+
+type StaffArea =
+  | 'appointments'
+  | 'services'
+  | 'sessions'
+  | 'patients'
+  | 'payments'
+  | 'reports'
+  | 'documents'
+  | 'userManagement'
+  | 'settings'
+
+function areaForPath(pathname: string): StaffArea | undefined {
+  if (pathname.startsWith('/staff/documents')) return 'documents'
+  if (pathname.includes('/appointments') || pathname.includes('/schedule')) return 'appointments'
+  if (pathname.includes('/services')) return 'services'
+  if (pathname.includes('/session')) return 'sessions'
+  if (pathname.includes('/patients') || pathname.includes('/therapists')) return 'patients'
+  if (pathname.includes('/payments')) return 'payments'
+  if (pathname.includes('/reports')) return 'reports'
+  if (pathname.includes('/users')) return 'userManagement'
+  if (pathname.includes('/settings')) return 'settings'
+  return undefined
 }
 
 /** Sends staff away from an area the admin has switched off for their role. */

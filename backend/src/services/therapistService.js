@@ -2,8 +2,11 @@ import { Types } from "mongoose";
 import Appointment from "../models/appointmentModel.js";
 import Session from "../models/sessionModel.js";
 import User from "../models/userModel.js";
+import TherapyService from "../models/therapyServiceModel.js";
+import { bookingTimes } from "./availabilityService.js";
 import {
   isValidFutureDate,
+  clinicDate,
   manilaDateTime,
 } from "../utils/appointmentDates.js";
 import {
@@ -138,6 +141,14 @@ export async function requestReschedule(therapistId, appointmentId, input) {
       status: 400,
       message: "Choose a future reschedule date and time.",
     };
+  const service = await TherapyService.findById(appointment.service);
+  const times = service ? await bookingTimes({
+    name: appointment.serviceSnapshot?.name || service.name,
+    duration: appointment.serviceSnapshot?.duration || service.duration,
+  }, input.proposedDate, therapistId, { time: input.proposedTime, excludeId: appointment._id }) : [];
+  if (!times.includes(input.proposedTime)) {
+    return { ok: false, status: 400, message: "Choose an available time within therapist working hours." };
+  }
   appointment.rescheduleRequest = {
     status: "requested",
     proposedDate: input.proposedDate,
@@ -207,13 +218,14 @@ export async function createSessionForAppointment(
       message:
         "Sessions can be recorded after a confirmed appointment has passed.",
     };
-  const sessionDate = new Date(input.sessionDate);
+  const sessionDate = clinicDate(input.sessionDate);
   const durationMinutes = Number(input.durationMinutes);
   if (
     Number.isNaN(sessionDate.getTime()) ||
     sessionDate > new Date() ||
     !Number.isInteger(durationMinutes) ||
-    durationMinutes < 1
+    durationMinutes < 30 ||
+    durationMinutes > 240
   )
     return {
       ok: false,
@@ -263,7 +275,7 @@ export async function updateSession(therapistId, sessionId, changes, ifMatch) {
   // ** Concurrency: reject if the session notes changed since the client read them.
   guardFresh(session, ifMatch);
   if (changes.sessionDate !== undefined)
-    session.sessionDate = new Date(changes.sessionDate);
+    session.sessionDate = clinicDate(changes.sessionDate);
   if (changes.durationMinutes !== undefined)
     session.durationMinutes = Number(changes.durationMinutes);
   if (changes.patientVisibleNotes !== undefined)

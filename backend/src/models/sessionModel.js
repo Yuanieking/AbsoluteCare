@@ -28,7 +28,7 @@ const sessionSchema = new mongoose.Schema(
       required: true,
     },
     sessionDate: { type: Date, required: true },
-    durationMinutes: { type: Number, required: true, min: 1 },
+    durationMinutes: { type: Number, required: true, min: 30 },
     patientVisibleNotes: { type: String, default: "" },
     clinicalNotes: { type: String, default: "" },
     editHistory: [

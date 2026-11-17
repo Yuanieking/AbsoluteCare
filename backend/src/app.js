@@ -1,3 +1,4 @@
+import "./config/audit.js";
 import "./config/integrations.js";
 import express from "express";
 import path from "node:path";
@@ -27,6 +28,7 @@ import connectDB from "./config/db.js";
 import { verifyMailer } from "./services/mailer.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import backupRoutes from "./routes/backupRoutes.js";
 import { getSettings } from "./services/settingsService.js";
 import { getIntegrationStatus } from "./config/integrations.js";
 import { validateEmailAssets } from "./emails/layout.js";
@@ -40,11 +42,15 @@ import { setHttpServer } from "./services/restartService.js";
 import { securityHeaders } from "./middleware/securityHeaders.js";
 import { globalRateLimit } from "./middleware/rateLimit.js";
 import { sanitizeInput } from "./middleware/sanitizeInput.js";
+import { auditRequest } from "./middleware/auditMiddleware.js";
+import auditRoutes from "./routes/auditRoutes.js";
+import { importLegacyAudit } from "./services/auditService.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 app.disable("x-powered-by");
 app.use(securityHeaders);
+app.use(auditRequest);
 
 app.get("/static/email/logo.png", (req, res) => {
   res.sendFile(path.join(ASSETS_DIR, "email/logo.png"));
@@ -73,10 +79,15 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 app.use(globalRateLimit);
-app.use(express.json());
+// Backup requests use a route-specific limit and must have parsed auth cookies.
+
 app.use(cookieParser());
+app.use("/admin/backup", backupRoutes);
+app.use(express.json());
+
 app.use(sanitizeInput);
 
+app.use("/audit", auditRoutes);
 app.use("/auth", authRoutes);
 app.use("/integrations", calendarRoutes);
 app.use("/integrations", googleDriveRoutes);
@@ -109,6 +120,7 @@ const server = app.listen(PORT, () => {
   void verifyMailer();
   connectDB()
     .then(async () => {
+      await importLegacyAudit();
       await refreshRuntimeConfig();
       await syncBootstrapAdmins();
       await markRestartApplied();

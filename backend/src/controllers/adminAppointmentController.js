@@ -21,10 +21,11 @@ import {
   notifyAppointmentConfirmed,
   notifyAppointmentRescheduled,
 } from "../services/notificationService.js";
-import { availabilityError } from "../services/availabilityService.js";
+import { therapistMismatch } from "../services/availabilityService.js";
 import { adminNotificationSchema } from "../schemas/appointmentSchema.js";
 import { manilaDateTime } from "../utils/appointmentDates.js";
 import { guardFresh } from "../services/concurrencyService.js";
+import { clinicDate } from "../utils/appointmentDates.js";
 
 function scheduleFor(appointment, date, time) {
   const start = manilaDateTime(date, time);
@@ -45,25 +46,6 @@ function statusError(res, appointment, action, statuses) {
     message: `Cannot ${action} an appointment with status "${appointment.status}".`,
   });
   return true;
-}
-
-/** First failure wins, and each failure names the rule that blocked it. */
-function therapistMismatch(therapist, service, start, end) {
-  const specializations = Array.isArray(therapist.specialization)
-    ? therapist.specialization
-    : [therapist.specialization].filter(Boolean);
-  const serviceName = service.name.toLowerCase();
-  const qualified =
-    !specializations.length ||
-    specializations.some(
-      (item) =>
-        serviceName.includes(String(item).toLowerCase()) ||
-        String(item).toLowerCase().includes(serviceName),
-    );
-  if (!qualified) {
-    return `This therapist's specialization does not cover ${service.name}.`;
-  }
-  return availabilityError(therapist, start, end);
 }
 
 async function assertTherapistAvailable(appointment, therapistId, start, end) {
@@ -131,8 +113,8 @@ export async function listAppointments(req, res) {
   }
   if (req.query.from || req.query.to) {
     query.scheduledStart = {
-      ...(req.query.from ? { $gte: new Date(String(req.query.from)) } : {}),
-      ...(req.query.to ? { $lte: new Date(String(req.query.to)) } : {}),
+      ...(req.query.from ? { $gte: clinicDate(req.query.from) } : {}),
+      ...(req.query.to ? { $lte: clinicDate(req.query.to, true) } : {}),
     };
   }
   if (typeof req.query.therapist === "string" && req.query.therapist)

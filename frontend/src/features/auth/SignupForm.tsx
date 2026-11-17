@@ -2,7 +2,9 @@ import { useRef, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoaderCircle } from 'lucide-react'
 import { useForm, useWatch } from 'react-hook-form'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { LegalContent } from '@/features/legal/LegalContent'
 import RecaptchaField from '@/features/auth/RecaptchaField'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -45,6 +47,7 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
     siteKey: settings.recaptchaSiteKey,
     recaptchaRef,
   })
+  const [legal, setLegal] = useState<'terms' | 'privacy' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [networkError, setNetworkError] = useState('')
@@ -150,6 +153,15 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
         <NetworkAlert message={networkError} onDismiss={() => setNetworkError('')} />
       ) : null}
       {error && !networkError ? <AuthAlert>{error}</AuthAlert> : null}
+      <Dialog open={legal !== null} onOpenChange={(open) => { if (!open) setLegal(null) }}>
+        <DialogContent className="max-h-[85dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{legal === 'privacy' ? 'Privacy Policy' : 'Terms and Conditions'}</DialogTitle>
+            <DialogDescription>Review without leaving your signup form.</DialogDescription>
+          </DialogHeader>
+          <LegalContent />
+        </DialogContent>
+      </Dialog>
       <Form {...form}>
         <form className="grid items-start gap-3.5 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
           <FormField
@@ -290,13 +302,13 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
                 <div className="grid gap-1">
                   <FormLabel className="text-[12px] font-normal leading-relaxed">
                     I agree to the{' '}
-                    <Link className="font-semibold underline" to="/terms">
+                    <button type="button" className="font-semibold underline" onClick={(event) => { event.preventDefault(); setLegal('terms') }}>
                       Terms and Conditions
-                    </Link>{' '}
+                    </button>{' '}
                     and{' '}
-                    <Link className="font-semibold underline" to="/privacy">
+                    <button type="button" className="font-semibold underline" onClick={(event) => { event.preventDefault(); setLegal('privacy') }}>
                       Privacy Policy
-                    </Link>
+                    </button>
                     .
                   </FormLabel>
                   <FormMessage />

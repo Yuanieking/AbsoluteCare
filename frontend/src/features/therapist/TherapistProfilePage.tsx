@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { AddressField, TextField } from '@/components/form/FormFields'
 import { PageBody, PageHeader } from '@/components/layout/Page'
+import { AuditTrail } from '@/features/audit/AuditTrail'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -254,6 +255,7 @@ export default function TherapistProfilePage() {
           </div>
         )}
       </section>
+      <AuditTrail />
     </PageBody>
   )
 }

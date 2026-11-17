@@ -1,8 +1,13 @@
 import jwt from "jsonwebtoken";
+import { auditContext } from "../services/auditCapture.js";
 
 import { JWT_SECRET } from "../config/env.js";
 import User from "../models/userModel.js";
-import { getSettings, roleHasAccess } from "../services/settingsService.js";
+import {
+  getSettings,
+  roleAccess,
+  roleHasAccess,
+} from "../services/settingsService.js";
 
 export const protectRoute = async (req, res, next) => {
   try {
@@ -28,7 +33,7 @@ export const protectRoute = async (req, res, next) => {
     }
 
     const user = await User.findById(req.user.userId).select(
-      "role isActive isArchived removedAt mustChangePassword",
+      "role firstname lastname isActive isArchived removedAt mustChangePassword",
     );
     if (!user || user.removedAt) {
       res.status(403).json({
@@ -44,6 +49,12 @@ export const protectRoute = async (req, res, next) => {
       return;
     }
 
+    req.user.role = user.role;
+    const context = auditContext.getStore();
+    if (context) context.actor = {
+      actorId: req.user.userId, actorRole: user.role,
+      actorName: `${user.firstname || ""} ${user.lastname || ""}`.trim() || "User",
+    };
     const requestPath = req.originalUrl.split("?")[0];
     const allowedDuringPasswordChange = [
       "/auth/me",
@@ -97,10 +108,22 @@ export function requireRole(...roles) {
 // Runs after requireRole: admins always pass, other staff roles pass only
 // while the admin has switched the area on in Settings.
 export function requireAccess(area) {
+  return requirePermission(area, "read");
+}
+
+export function requirePermission(area, action) {
   return async (req, res, next) => {
     try {
       const settings = await getSettings();
-      if (!roleHasAccess(settings, String(req.user.role), area)) {
+      if (req.user.role !== "admin") {
+        const access = roleAccess(settings)[String(req.user.role)];
+        if (access?.[area]?.read !== true || access?.[area]?.[action] !== true) {
+          res.status(403).json({
+            message: `Your role does not have ${action} access to this area.`,
+          });
+          return;
+        }
+      } else if (!roleHasAccess(settings, String(req.user.role), area)) {
         res.status(403).json({
           message: "Your role does not have access to this area.",
         });

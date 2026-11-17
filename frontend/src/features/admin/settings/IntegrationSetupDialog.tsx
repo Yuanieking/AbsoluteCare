@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { CopyButton } from './IntegrationSetupGuide'
+import { maskCredential } from './maskCredential'
 import type { CredentialGroup, CredentialKeyEntry } from './types'
 
 function sourceBadge(entry: CredentialKeyEntry) {
@@ -69,7 +70,7 @@ export function IntegrationSetupDialog({
                 {group.redirectUri ? (
                   <span className="flex flex-wrap items-center gap-2">
                     <code className="font-mono text-[11px] break-all text-ink-soft">
-                      {group.redirectUri}
+                      {maskCredential(group.redirectUri)}
                     </code>
                     <CopyButton value={group.redirectUri} label="Copy redirect URI" />
                   </span>
@@ -115,10 +116,16 @@ export function IntegrationSetupDialog({
                     </div>
                     <p className="mt-0.5 text-[12px] font-medium text-ink">{entry.label}</p>
                     {entry.helper ? (
-                      <p className="mt-0.5 text-[11.5px] text-ink-soft">{entry.helper}</p>
+                      <p className="mt-0.5 text-[11.5px] text-ink-soft">
+                        {entry.key === 'RECAPTCHA_SITE_KEY'
+                          ? 'Public. Browsers receive this value, but it stays masked here.'
+                          : entry.helper}
+                      </p>
                     ) : null}
                     {entry.masked && badge.set ? (
-                      <p className="mt-1 font-mono text-[11px] text-ink-faint">{entry.masked}</p>
+                      <p className="mt-1 font-mono text-[11px] text-ink-faint">
+                        {maskCredential(entry.masked)}
+                      </p>
                     ) : null}
                     {entry.sharedWith ? (
                       <p className="mt-1 text-[11px] text-ink-faint">

@@ -56,6 +56,11 @@ export async function listServices() {
   return (response.data?.services || []) as TherapyService[]
 }
 
+export async function listBookingTimes(service: string, date: string) {
+  const response = await axiosInstance.get('/availability', { params: { service, date } })
+  return (response.data?.times || []) as string[]
+}
+
 export async function listDependents() {
   const response = await axiosInstance.get('/dependents')
   return (response.data?.dependents || []) as Dependent[]

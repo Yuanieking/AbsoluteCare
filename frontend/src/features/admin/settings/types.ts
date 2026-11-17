@@ -35,7 +35,32 @@ export type AuthValues = {
   secretaryCanOpenDocuments: boolean
   secretaryCanViewDriveStatus: boolean
   therapistCanOpenDocuments: boolean
+  permissions: {
+    secretary: RolePermissions
+    therapist: RolePermissions
+  }
 }
+
+export type PermissionKey =
+  | 'dashboard'
+  | 'appointments'
+  | 'services'
+  | 'sessions'
+  | 'patients'
+  | 'payments'
+  | 'reports'
+  | 'documents'
+  | 'userManagement'
+  | 'settings'
+
+export type CrudPermission = {
+  create: boolean
+  read: boolean
+  update: boolean
+  delete: boolean
+}
+
+export type RolePermissions = Record<PermissionKey, CrudPermission>
 
 export type NotificationsValues = {
   emailEnabled: boolean

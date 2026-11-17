@@ -24,6 +24,7 @@ import { sectionMap } from '../config'
 import { InlineNote, SettingsSection } from '../fields'
 import { IntegrationSetupDialog } from '../IntegrationSetupDialog'
 import { IntegrationSetupGuide } from '../IntegrationSetupGuide'
+import { maskCredential } from '../maskCredential'
 import { RestartBanner, type RestartPhase } from '../RestartBanner'
 import type {
   CredentialsResponse,
@@ -36,7 +37,7 @@ import type {
 
 function lastChanged(record?: IntegrationHealthRecord) {
   if (!record?.updatedBy?.name) return 'Never changed'
-  const when = record.updatedAt ? new Date(record.updatedAt).toLocaleDateString() : ''
+  const when = record.updatedAt ? new Date(record.updatedAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' }) : ''
   return `Last changed by ${record.updatedBy.name}${when ? ` · ${when}` : ''}`
 }
 
@@ -307,6 +308,7 @@ export function IntegrationsSection({
   onEditCredentials,
   onRestart,
   onDismissRestart,
+  onResetDefaults,
   onDownloadHandover,
 }: {
   value: IntegrationValues
@@ -325,6 +327,7 @@ export function IntegrationsSection({
   onEditCredentials: (group: string) => void
   onRestart: () => void
   onDismissRestart: () => void
+  onResetDefaults: () => void
   onDownloadHandover: () => void
 }) {
   const [testing, setTesting] = useState('')
@@ -397,14 +400,19 @@ export function IntegrationsSection({
     <SettingsSection
       section={sectionMap.integrations!}
       actions={
-        <Button type="button" variant="outline" size="sm" disabled={refreshing} onClick={onRefresh}>
-          {refreshing ? (
-            <LoaderCircle className="animate-spin" size={14} aria-hidden="true" />
-          ) : (
-            <RefreshCw size={14} aria-hidden="true" />
-          )}
-          {refreshing ? 'Re-checking...' : 'Re-check status'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" disabled={saving || !credentials} onClick={onResetDefaults}>
+            Reset to Default
+          </Button>
+          <Button type="button" variant="outline" size="sm" disabled={refreshing} onClick={onRefresh}>
+            {refreshing ? (
+              <LoaderCircle className="animate-spin" size={14} aria-hidden="true" />
+            ) : (
+              <RefreshCw size={14} aria-hidden="true" />
+            )}
+            {refreshing ? 'Re-checking...' : 'Re-check status'}
+          </Button>
+        </div>
       }
     >
       {!googleConfigured || !recaptchaConfigured || !emailConfigured ? (
@@ -441,7 +449,7 @@ export function IntegrationsSection({
           title="Google sign-in"
           description="Let patients log in and sign up with their Google account."
           configured={googleConfigured}
-          meta={`${googleRecord.details?.clientIdMasked ? `Client ID ${googleRecord.details.clientIdMasked}` : 'Client ID not set'} · ${lastChanged(googleRecord)}`}
+          meta={`Client ID ${maskCredential(googleRecord.details?.clientIdMasked)} · ${lastChanged(googleRecord)}`}
           setupHint={!googleConfigured ? missingNote(googleRecord) : undefined}
           switchControl={toggle(
             'googleAuthEnabled',
@@ -539,7 +547,7 @@ export function IntegrationsSection({
           title="Google Calendar"
           description="Sync confirmed appointments to users' Google Calendars. Turning this off pauses syncing but keeps existing connections."
           configured={calendarConfigured}
-          meta={`${calendarRecord.details?.redirectUri || 'Calendar redirect URI not set'} · ${lastChanged(calendarRecord)}`}
+          meta={`Calendar redirect URI ${maskCredential(calendarRecord.details?.redirectUri)} · ${lastChanged(calendarRecord)}`}
           setupHint={!calendarConfigured ? missingNote(calendarRecord) : undefined}
           switchControl={toggle(
             'googleCalendarEnabled',
@@ -581,7 +589,7 @@ export function IntegrationsSection({
                   ? 'Login rejected'
                   : undefined
           }
-          meta={`${emailRecord.details?.senderAddress || 'Sender address not set'} · ${lastChanged(emailRecord)}`}
+          meta={`Sender address ${maskCredential(emailRecord.details?.senderAddress)} · ${lastChanged(emailRecord)}`}
           setupHint={!emailConfigured ? missingNote(emailRecord) : undefined}
           switchControl={toggle('emailEnabled', 'Email provider', value.emailEnabled)}
           footer={
@@ -609,7 +617,8 @@ export function IntegrationsSection({
               {results.email ||
                 `${emailRecord.lastTest?.ok ? 'Last test passed' : 'Last test failed'} · ${
                   emailRecord.lastTest?.checkedAt
-                    ? new Date(emailRecord.lastTest.checkedAt).toLocaleTimeString([], {
+                    ? new Date(emailRecord.lastTest.checkedAt).toLocaleTimeString('en-PH', {
+                        timeZone: 'Asia/Manila',
                         hour: 'numeric',
                         minute: '2-digit',
                       })

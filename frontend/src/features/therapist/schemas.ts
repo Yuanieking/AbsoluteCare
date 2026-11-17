@@ -37,8 +37,8 @@ export const sessionSchema = z.object({
     .trim()
     .min(1, 'Enter the duration.')
     .refine(
-      (value) => /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 240,
-      'Enter between 1 and 240 minutes.',
+      (value) => /^\d+$/.test(value) && Number(value) >= 30 && Number(value) <= 240,
+      'Enter between 30 and 240 minutes.',
     ),
   patientVisibleNotes: z.string().trim().max(4000, 'Keep the notes under 4000 characters.'),
   clinicalNotes: z

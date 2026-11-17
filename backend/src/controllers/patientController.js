@@ -16,6 +16,8 @@ import {
 } from "../services/calendarService.js";
 import { notify, notifyMany } from "../services/notificationService.js";
 import * as patientService from "../services/patientService.js";
+import { bookingTimes } from "../services/availabilityService.js";
+import { bookingAvailabilitySchema } from "../schemas/availabilitySchema.js";
 
 function queryInt(value, fallback) {
   return Number.parseInt(String(value || fallback), 10);
@@ -24,6 +26,13 @@ function queryInt(value, fallback) {
 export async function listServices(req, res) {
   const services = await patientService.listPublicServices();
   res.json({ services });
+}
+
+export async function listBookingTimes(req, res) {
+  const parsed = bookingAvailabilitySchema.parse(req.query);
+  const service = await patientService.findService(parsed.service);
+  if (!service) return res.status(400).json({ message: "That therapy service is not available." });
+  res.json({ times: await bookingTimes(service, parsed.date) });
 }
 
 export async function listDependents(req, res) {
@@ -98,6 +107,12 @@ export async function requestAppointment(req, res) {
   }
   if (!isValidFutureDate(parsed.requestedDate, parsed.requestedTime)) {
     res.status(400).json({ message: "Choose a future date and time." });
+    return;
+  }
+
+  const times = await bookingTimes(service, parsed.requestedDate, null, { time: parsed.requestedTime });
+  if (!times.includes(parsed.requestedTime)) {
+    res.status(400).json({ message: "Choose an available time within therapist working hours." });
     return;
   }
 
@@ -206,6 +221,15 @@ export async function requestReschedule(req, res) {
     return;
   }
 
+  const times = await bookingTimes({
+    name: appointment.serviceSnapshot?.name || appointment.service.name,
+    duration: appointment.serviceSnapshot?.duration || appointment.service.duration,
+  }, parsed.proposedDate, appointment.therapist?._id || appointment.therapist, { time: parsed.proposedTime, excludeId: appointment._id });
+  if (!times.includes(parsed.proposedTime)) {
+    res.status(400).json({ message: "Choose an available time within therapist working hours." });
+    return;
+  }
+
   appointment.rescheduleRequest = {
     status: "requested",
     proposedDate: parsed.proposedDate,
@@ -291,7 +315,11 @@ export async function syncAppointmentCalendar(req, res) {
   }
 
   try {
-    await syncConfirmedAppointment(appointment._id);
+    const event = await syncConfirmedAppointment(appointment._id);
+    if (!event) {
+      res.status(409).json({ message: "Enable Google Calendar sync and connect your Google account before adding this appointment." });
+      return;
+    }
     const refreshed = await patientService.findAppointmentCalendarFields(
       appointment._id.toString(),
     );

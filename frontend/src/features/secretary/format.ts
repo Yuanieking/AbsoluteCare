@@ -1,4 +1,5 @@
 import { formatDateTimeManila, formatTimeManila } from '@/lib/format/patient'
+import { clinicDate } from '@/lib/format/clinic-time'
 import type { PersonRef, SecretaryAppointment } from './types'
 
 export function personName(person?: PersonRef | null) {
@@ -57,7 +58,7 @@ export function appointmentMoment(appointment: SecretaryAppointment) {
     return Number.isNaN(date.getTime()) ? null : date
   }
   if (appointment.requestedDate) {
-    const date = new Date(`${appointment.requestedDate}T${appointment.requestedTime || '00:00'}`)
+    const date = clinicDate(`${appointment.requestedDate}T${appointment.requestedTime || '00:00'}`)
     return Number.isNaN(date.getTime()) ? null : date
   }
   return null
@@ -98,7 +99,7 @@ export function collectedSeries(appointments: SecretaryAppointment[], now = new 
     month: '2-digit',
   })
   const months = Array.from({ length: 6 }, (_, index) =>
-    formatter.format(new Date(now.getFullYear(), now.getMonth() - (5 - index), 1)).slice(0, 7),
+    new Date(Date.UTC(Number(manilaDayKey(now).slice(0, 4)), Number(manilaDayKey(now).slice(5, 7)) - 1 - (5 - index), 1)).toISOString().slice(0, 7),
   )
   const totals = new Map(months.map((month) => [month, 0]))
   for (const appointment of appointments) {

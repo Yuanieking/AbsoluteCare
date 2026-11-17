@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 
-const documentCounterSchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true },
-  seq: { type: Number, default: 0, min: 0 },
-});
+const documentCounterSchema = new mongoose.Schema(
+  {
+    key: { type: String, required: true, unique: true },
+    seq: { type: Number, default: 0, min: 0 },
+  },
+  { timestamps: true },
+);
 
 const DocumentCounter = mongoose.model(
   "DocumentCounter",

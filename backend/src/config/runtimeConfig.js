@@ -26,23 +26,27 @@ const READ_CHAIN = {
 };
 
 let overrides = new Map();
+let clearedKeys = new Set();
 let loadedAt = 0;
 let loading = null;
 
 async function load() {
   try {
-    const docs = await IntegrationCredential.find({
-      clearedAt: null,
-      valueEncrypted: { $ne: "" },
-    }).lean();
+    const docs = await IntegrationCredential.find({}).lean();
     const next = new Map();
+    const cleared = new Set();
     for (const doc of docs) {
+      if (doc.clearedAt) {
+        cleared.add(doc.key);
+        continue;
+      }
       const value = decryptSecret(doc.valueEncrypted, () =>
         console.error(`credential: cannot decrypt ${doc.key}`),
       );
       if (value) next.set(doc.key, value);
     }
     overrides = next;
+    clearedKeys = cleared;
   } catch (error) {
     console.error("credential: overrides unavailable:", error.message);
   } finally {
@@ -72,6 +76,16 @@ export function getIntegrationConfig(key) {
   for (const candidate of chainFor(key)) {
     const override = overrides.get(candidate);
     if (override !== undefined) return override;
+  }
+  for (const candidate of chainFor(key)) {
+    const custom = process.env[`CUSTOM_${candidate}`];
+    if (!clearedKeys.has(candidate) && custom?.trim()) return custom.trim();
+  }
+  return getIntegrationDefault(key);
+}
+
+export function getIntegrationDefault(key) {
+  for (const candidate of chainFor(key)) {
     const fromEnv = process.env[candidate];
     if (typeof fromEnv === "string" && fromEnv.trim()) return fromEnv.trim();
   }
@@ -80,7 +94,10 @@ export function getIntegrationConfig(key) {
 
 export function getIntegrationSource(key) {
   for (const candidate of chainFor(key)) {
-    if (overrides.has(candidate)) return "app";
+    if (
+      overrides.has(candidate) ||
+      (!clearedKeys.has(candidate) && process.env[`CUSTOM_${candidate}`]?.trim())
+    ) return "app";
   }
   for (const candidate of chainFor(key)) {
     const fromEnv = process.env[candidate];

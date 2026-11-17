@@ -1,3 +1,5 @@
+import { clinicDate, clinicDay } from './clinic-time'
+
 type DateValue = string | Date | null | undefined
 
 type AppointmentLike = {
@@ -16,7 +18,7 @@ type TherapistLike = {
 
 function toDate(value: DateValue): Date | null {
   if (!value) return null
-  const date = new Date(value)
+  const date = clinicDate(value)
   return Number.isNaN(date.getTime()) ? null : date
 }
 
@@ -31,12 +33,8 @@ export function formatAppointmentDate(value: DateValue): string {
 }
 
 export function todayInManila(): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    day: '2-digit',
-    month: '2-digit',
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-  }).format(new Date())
+  return clinicDay()
+
 }
 
 export function formatAppointmentTime(start: DateValue, end?: DateValue, fallback = ''): string {
@@ -46,8 +44,8 @@ export function formatAppointmentTime(start: DateValue, end?: DateValue, fallbac
     minute: '2-digit',
     timeZone: 'Asia/Manila',
   })
-  const first = formatter.format(new Date(start))
-  return end ? `${first} – ${formatter.format(new Date(end))}` : first
+  const first = formatter.format(clinicDate(start))
+  return end ? `${first} – ${formatter.format(clinicDate(end))}` : first
 }
 
 export function appointmentDate(appointment: AppointmentLike): string {
@@ -139,7 +137,7 @@ export function formatTimeManila(value: DateValue): string {
 }
 
 export function relativeTime(value: string | Date): string {
-  const date = new Date(value)
+  const date = clinicDate(value)
   const seconds = Math.round((date.getTime() - Date.now()) / 1000)
   const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
   const absolute = Math.abs(seconds)

@@ -10,7 +10,7 @@ const sessionFields = {
   durationMinutes: z.coerce
     .number()
     .int("Enter the duration in whole minutes.")
-    .min(1, "Enter at least 1 minute.")
+    .min(30, "Enter at least 30 minutes.")
     .max(240, "Enter 240 minutes or less."),
   patientVisibleNotes: notes,
   clinicalNotes: notes,

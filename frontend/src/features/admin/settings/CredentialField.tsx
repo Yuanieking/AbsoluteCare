@@ -1,13 +1,8 @@
 import { ExternalLink } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { formatDate } from '../format'
+import { maskCredential } from './maskCredential'
 import type { CredentialKeyEntry } from './types'
-
-function maskParts(masked = '') {
-  const index = masked.indexOf('•')
-  if (index === -1) return { head: masked, rest: '' }
-  return { head: masked.slice(0, index), rest: masked.slice(index) }
-}
 
 function sourceLabel(source?: string) {
   if (source === 'app') return 'App'
@@ -31,11 +26,9 @@ export function CredentialField({
   const inputId = `credential-${entry.key}`
   const helperId = `${inputId}-helper`
   const errorId = `${inputId}-error`
-  const { head, rest } = maskParts(entry.masked)
-  const notSet = !entry.masked || entry.masked === 'Not set'
-  const label = notSet
-    ? `${entry.label}, not set`
-    : `${entry.label}, currently set${head ? `, starts with ${head}` : ''}`
+  const masked = maskCredential(entry.masked)
+  const notSet = masked === 'Not set'
+  const label = `${entry.label}, ${notSet ? 'not set' : 'currently set'}`
 
   return (
     <div className="grid gap-1.5">
@@ -69,10 +62,7 @@ export function CredentialField({
         {notSet ? (
           <span className="text-signal">Not set</span>
         ) : (
-          <>
-            <span aria-hidden="true">{head}</span>
-            <span aria-hidden="true">{rest}</span>
-          </>
+          <span aria-hidden="true">{masked}</span>
         )}
       </p>
 
@@ -91,7 +81,11 @@ export function CredentialField({
       />
 
       <p id={helperId} className="flex flex-wrap items-center gap-2 text-[11.5px] text-ink-soft">
-        <span>{entry.helper}</span>
+        <span>
+          {entry.key === 'RECAPTCHA_SITE_KEY'
+            ? 'Public. Browsers receive this value, but it stays masked here.'
+            : entry.helper}
+        </span>
         {entry.helpUrl ? (
           <a
             href={entry.helpUrl}
