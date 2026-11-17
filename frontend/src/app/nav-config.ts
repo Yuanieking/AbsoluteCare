@@ -189,6 +189,7 @@ const adminNav: RoleNav = {
         },
         { key: 'payments', label: 'Payments', to: '/staff/admin/settings?section=payments' },
         { key: 'system', label: 'Maintenance', to: '/staff/admin/settings?section=system' },
+        { key: 'backup', label: 'Backup', to: '/staff/admin/settings?section=backup' },
         { key: 'audit', label: 'Audit log', to: '/staff/admin/settings?section=audit' },
       ],
     },

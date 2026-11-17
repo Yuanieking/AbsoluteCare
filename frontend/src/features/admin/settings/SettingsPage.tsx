@@ -14,6 +14,7 @@ import { SuperuserVerifyDialog } from './SuperuserVerifyDialog'
 import { useSettingsBundle } from './queries'
 import { RestartBanner, type RestartPhase } from './RestartBanner'
 import { AuditSection } from './AuditLog'
+import { BackupSection } from './sections/backup'
 import { AuthSection } from './sections/access'
 import { BookingSection, GeneralSection, ScheduleSection } from './sections/clinic'
 import { IntegrationsSection } from './sections/integrations'
@@ -41,7 +42,10 @@ const guardedDisableActions: Partial<Record<keyof IntegrationValues, string>> = 
 export default function SettingsPage() {
   const [params, setParams] = useSearchParams()
   const requested = params.get('section') || 'general'
-  const section = isSectionKey(requested) || requested === 'audit' ? requested : 'general'
+  const section =
+    isSectionKey(requested) || requested === 'audit' || requested === 'backup'
+      ? requested
+      : 'general'
   const bundle = useSettingsBundle()
   const [drafts, setDrafts] = useState<Partial<Record<SettingsSectionKey, SectionValue>>>({})
   const [saving, setSaving] = useState(false)
@@ -59,8 +63,8 @@ export default function SettingsPage() {
   const integrationFlags = bundle.data?.settings.integrations ?? {}
   const health = bundle.data?.health ?? {}
   const credentials = bundle.data?.credentials ?? null
-  const savedSection = section === 'audit' ? null : (settings?.[section] ?? null)
-  const draft = section === 'audit' ? null : (drafts[section] ?? savedSection)
+  const savedSection = !isSectionKey(section) ? null : (settings?.[section] ?? null)
+  const draft = !isSectionKey(section) ? null : (drafts[section] ?? savedSection)
 
   useEffect(() => {
     mounted.current = true
@@ -95,14 +99,14 @@ export default function SettingsPage() {
   }, [search])
 
   function update(field: string, value: unknown) {
-    if (section === 'audit') return
+    if (!isSectionKey(section)) return
     const base = drafts[section] ?? savedSection
     if (!base) return
     setDrafts((current) => ({ ...current, [section]: { ...base, [field]: value } as SectionValue }))
   }
 
   function discardDraft() {
-    if (section === 'audit') return
+    if (!isSectionKey(section)) return
     setDrafts((current) => {
       const next = { ...current }
       delete next[section]
@@ -111,7 +115,7 @@ export default function SettingsPage() {
   }
 
   async function save() {
-    if (!draft || section === 'audit') return
+    if (!draft || !isSectionKey(section)) return
     setSaving(true)
     try {
       await api.updateSettingsSection(section, draft)
@@ -330,6 +334,8 @@ export default function SettingsPage() {
           />
         ) : section === 'audit' ? (
           <AuditSection />
+        ) : section === 'backup' ? (
+          <BackupSection section={sectionMap.backup!} />
         ) : !draft || !settings ? null : (
           <>
             {section === 'general' ? (

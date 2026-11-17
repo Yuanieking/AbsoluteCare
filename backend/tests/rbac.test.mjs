@@ -14,12 +14,13 @@ import users from "../src/routes/adminUserRoutes.js";
 import services from "../src/routes/adminServiceRoutes.js";
 import monitoring from "../src/routes/adminMonitoringRoutes.js";
 import therapist from "../src/routes/therapistRoutes.js";
+import backup from "../src/routes/backupRoutes.js";
 import { errorHandler } from "../src/middleware/errorHandler.js";
 import Verification from "../src/models/settingsVerificationModel.js";
 
 const id = "111111111111111111111111";
 
-test("Staff write routes reject read-only roles before touching persistence", async () => {
+test("Staff write routes reject read-only roles before touching persistence; backup authenticates cookies and validates confirmation", async () => {
   const oldUser = User.findById, oldSetting = Setting.findOne;
   const oldExists = Verification.exists, oldSpend = Verification.findOneAndUpdate;
   let role = "secretary";
@@ -36,6 +37,7 @@ test("Staff write routes reject read-only roles before touching persistence", as
   invalidateSettingsCache();
   const app = express();
   app.use(cookieParser());
+  app.use("/admin/backup", backup);
   app.use(express.json());
   app.use("/admin/appointments", appointments);
   app.use("/admin/users", users);
@@ -65,6 +67,17 @@ test("Staff write routes reject read-only roles before touching persistence", as
     for (const [method, suffix] of [["POST", "reschedule-request"], ["PATCH", "no-show"], ["POST", "calendar-sync"]]) {
       assert.equal((await request(`/therapist/appointments/${id}/${suffix}`, method)).status, 403);
     }
+    assert.equal((await request("/admin/backup/export", "POST", {}, false)).status, 401);
+    assert.equal((await request("/admin/backup/export", "POST")).status, 403);
+    role = "admin";
+    assert.equal((await request("/admin/backup/export", "POST")).status, 400);
+    assert.equal((await request("/admin/backup/restore", "POST", { confirmation: "wrong", backup: "{}", verificationToken: "fake" })).status, 400);
+    assert.equal(spends, 0);
+    assert.equal((await request("/admin/backup/export", "POST", { verificationToken: "invalid" })).status, 403);
+    const token = jwt.sign({ purpose: "settings-verification", adminId: id, action: "restoreBackup", verificationId: id }, JWT_SECRET);
+    assert.equal((await request("/admin/backup/restore", "POST", { confirmation: "RESTORE", backup: "not a backup", verificationToken: token })).status, 400);
+    assert.equal(spends, 1);
+    assert.equal((await request("/admin/backup/restore", "POST", { confirmation: "RESTORE", backup: "not a backup", verificationToken: token })).status, 403);
     // Explicit grant works; denied read still prevents writes; unknown areas fail closed.
     settings.auth.permissions.secretary.services.update = true;
     settings.auth.permissions.secretary.patients.read = false;

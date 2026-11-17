@@ -137,6 +137,22 @@ export async function restartServer() {
   return response.data as { code?: string; command?: string }
 }
 
+/** Needs a verification token: the file contains credential material. */
+export async function downloadBackup(verificationToken: string) {
+  const response = await axiosInstance.post('/admin/backup/export', { verificationToken }, {
+    responseType: 'blob',
+  })
+  return response.data as Blob
+}
+
+/** Replaces the whole database. Requires maintenance mode server-side. */
+export async function restoreBackup(file: File, verificationToken: string, confirmation: string) {
+  const response = await axiosInstance.post('/admin/backup/restore', {
+    backup: await file.text(), verificationToken, confirmation,
+  })
+  return response.data as { message: string; total: number }
+}
+
 export async function downloadHandoverPack() {
   const response = await axiosInstance.get('/admin/settings/integrations/handover', {
     responseType: 'blob',

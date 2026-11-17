@@ -28,6 +28,7 @@ import connectDB from "./config/db.js";
 import { verifyMailer } from "./services/mailer.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import backupRoutes from "./routes/backupRoutes.js";
 import { getSettings } from "./services/settingsService.js";
 import { getIntegrationStatus } from "./config/integrations.js";
 import { validateEmailAssets } from "./emails/layout.js";
@@ -78,8 +79,12 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 app.use(globalRateLimit);
-app.use(express.json());
+// Backup requests use a route-specific limit and must have parsed auth cookies.
+
 app.use(cookieParser());
+app.use("/admin/backup", backupRoutes);
+app.use(express.json());
+
 app.use(sanitizeInput);
 
 app.use("/audit", auditRoutes);
