@@ -16,6 +16,7 @@ import {
 import * as adminUserService from "../services/adminUserService.js";
 
 import { guardFresh } from "../services/concurrencyService.js";
+import { registerSpecializationsSchema } from "../schemas/specializationSchema.js";
 
 const roles = ["user", "therapist", "secretary", "admin"];
 
@@ -281,7 +282,10 @@ async function updateRoleRecord(req, res, role, fields, bodyOverride) {
   const result = await adminUserService.updateRoleRecord({
     id: req.params.id,
     role,
-    updates: normalizeUserFields(body, fields),
+    updates: normalizeUserFields(
+      body.specialization === undefined ? body : { ...body, specialization: registerSpecializationsSchema.parse({ names: body.specialization }).names },
+      fields,
+    ),
     adminId: req.user.userId,
     // ** Concurrency: guarded inside the service (stale -> 409 STALE_RECORD).
     ifMatch: req.get("If-Match"),
@@ -348,6 +352,7 @@ export const updateTherapist = (req, res) =>
     "phone",
     "profilePicture",
     "address",
+    "specialization",
   ]);
 
 export async function updateTherapistSpecialization(req, res) {

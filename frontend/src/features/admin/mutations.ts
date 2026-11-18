@@ -72,7 +72,7 @@ export function useSavePerson(role: 'patient' | 'therapist') {
         ? api.updatePatient(id, payload)
         : (async () => {
             const updated = await api.updateTherapist(id, payload)
-            await api.updateTherapistSpecialization(id, payload.specialization ?? [])
+
             await api.registerSpecializations(customSpecializations)
             return updated
           })(),
