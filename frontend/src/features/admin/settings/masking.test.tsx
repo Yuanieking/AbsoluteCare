@@ -72,15 +72,30 @@ function expectHidden(html: string) {
 }
 
 describe('integration value masking', () => {
-  it('uses a fixed mask for every kind of configured value and preserves missing status', () => {
-    for (const entry of group.keys) expect(maskCredential(entry.masked)).toBe('••••••••')
+  it('previews only the first four characters and preserves missing status', () => {
+    const previews = ['1234', 'GOCS', 'priv', 'http', '6L-p']
+    group.keys.forEach((entry, index) => {
+      expect(maskCredential(entry.masked)).toBe(`${previews[index]}••••••••`)
+    })
     for (const value of [undefined, '', 'Not set']) expect(maskCredential(value)).toBe('Not set')
+  })
+
+  it.each([
+    ['ab••••••••', 'ab••••••••'],
+    ['••••••••', '••••••••'],
+    ['a', '••••••••'],
+    ['ab', 'a••••••••'],
+    ['abcd', 'abc••••••••'],
+    ['abcde', 'abcd••••••••'],
+  ])('keeps short or already masked values safe: %s', (value, expected) => {
+    expect(maskCredential(value)).toBe(expected)
   })
 
   it('hides saved values and keeps every replacement input password-only', () => {
     for (const entry of group.keys) {
       const html = renderToStaticMarkup(<CredentialField entry={entry} value="" onChange={noop} />)
       expect(html).not.toContain(entry.masked)
+      expect(html).toContain(maskCredential(entry.masked))
       expect(html).not.toContain('starts with')
       expect(html).not.toContain('shown in full')
       expect(html).toContain('type="password"')
@@ -111,6 +126,7 @@ describe('integration value masking', () => {
     )
     expectHidden(guide)
     expectHidden(dialog)
+    for (const entry of group.keys) expect(dialog).toContain(maskCredential(entry.masked))
     for (const html of [guide, dialog]) {
       for (const entry of group.keys) expect(html).toContain(entry.key)
     }
