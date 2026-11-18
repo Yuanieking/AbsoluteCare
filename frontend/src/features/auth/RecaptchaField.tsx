@@ -25,20 +25,16 @@ export default function RecaptchaField({
   return (
     <div className="grid gap-1" {...containerProps}>
       <ReCAPTCHA
+        key={siteKey}
         ref={recaptchaRef}
         sitekey={siteKey}
         onChange={onChange}
         onExpired={onExpired}
         onErrored={onErrored}
       />
-      {error === 'recaptcha' && (
+      {error && (
         <span className="text-[12px] text-destructive" role="alert">
-          Verify reCAPTCHA before continuing.
-        </span>
-      )}
-      {error === 'recaptcha-expired' && (
-        <span className="text-[12px] text-destructive" role="alert">
-          Your verification expired. Please try again.
+          {error}
         </span>
       )}
     </div>

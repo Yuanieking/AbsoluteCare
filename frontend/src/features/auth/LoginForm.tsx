@@ -54,7 +54,7 @@ export function LoginForm({ isStaffAlias, oauthError }: LoginFormProps) {
     setError('')
     setNetworkError('')
     if (recaptcha.enabled && !recaptcha.token) {
-      setError('Verify reCAPTCHA before continuing.')
+      recaptcha.reset('Verify reCAPTCHA before continuing.')
       return
     }
     setLoading(true)
@@ -72,7 +72,10 @@ export function LoginForm({ isStaffAlias, oauthError }: LoginFormProps) {
       )
     } catch (requestError) {
       const details = getApiErrorDetails(requestError)
-      if (details.isNetwork) {
+      const captchaError = recaptcha.handleError(details.code)
+      if (captchaError) {
+        void refreshSettings()
+      } else if (details.isNetwork) {
         setNetworkError(details.message)
       } else {
         setError(details.message)
@@ -82,10 +85,9 @@ export function LoginForm({ isStaffAlias, oauthError }: LoginFormProps) {
           }
         }
       }
-      form.setValue('password', '')
-      recaptcha.reset()
-      if (details.code === 'RECAPTCHA_FAILED' || details.code === 'RECAPTCHA_UNAVAILABLE') {
-        void refreshSettings()
+      if (!captchaError) {
+        form.setValue('password', '')
+        recaptcha.reset()
       }
     } finally {
       setLoading(false)
@@ -145,19 +147,16 @@ export function LoginForm({ isStaffAlias, oauthError }: LoginFormProps) {
           {recaptcha.enabled ? (
             <RecaptchaField
               enabled={recaptcha.enabled}
-              error={error}
+              error={recaptcha.error}
               siteKey={settings.recaptchaSiteKey}
               onChange={(token: string | null) => {
                 recaptcha.setToken(token)
-                setError('')
               }}
               onExpired={() => {
-                recaptcha.setToken(null)
-                setError('Your verification expired. Please try again.')
+                recaptcha.reset('Your verification expired. Please try again.')
               }}
               onErrored={() => {
-                recaptcha.setToken(null)
-                setError('Verify reCAPTCHA before continuing.')
+                recaptcha.reset('Invalid CAPTCHA')
               }}
               recaptchaRef={recaptchaRef}
               {...recaptcha.containerProps}

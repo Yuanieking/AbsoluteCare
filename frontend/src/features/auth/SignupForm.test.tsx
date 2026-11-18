@@ -41,7 +41,7 @@ vi.mock('@/features/settings/provider', () => ({
   }),
 }))
 vi.mock('@/hooks/useRecaptcha', () => ({
-  useRecaptcha: () => ({ enabled: false, reset: vi.fn() }),
+  useRecaptcha: () => ({ enabled: false, reset: vi.fn(), handleError: () => false }),
 }))
 vi.mock('@/lib/api/auth', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/auth')>()),

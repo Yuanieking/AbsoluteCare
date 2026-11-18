@@ -47,7 +47,7 @@ export function ForgotPasswordForm({ isStaffAlias }: ForgotPasswordFormProps) {
     setError('')
     setNetworkError('')
     if (recaptcha.enabled && !recaptcha.token) {
-      setError('Verify reCAPTCHA before continuing.')
+      recaptcha.reset('Verify reCAPTCHA before continuing.')
       return
     }
     setLoading(true)
@@ -59,16 +59,15 @@ export function ForgotPasswordForm({ isStaffAlias }: ForgotPasswordFormProps) {
       setSubmitted(true)
     } catch (requestError) {
       const details = getApiErrorDetails(requestError)
-      if (details.isNetwork) {
+      if (recaptcha.handleError(details.code)) {
+        void refreshSettings()
+      } else if (details.isNetwork) {
         setNetworkError(details.message)
       } else {
         setError(details.message)
         if (details.fieldErrors.email) {
           form.setError('email', { message: details.fieldErrors.email })
         }
-      }
-      if (details.code === 'RECAPTCHA_FAILED' || details.code === 'RECAPTCHA_UNAVAILABLE') {
-        void refreshSettings()
       }
     } finally {
       setLoading(false)
@@ -128,19 +127,16 @@ export function ForgotPasswordForm({ isStaffAlias }: ForgotPasswordFormProps) {
           {recaptcha.enabled ? (
             <RecaptchaField
               enabled={recaptcha.enabled}
-              error={error}
+              error={recaptcha.error}
               siteKey={settings.recaptchaSiteKey}
               onChange={(token: string | null) => {
                 recaptcha.setToken(token)
-                setError('')
               }}
               onExpired={() => {
-                recaptcha.setToken(null)
-                setError('Your verification expired. Please try again.')
+                recaptcha.reset('Your verification expired. Please try again.')
               }}
               onErrored={() => {
-                recaptcha.setToken(null)
-                setError('Verify reCAPTCHA before continuing.')
+                recaptcha.reset('Invalid CAPTCHA')
               }}
               recaptchaRef={recaptchaRef}
               {...recaptcha.containerProps}

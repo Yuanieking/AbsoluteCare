@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/session'
 import { useSettings } from '@/features/settings/provider'
 import { useRecaptcha } from '@/hooks/useRecaptcha'
-import { completeGoogleSignup, getApiErrorMessage } from '@/lib/api/auth'
+import { completeGoogleSignup, getApiErrorDetails } from '@/lib/api/auth'
 import { consumePostAuthRedirect, getDashboardPath } from '@/lib/dashboard-path'
 import { AuthAlert, AuthHeading, AuthShell } from './AuthShell'
 import { googleSetupSchema, type GoogleSetupValues } from './schemas'
@@ -44,7 +44,7 @@ export default function GoogleAccountSetupPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { setUser } = useAuth()
-  const { settings } = useSettings()
+  const { settings, refreshSettings } = useSettings()
   const recaptchaRef = useRef(null)
   const recaptcha = useRecaptcha({
     enabled: settings.recaptchaEnabled,
@@ -70,7 +70,7 @@ export default function GoogleAccountSetupPage() {
   const onSubmit = form.handleSubmit(async (values) => {
     setError('')
     if (recaptcha.enabled && !recaptcha.token) {
-      setError('Verify reCAPTCHA before continuing.')
+      recaptcha.reset('Verify reCAPTCHA before continuing.')
       return
     }
     setLoading(true)
@@ -87,8 +87,13 @@ export default function GoogleAccountSetupPage() {
       const from = consumePostAuthRedirect()
       navigate(from || getDashboardPath(nextUser), { replace: true })
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
-      recaptcha.reset()
+      const details = getApiErrorDetails(requestError)
+      if (recaptcha.handleError(details.code)) {
+        void refreshSettings()
+      } else {
+        setError(details.message)
+        recaptcha.reset()
+      }
     } finally {
       setLoading(false)
     }
@@ -171,19 +176,16 @@ export default function GoogleAccountSetupPage() {
           {recaptcha.enabled ? (
             <RecaptchaField
               enabled={recaptcha.enabled}
-              error={error}
+              error={recaptcha.error}
               siteKey={settings.recaptchaSiteKey}
               onChange={(nextToken: string | null) => {
                 recaptcha.setToken(nextToken)
-                setError('')
               }}
               onExpired={() => {
-                recaptcha.setToken(null)
-                setError('Your verification expired. Please try again.')
+                recaptcha.reset('Your verification expired. Please try again.')
               }}
               onErrored={() => {
-                recaptcha.setToken(null)
-                setError('Verify reCAPTCHA before continuing.')
+                recaptcha.reset('Invalid CAPTCHA')
               }}
               recaptchaRef={recaptchaRef}
               {...recaptcha.containerProps}
