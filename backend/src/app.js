@@ -8,6 +8,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/authRoutes.js";
+import recordEditorsRoutes from "./routes/recordEditorsRoutes.js";
+import { recordWriteContext, recordTarget } from "./services/recordConcurrency.js";
 import patientRoutes from "./routes/patientRoutes.js";
 import calendarRoutes from "./routes/calendarRoutes.js";
 import googleDriveRoutes from "./routes/googleDriveRoutes.js";
@@ -40,7 +42,7 @@ import {
 import { syncBootstrapAdmins } from "./services/adminBootstrapService.js";
 import { setHttpServer } from "./services/restartService.js";
 import { securityHeaders } from "./middleware/securityHeaders.js";
-import { globalRateLimit } from "./middleware/rateLimit.js";
+import { createRateLimiter, globalRateLimit } from "./middleware/rateLimit.js";
 import { sanitizeInput } from "./middleware/sanitizeInput.js";
 import { auditRequest } from "./middleware/auditMiddleware.js";
 import auditRoutes from "./routes/auditRoutes.js";
@@ -78,7 +80,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
-app.use(globalRateLimit);
+const editorRateLimit = createRateLimiter({
+  windowMs: 60_000, limit: 120, body: { message: "Too many editor updates." },
+});
+app.use((req, res, next) => req.path.startsWith("/record-editors/")
+  ? editorRateLimit(req, res, next) : globalRateLimit(req, res, next));
 // Backup requests use a route-specific limit and must have parsed auth cookies.
 
 app.use(cookieParser());
@@ -86,7 +92,12 @@ app.use("/admin/backup", backupRoutes);
 app.use(express.json());
 
 app.use(sanitizeInput);
+app.use((req, res, next) => recordWriteContext.run({
+  target: recordTarget(req.path, req.method),
+  ifMatch: req.get("If-Match"),
+}, next));
 
+app.use("/record-editors", recordEditorsRoutes);
 app.use("/audit", auditRoutes);
 app.use("/auth", authRoutes);
 app.use("/integrations", calendarRoutes);

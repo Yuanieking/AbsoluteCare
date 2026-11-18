@@ -13,6 +13,29 @@ import {
 import { getIntegrationStatus } from "../config/integrations.js";
 import { ConflictError } from "../errors/AppError.js";
 import { freshFilter, guardFresh } from "./concurrencyService.js";
+import { randomUUID } from "node:crypto";
+import { recordWriteContext, requireRecordTimestamp } from "./recordConcurrency.js";
+
+export async function withSettingsEdit(ifMatch, action) {
+  const expected = requireRecordTimestamp(ifMatch);
+  const lease = randomUUID();
+  const updatedAt = new Date(Math.max(Date.now(), expected.getTime() + 1));
+  const reserved = await recordWriteContext.run(null, () => AppSetting.findOneAndUpdate(
+    { key: "singleton", updatedAt: expected, $or: [{ editLease: null }, { editLeaseExpiresAt: { $lt: new Date() } }] },
+    { $set: { editLease: lease, editLeaseExpiresAt: new Date(Date.now() + 120_000), updatedAt } },
+    { new: true, timestamps: false },
+  ).exec());
+  if (!reserved) throw new ConflictError();
+  const context = recordWriteContext.getStore();
+  if (context) { context.lease = lease; context.savedAt = updatedAt; }
+  try { return await action(); }
+  finally {
+    await recordWriteContext.run(null, () => AppSetting.updateOne(
+      { key: "singleton", editLease: lease }, { $set: { editLease: null, editLeaseExpiresAt: null } }, { timestamps: false },
+    ).exec());
+    invalidateSettingsCache();
+  }
+}
 
 const integrationDefaults = {
   googleAuthEnabled: true,

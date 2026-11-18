@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { todayInManila } from '@/lib/format/patient'
 import { showPromise } from '@/lib/toast'
 import { appointmentLabel, canRecordOutcome, patientName } from './format'
@@ -89,6 +90,7 @@ export function RescheduleDialog({
             the patient accepts.
           </DialogDescription>
         </DialogHeader>
+        <RecordEditors kind="appointments" record={appointment} active={open} />
         <Form {...form}>
           <form className="grid gap-3" onSubmit={onSubmit} noValidate>
             <TextField<RescheduleValues>
@@ -175,6 +177,7 @@ export function RecordSessionDialog({
             Document the visit with {patientName(appointment)}. Recording completes the appointment.
           </DialogDescription>
         </DialogHeader>
+        <RecordEditors kind="appointments" record={appointment} active={open} />
         <Form {...form}>
           <form className="grid gap-3" onSubmit={onSubmit} noValidate>
             <TextField<SessionValues>
@@ -252,6 +255,7 @@ export function NoShowDialog({
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
+        <RecordEditors kind="appointments" record={appointment} active={open} />
         <AlertDialogHeader>
           <AlertDialogTitle>Mark no-show</AlertDialogTitle>
           <AlertDialogDescription>

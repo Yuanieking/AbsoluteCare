@@ -18,6 +18,7 @@ import { notify, notifyMany } from "../services/notificationService.js";
 import * as patientService from "../services/patientService.js";
 import { bookingTimes } from "../services/availabilityService.js";
 import { bookingAvailabilitySchema } from "../schemas/availabilitySchema.js";
+import { guardFresh } from "../services/concurrencyService.js";
 
 function queryInt(value, fallback) {
   return Number.parseInt(String(value || fallback), 10);
@@ -203,6 +204,7 @@ export async function requestReschedule(req, res) {
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  guardFresh(appointment, req.get("If-Match"));
   if (!["pending", "confirmed"].includes(appointment.status)) {
     res.status(400).json({
       message: `A ${appointment.status.replace("_", "-")} appointment can no longer be rescheduled.`,
@@ -284,6 +286,7 @@ export async function cancelAppointment(req, res) {
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  guardFresh(appointment, req.get("If-Match"));
   const start =
     appointment.scheduledStart ||
     manilaDateTime(appointment.requestedDate, appointment.requestedTime);

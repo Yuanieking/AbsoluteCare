@@ -1,6 +1,7 @@
 import axios, { type AxiosError } from 'axios'
 import { showError } from '@/lib/toast'
 import { queryClient } from './query-client'
+
 import { canHandleSessionExpiry, markSessionExpiryHandled } from './session'
 
 const sessionCheckPaths = [
@@ -38,6 +39,22 @@ const axiosInstance = axios.create({
 // ** answers 409 STALE_RECORD if someone else changed the record in between.
 // ponytail: unbounded per-tab map of id -> timestamp; fine for a session, prune if it ever matters
 const seenUpdatedAt = new Map<string, string>()
+const editSnapshots = new Map<string, Map<symbol, string>>()
+
+export function getRecordTimestamp(id: string) { return seenUpdatedAt.get(id) }
+
+
+
+export function pinRecordTimestamp(id: string, timestamp?: string) {
+  const token = Symbol(id)
+  const pins = editSnapshots.get(id) || new Map<symbol, string>()
+  pins.set(token, timestamp || seenUpdatedAt.get(id) || '')
+  editSnapshots.set(id, pins)
+  return () => {
+    pins.delete(token)
+    if (!pins.size) editSnapshots.delete(id)
+  }
+}
 let selfId = ''
 const objectIdInPath = /\/([a-f\d]{24})(?:\/|$)/i
 // ** Own-account routes carry no id in the URL; they target the signed-in user.
@@ -62,17 +79,22 @@ function rememberTimestamps(value: unknown, depth = 0) {
 
 axiosInstance.interceptors.request.use((config) => {
   const method = config.method?.toLowerCase()
-  if (method !== 'patch' && method !== 'delete') return config
+  if (!['patch', 'delete', 'post', 'put'].includes(method || '')) return config
+  if (config.url?.startsWith('/record-editors/')) return config
   const path = (config.url ?? '').split('?')[0] ?? ''
-  const id = selfPaths.test(path) ? selfId : objectIdInPath.exec(path)?.[1]
-  const updatedAt = id && seenUpdatedAt.get(id)
-  if (updatedAt) config.headers.set('If-Match', `"${updatedAt}"`)
+  const id = selfPaths.test(path) ? selfId : /^\/(?:admin\/)?settings\//.test(path) ? 'settings' : objectIdInPath.exec(path)?.[1]
+  const pins = id ? editSnapshots.get(id) : undefined
+  const updatedAt = pins?.size ? pins.values().next().value : id && seenUpdatedAt.get(id)
+  if (updatedAt && !config.headers.has('If-Match')) config.headers.set('If-Match', `"${updatedAt}"`)
   return config
 })
 
 axiosInstance.interceptors.response.use(
   (response) => {
     rememberTimestamps(response.data)
+    const settings = response.data?.settings
+    if (settings?.updatedAt) seenUpdatedAt.set('settings', settings.updatedAt)
+
     const user = (response.data as { user?: { _id?: unknown } } | undefined)?.user
     if (response.config.url?.startsWith('/auth/') && typeof user?._id === 'string')
       selfId = user._id
@@ -82,6 +104,9 @@ axiosInstance.interceptors.response.use(
     // ** 409 STALE_RECORD: refetch so the next attempt carries the latest timestamp. The page
     // ** still shows the server's message through its own error toast.
     if (error.response?.status === 409 && error.response.data?.code === 'STALE_RECORD') {
+      // Keep the form and its original precondition intact. Never silently rebase an unsaved draft.
+      window.dispatchEvent(new CustomEvent('record:stale', { detail: error.config?.url }))
+      // Refresh read views only; mounted editors keep their pinned timestamp and input.
       void queryClient.invalidateQueries()
     }
     if (

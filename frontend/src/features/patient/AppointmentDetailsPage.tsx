@@ -183,6 +183,7 @@ export default function AppointmentDetailsPage() {
 
       <RescheduleDialog
         appointmentId={appointment._id}
+        appointment={appointment}
         open={rescheduling}
         onOpenChange={setRescheduling}
       />

@@ -141,6 +141,7 @@ export async function recordPayment(req, res) {
     res.status(404).json({ message: "Appointment not found." });
     return;
   }
+  guardFresh(appointment, req.get("If-Match"));
   if (!["confirmed", "completed"].includes(appointment.status)) {
     res.status(409).json({
       message:

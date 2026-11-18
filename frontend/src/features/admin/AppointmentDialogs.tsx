@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { showPromise } from '@/lib/toast'
 import { StatusBadge } from '@/components/domain/StatusBadge'
 import { AppointmentFacts, RequestCallout } from './AppointmentFacts'
@@ -126,6 +127,7 @@ export function AppointmentDialogs({
           ) : null}
         </DialogHeader>
 
+        <RecordEditors kind="appointments" record={appointment} active={!['view', 'notify'].includes(mode)} />
         <AppointmentFacts appointment={appointment} />
 
         {mode === 'assign' ? (

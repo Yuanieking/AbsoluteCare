@@ -1,5 +1,7 @@
 import { Lock } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { RecordEditors } from '@/components/form/RecordEditors'
+import { getRecordTimestamp } from '@/lib/api/client'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
@@ -71,6 +73,7 @@ export default function PermissionsPage() {
   const bundle = useSettingsBundle()
   const { refreshSettings } = useSettings()
   const saved = bundle.data?.settings.settings.auth
+  const snapshot = useRef<{ auth: AuthValues; timestamp?: string } | null>(null)
   const [draft, setDraft] = useState<AuthValues['permissions'] | null>(null)
   const [editingRole, setEditingRole] = useState<'secretary' | 'therapist' | 'user' | null>(null)
   const [saving, setSaving] = useState(false)
@@ -94,7 +97,7 @@ export default function PermissionsPage() {
     if (!saved || !current || !editingRole) return
     setSaving(true)
     try {
-      await updateSettingsSection('auth', { ...saved, permissions: current })
+      await updateSettingsSection('auth', { ...snapshot.current?.auth, permissions: current }, snapshot.current?.timestamp)
       await bundle.refetch()
       await refreshSettings()
       showSuccess('Permissions updated')
@@ -109,6 +112,7 @@ export default function PermissionsPage() {
 
   return (
     <PageBody>
+      <RecordEditors kind="settings" id="singleton" active={Boolean(editingRole)} />
       <PageHeader
         eyebrow="Administration"
         title="Permissions"
@@ -153,7 +157,9 @@ export default function PermissionsPage() {
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      setDraft(saved?.permissions ?? null)
+                      if (!saved) return
+                      snapshot.current = { auth: saved, timestamp: (bundle.data?.settings.settings as { updatedAt?: string } | undefined)?.updatedAt || getRecordTimestamp('settings') }
+                      setDraft(saved.permissions)
                       setEditingRole(role)
                     }}
                   >

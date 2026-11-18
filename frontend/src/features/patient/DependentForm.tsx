@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { todayInManila } from '@/lib/format/patient'
 import { getToastError, showError, showSuccess } from '@/lib/toast'
 import { useSaveDependent } from './mutations'
@@ -49,7 +50,8 @@ export function DependentFormDialog({
 
   useEffect(() => {
     if (open) form.reset(defaults(dependent))
-  }, [dependent, form, open])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dependent?._id, form, open])
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
@@ -71,6 +73,7 @@ export function DependentFormDialog({
             Family members you book appointments for are linked to your account.
           </DialogDescription>
         </DialogHeader>
+        <RecordEditors kind="dependents" record={dependent} active={open} />
         <Form {...form}>
           <form className="grid gap-3 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
             <TextField<DependentValues>

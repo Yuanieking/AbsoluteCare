@@ -115,10 +115,11 @@ export async function listAdminIds() {
   return admins.map((admin) => admin._id);
 }
 
-export async function requestReschedule(therapistId, appointmentId, input) {
+export async function requestReschedule(therapistId, appointmentId, input, ifMatch) {
   const appointment = await findOwnAppointment(therapistId, appointmentId);
   if (!appointment)
     return { ok: false, status: 404, message: "Appointment not found." };
+  guardFresh(appointment, ifMatch);
   if (!["pending", "confirmed"].includes(appointment.status))
     return {
       ok: false,
@@ -211,6 +212,7 @@ export async function createSessionForAppointment(
   therapistId,
   appointmentId,
   input,
+  ifMatch,
 ) {
   const appointment = await Appointment.findOne({
     _id: appointmentId,
@@ -229,6 +231,7 @@ export async function createSessionForAppointment(
       message:
         "Sessions can be recorded after a confirmed appointment has passed.",
     };
+  guardFresh(appointment, ifMatch);
   const sessionDate = clinicDate(input.sessionDate);
   const durationMinutes = Number(input.durationMinutes);
   if (
@@ -257,7 +260,12 @@ export async function createSessionForAppointment(
     clinicalNotes: input.clinicalNotes?.trim() || "",
   });
   appointment.status = "completed";
-  await appointment.save();
+  try {
+    await appointment.save();
+  } catch (error) {
+    await Session.deleteOne({ _id: session._id });
+    throw error;
+  }
   return { ok: true, session, appointment };
 }
 

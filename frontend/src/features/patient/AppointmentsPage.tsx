@@ -244,6 +244,7 @@ export default function AppointmentsPage() {
 
       <RescheduleDialog
         appointmentId={rescheduleId}
+        appointment={rescheduleOpen}
         open={Boolean(rescheduleOpen)}
         onOpenChange={(open) => {
           if (!open) setRescheduleId(null)

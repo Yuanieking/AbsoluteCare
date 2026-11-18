@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { showPromise } from '@/lib/toast'
 import { formatMoney, patientName, paymentAmount } from './format'
 import { useRecordPayment, useUpdatePayment } from './mutations'
@@ -58,7 +59,8 @@ export function PaymentDialog({
 
   useEffect(() => {
     if (open) form.reset(toForm(appointment, mode))
-  }, [appointment, form, mode, open])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointment?._id, form, mode, open])
 
   const onSubmit = form.handleSubmit(async (values) => {
     if (!appointment) return
@@ -107,6 +109,7 @@ export function PaymentDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <RecordEditors kind="appointments" record={appointment} active={open} />
         <Form {...form}>
           <PaymentRecord
             reference={appointment?.payment?.referenceNumber}

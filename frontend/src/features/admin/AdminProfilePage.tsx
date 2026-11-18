@@ -7,6 +7,7 @@ import { AddressField, TextField } from '@/components/form/FormFields'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { useAuth } from '@/features/auth/session'
 import { getApiErrorDetails, type AuthUser } from '@/lib/api/auth'
 import { showPromise } from '@/lib/toast'
@@ -40,8 +41,8 @@ export default function AdminProfilePage() {
   })
 
   useEffect(() => {
-    form.reset(toForm(profile))
-  }, [form, profile])
+    if (!editing) form.reset(toForm(profile))
+  }, [editing, form, profile])
 
   const watched = useWatch({ control: form.control }) as AdminProfileValues
   const values = editing ? watched : toForm(profile)
@@ -105,6 +106,7 @@ export default function AdminProfilePage() {
       <section className="mt-5 rounded-lg border border-hairline bg-card p-5">
         {editing ? (
           <Form {...form}>
+            <RecordEditors kind="users" record={profile} active={editing} />
             <form className="grid gap-4 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
               <div className="flex items-center gap-4 sm:col-span-2">
                 <Avatar picture={watched.profilePicture} fallback={initials} />

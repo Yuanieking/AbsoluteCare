@@ -138,6 +138,7 @@ export async function requestReschedule(req, res) {
     therapistId(req),
     String(req.params.id),
     parsed,
+    req.get("If-Match"),
   );
   if (!result.ok) {
     res.status(result.status).json({ message: result.message });
@@ -198,6 +199,7 @@ export async function createSession(req, res) {
     therapistId(req),
     String(req.params.id),
     parsed,
+    req.get("If-Match"),
   );
   if (!result.ok) {
     res.status(result.status).json({ message: result.message });

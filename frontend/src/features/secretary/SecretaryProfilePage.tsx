@@ -9,6 +9,7 @@ import { PageBody, PageHeader } from '@/components/layout/Page'
 import { StatusBadge } from '@/components/domain/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/features/auth/session'
 import type { AuthUser } from '@/lib/api/auth'
@@ -45,8 +46,8 @@ export default function SecretaryProfilePage() {
   })
 
   useEffect(() => {
-    if (query.data) form.reset(toForm(query.data))
-  }, [form, query.data])
+    if (query.data && !editing) form.reset(toForm(query.data))
+  }, [editing, form, query.data])
 
   const watched = useWatch({ control: form.control })
   const profile = editing ? { ...query.data, ...watched } : query.data
@@ -138,6 +139,7 @@ export default function SecretaryProfilePage() {
       <section className="mt-5 rounded-lg border border-hairline bg-card p-5">
         {editing ? (
           <Form {...form}>
+            <RecordEditors kind="users" record={query.data} active={editing} />
             <form className="grid gap-4 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
               <div className="flex items-center gap-4 sm:col-span-2">
                 <Avatar picture={watched.profilePicture} fallback={initials || 'AC'} />

@@ -155,6 +155,8 @@ const appSettingSchema = new mongoose.Schema(
       default: null,
     },
     version: { type: Number, default: 1 },
+    editLease: { type: String, default: null, select: false },
+    editLeaseExpiresAt: { type: Date, default: null, select: false },
   },
   { timestamps: true, minimize: false },
 );

@@ -14,6 +14,7 @@ import { resetIntegrationCredentialsSchema } from "../schemas/settingsSchema.js"
 import {
   consumeVerification,
   getAdminContact,
+  withSettingsEdit,
 } from "../services/settingsService.js";
 import {
   parseAction,
@@ -95,14 +96,14 @@ export const patchCredentials = withCredentialErrors(async (req, res) => {
 
   let result;
   try {
-    result = await saveCredentials({
+    result = await withSettingsEdit(req.get("If-Match"), () => saveCredentials({
       group,
       values: trimmed,
       adminId: req.user.userId,
       ip: req.ip ?? "",
       confirmKeyRotation: Boolean(body.confirmKeyRotation),
       bootstrap: Boolean(bootstrap),
-    });
+    }));
   } catch (error) {
     // A rejected key spends the code, so the token can't be replayed.
     if (error?.code === "INVALID_CREDENTIALS")
@@ -135,11 +136,11 @@ export const clearCredentialKey = withCredentialErrors(async (req, res) => {
     });
     return;
   }
-  const result = await clearCredential({
+  const result = await withSettingsEdit(req.get("If-Match"), () => clearCredential({
     key,
     adminId: req.user.userId,
     ip: req.ip ?? "",
-  });
+  }));
   await consumeVerification(payload.verificationId);
   res.json(result);
 });
@@ -166,11 +167,11 @@ export const rollbackCredentialKey = withCredentialErrors(async (req, res) => {
     });
     return;
   }
-  const result = await rollbackCredential({
+  const result = await withSettingsEdit(req.get("If-Match"), () => rollbackCredential({
     key,
     adminId: req.user.userId,
     ip: req.ip ?? "",
-  });
+  }));
   await consumeVerification(payload.verificationId);
   res.json(result);
 });
@@ -198,10 +199,10 @@ export const resetCredentialDefaults = withCredentialErrors(
       });
       return;
     }
-    const result = await resetCredentials({
+    const result = await withSettingsEdit(req.get("If-Match"), () => resetCredentials({
       adminId: req.user.userId,
       ip: req.ip ?? "",
-    });
+    }));
     await consumeVerification(payload.verificationId);
     res.json(result);
   },

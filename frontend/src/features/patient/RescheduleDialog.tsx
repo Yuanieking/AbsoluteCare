@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { todayInManila } from '@/lib/format/patient'
 import { showPromise } from '@/lib/toast'
 import { useRequestReschedule } from './mutations'
@@ -18,10 +19,12 @@ import { rescheduleSchema, type RescheduleValues } from './schemas'
 
 export function RescheduleDialog({
   appointmentId,
+  appointment,
   open,
   onOpenChange,
 }: {
   appointmentId: string | null
+  appointment?: { _id: string; updatedAt?: string } | null
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -61,6 +64,7 @@ export function RescheduleDialog({
             Your current appointment stays in place until the care team reviews your request.
           </DialogDescription>
         </DialogHeader>
+        <RecordEditors kind="appointments" id={appointmentId} record={appointment} active={open} />
         <Form {...form}>
           <form className="grid gap-3" onSubmit={onSubmit} noValidate>
             <TextField<RescheduleValues>

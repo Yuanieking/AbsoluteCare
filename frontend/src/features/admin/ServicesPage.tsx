@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { showPromise } from '@/lib/toast'
 import { formatDuration, formatMoney } from './format'
 import { useRetireService, useSaveService } from './mutations'
@@ -52,7 +53,9 @@ function ServiceDialog({
 
   useEffect(() => {
     if (open) form.reset(toForm(service))
-  }, [form, open, service])
+    // Freeze defaults while this editor remains open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, open, service?._id])
 
   const onSubmit = form.handleSubmit(async (values) => {
     const request = save.mutateAsync({
@@ -83,6 +86,7 @@ function ServiceDialog({
             Keep the service catalogue and booking prices current.
           </DialogDescription>
         </DialogHeader>
+        <RecordEditors kind="services" record={service} active={open} />
         <Form {...form}>
           <form className="grid gap-3" onSubmit={onSubmit} noValidate>
             <TextField<ServiceValues> control={form.control} name="name" label="Service name" />

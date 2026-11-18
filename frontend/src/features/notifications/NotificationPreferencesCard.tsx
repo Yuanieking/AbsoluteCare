@@ -1,6 +1,7 @@
 import { Bell } from 'lucide-react'
 import { useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { useAuth } from '@/features/auth/session'
 import { updateNotificationPreferences, type AuthUser } from '@/lib/api/auth'
 import { getToastError, showError } from '@/lib/toast'
@@ -39,6 +40,8 @@ const categories: {
 
 export function NotificationPreferencesCard() {
   const { user, setUser } = useAuth()
+  const [editorEpoch, setEditorEpoch] = useState(0)
+  const [savedTimestamp, setSavedTimestamp] = useState<string>()
   const [preferences, setPreferences] = useState<NotificationPreferences>(
     (user?.notificationPreferences as NotificationPreferences | undefined) || {
       inApp: true,
@@ -52,6 +55,8 @@ export function NotificationPreferencesCard() {
     try {
       const response = await updateNotificationPreferences(next)
       if (response.data?.user) setUser(response.data.user as AuthUser)
+      setSavedTimestamp((response.data?.user as { updatedAt?: string } | undefined)?.updatedAt)
+      setEditorEpoch((value) => value + 1)
     } catch (error) {
       setPreferences(previous)
       showError(getToastError(error, 'Unable to update notification preferences.'))
@@ -69,6 +74,7 @@ export function NotificationPreferencesCard() {
 
   return (
     <section className="rounded-lg border border-hairline bg-card p-5">
+      <RecordEditors kind="users" record={user} resetKey={editorEpoch} timestamp={savedTimestamp} />
       <div className="flex items-start gap-3">
         <span className="mt-0.5 text-ink-faint" aria-hidden="true">
           <Bell size={18} />

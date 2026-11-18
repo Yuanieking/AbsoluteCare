@@ -17,8 +17,10 @@ export async function getAdminSettings() {
   }
 }
 
-export async function updateSettingsSection(section: SettingsSectionKey, payload: unknown) {
-  const response = await axiosInstance.patch(`/admin/settings/${section}`, payload)
+export async function updateSettingsSection(section: SettingsSectionKey, payload: unknown, timestamp?: string) {
+  const response = await axiosInstance.patch(`/admin/settings/${section}`, payload, {
+    headers: timestamp ? { 'If-Match': `"${timestamp}"` } : undefined,
+  })
   return response.data?.section as unknown
 }
 

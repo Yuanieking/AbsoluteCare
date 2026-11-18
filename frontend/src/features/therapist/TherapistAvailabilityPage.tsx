@@ -1,6 +1,7 @@
 import { CalendarDays, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { WeeklyAvailabilityEditor } from '@/components/availability/WeeklyAvailabilityEditor'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
@@ -85,6 +86,8 @@ export default function TherapistAvailabilityPage() {
 }
 
 function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
+  const [editorEpoch, setEditorEpoch] = useState(0)
+  const [savedTimestamp, setSavedTimestamp] = useState<string>()
   const calendar = useTherapistCalendarStatus()
   const saveMutation = useSaveAvailability()
   const disconnectMutation = useDisconnectCalendar()
@@ -146,6 +149,8 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
       setDateOverrides(updated.dateOverrides || [])
       setSavedOverrides(updated.dateOverrides || [])
       setSavedNotice(true)
+      setSavedTimestamp((updated as { updatedAt?: string }).updatedAt)
+      setEditorEpoch((value) => value + 1)
     } catch (error) {
       const conflict = conflictOf(error)
       if (conflict) setConflicts(conflict)
@@ -166,6 +171,7 @@ function AvailabilityPanel({ profile }: { profile: TherapistProfile }) {
 
   return (
     <PageBody>
+      <RecordEditors kind="users" record={profile} resetKey={editorEpoch} timestamp={savedTimestamp} />
       <PageHeader
         eyebrow="My care desk"
         title="My availability"

@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
+import { RecordEditors } from '@/components/form/RecordEditors'
+import { getRecordTimestamp } from '@/lib/api/client'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getToastError, showError, showSuccess } from '@/lib/toast'
@@ -49,6 +51,8 @@ export default function SettingsPage() {
   const bundle = useSettingsBundle()
   const [drafts, setDrafts] = useState<Partial<Record<SettingsSectionKey, SectionValue>>>({})
   const [saving, setSaving] = useState(false)
+  const [editorEpoch, setEditorEpoch] = useState(0)
+  const draftTimestamps = useRef<Partial<Record<SettingsSectionKey, string>>>({})
   const [credentialGroup, setCredentialGroup] = useState('')
   const [resettingCredentials, setResettingCredentials] = useState(false)
   const [pendingDisable, setPendingDisable] = useState<keyof IntegrationValues | null>(null)
@@ -101,6 +105,7 @@ export default function SettingsPage() {
 
   function update(field: string, value: unknown) {
     if (!isSectionKey(section)) return
+    if (!drafts[section]) draftTimestamps.current[section] = (settings as { updatedAt?: string } | undefined)?.updatedAt || getRecordTimestamp('settings')
     const base = drafts[section] ?? savedSection
     if (!base) return
     setDrafts((current) => ({ ...current, [section]: { ...base, [field]: value } as SectionValue }))
@@ -108,6 +113,7 @@ export default function SettingsPage() {
 
   function discardDraft() {
     if (!isSectionKey(section)) return
+    delete draftTimestamps.current[section]
     setDrafts((current) => {
       const next = { ...current }
       delete next[section]
@@ -119,9 +125,10 @@ export default function SettingsPage() {
     if (!draft || !isSectionKey(section)) return
     setSaving(true)
     try {
-      await api.updateSettingsSection(section, draft)
+      await api.updateSettingsSection(section, draft, draftTimestamps.current[section])
       await bundle.refetch()
       discardDraft()
+      setEditorEpoch((value) => value + 1)
       showSuccess(`${sectionMap[section]?.title} settings updated`)
     } catch (error) {
       showError(getToastError(error, 'Settings could not be saved.'))
@@ -146,6 +153,7 @@ export default function SettingsPage() {
         ...(verificationToken ? { verificationToken } : {}),
       })
       await bundle.refetch()
+      setEditorEpoch((value) => value + 1)
       showSuccess('Integration settings updated')
     } catch (error) {
       showError(getToastError(error, 'Integration settings could not be saved.'))
@@ -254,6 +262,7 @@ export default function SettingsPage() {
     showSuccess('Credentials saved. Restart the server to apply them.')
     try {
       await bundle.refetch()
+      setEditorEpoch((value) => value + 1)
     } catch {
       showError('Saved, but the page could not refresh. Reload to see it.')
     }
@@ -263,6 +272,7 @@ export default function SettingsPage() {
 
   return (
     <PageBody>
+      {settings && isSectionKey(section) ? <RecordEditors key={section} kind="settings" id="singleton" resetKey={editorEpoch} /> : null}
       <PageHeader
         eyebrow="System"
         title="Settings"
@@ -449,6 +459,7 @@ export default function SettingsPage() {
             for (const warning of result.warnings) showError(warning)
             try {
               await bundle.refetch()
+              setEditorEpoch((value) => value + 1)
             } catch {
               showError('Reset saved, but the page could not refresh. Reload to see it.')
             }

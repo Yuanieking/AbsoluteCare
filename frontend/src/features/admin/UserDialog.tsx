@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { useSettings } from '@/features/settings/provider'
 import { getApiErrorDetails } from '@/lib/api/auth'
 import { showPromise } from '@/lib/toast'
@@ -126,6 +127,7 @@ export function UserDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <RecordEditors kind="users" record={user} active={open} />
         {temporaryPassword ? (
           <div
             className="grid gap-2 rounded-md border border-signal/30 bg-signal-soft p-3"

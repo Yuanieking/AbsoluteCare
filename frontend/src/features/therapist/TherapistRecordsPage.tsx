@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { formatDateManila, todayInManila } from '@/lib/format/patient'
 import { showPromise } from '@/lib/toast'
 import { personName } from './format'
@@ -161,7 +162,8 @@ function SessionEditDialog({
       patientVisibleNotes: session.patientVisibleNotes || '',
       clinicalNotes: session.clinicalNotes || '',
     })
-  }, [form, session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, session?._id])
 
   const onSubmit = form.handleSubmit(async (values) => {
     if (!session) return
@@ -196,6 +198,7 @@ function SessionEditDialog({
             Updating the clinical record for {session ? sessionPatient(session) : 'this patient'}.
           </DialogDescription>
         </DialogHeader>
+        <RecordEditors kind="sessions" record={session} />
         <Form {...form}>
           <form className="grid gap-3" onSubmit={onSubmit} noValidate>
             <TextField<SessionValues>

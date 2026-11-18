@@ -101,6 +101,7 @@ test("Native-ESM startup serves document authorization and public verification",
     assert.deepEqual(unknown.body, { status: "not_found" });
     assert.equal(unknown.headers["cache-control"], "no-store");
     assert.equal((await request("/documents")).status, 401);
+    assert.equal((await request("/record-editors/users/111111111111111111111111", { "Content-Type": "application/json" }, "PUT")).status, 401);
     const session = jwt.sign({ userId: issuer, role: "secretary" }, JWT_SECRET);
     const retry = await request(
       "/documents/333333333333333333333333/retry",

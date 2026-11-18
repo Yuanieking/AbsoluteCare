@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { Input } from '@/components/ui/input'
 import { formatSchedule, scheduleErrors, scheduleOf, schedulePayload } from '@/lib/availability'
 import { getApiErrorDetails } from '@/lib/api/auth'
@@ -104,6 +105,8 @@ export function PersonDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const [editorEpoch, setEditorEpoch] = useState(0)
+  const [savedTimestamp, setSavedTimestamp] = useState<string>()
   const save = useSavePerson(role)
   const saveSchedule = useSaveTherapistAvailability()
   const form = useForm<PersonValues>({
@@ -157,7 +160,9 @@ export function PersonDialog({
       error: 'Unable to save this record.',
     })
     try {
-      await request
+      const updated = await request
+      setSavedTimestamp((updated as { updatedAt?: string }).updatedAt)
+      setEditorEpoch((value) => value + 1)
     } catch (error) {
       const details = getApiErrorDetails(error)
       form.setError('root', {
@@ -203,6 +208,8 @@ export function PersonDialog({
       setDays(next)
       setSavedDays(next)
       setSavedNotice(true)
+      setSavedTimestamp((updated as { updatedAt?: string }).updatedAt)
+      setEditorEpoch((value) => value + 1)
     } catch (error) {
       const conflict = conflictOf(error)
       if (conflict) {
@@ -240,6 +247,7 @@ export function PersonDialog({
           </div>
         ) : null}
 
+        <RecordEditors kind="users" record={person} active={open && !readOnly} resetKey={editorEpoch} timestamp={savedTimestamp} />
         <Form {...form}>
           <form className="grid gap-3 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
             <TextField<PersonValues>

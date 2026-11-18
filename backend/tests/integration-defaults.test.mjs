@@ -99,7 +99,8 @@ test("Reset HTTP endpoint checks auth, confirmation and action token; defaults s
   t.mock.method(User, "updateMany", async () => {
     reconnected = true;
   });
-  t.mock.method(Setting, "findOneAndUpdate", async () => ({}));
+  t.mock.method(Setting, "findOneAndUpdate", () => ({ then: (resolve) => Promise.resolve({}).then(resolve), exec: async () => ({}) }));
+  t.mock.method(Setting, "updateOne", () => ({ exec: async () => ({ matchedCount: 1 }) }));
   t.mock.method(Audit, "create", async (log) => {
     logs.push(log);
   });
@@ -142,6 +143,7 @@ test("Reset HTTP endpoint checks auth, confirmation and action token; defaults s
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "If-Match": '"2026-01-01T00:00:00.000Z"',
           ...(signedIn ? { Cookie: `session=${session}` } : {}),
         },
         body: JSON.stringify(body),

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import {
   Dialog,
   DialogContent,
@@ -207,6 +208,7 @@ export function CredentialDialog({
   return (
     <Dialog open onOpenChange={(open) => (open || busy ? undefined : onClose())}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <RecordEditors kind="settings" id="singleton" />
         <DialogHeader>
           <DialogTitle>{group.title} credentials</DialogTitle>
           <DialogDescription>{group.purpose}</DialogDescription>

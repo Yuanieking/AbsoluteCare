@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { recordWriteContext } from "../services/recordConcurrency.js";
 import { auditContext } from "../services/auditCapture.js";
 
 import { JWT_SECRET } from "../config/env.js";
@@ -50,6 +51,8 @@ export const protectRoute = async (req, res, next) => {
     }
 
     req.user.role = user.role;
+    const writeContext = recordWriteContext.getStore();
+    if (writeContext?.target === "User:self") writeContext.target = `User:${req.user.userId}`;
     const context = auditContext.getStore();
     if (context)
       context.actor = {

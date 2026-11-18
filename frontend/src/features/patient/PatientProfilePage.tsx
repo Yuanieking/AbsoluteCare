@@ -7,6 +7,7 @@ import { PageBody, PageHeader } from '@/components/layout/Page'
 
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
+import { RecordEditors } from '@/components/form/RecordEditors'
 import { useAuth } from '@/features/auth/session'
 import { getApiErrorDetails } from '@/lib/api/auth'
 import { todayInManila } from '@/lib/format/patient'
@@ -55,8 +56,8 @@ export default function PatientProfilePage() {
   })
 
   useEffect(() => {
-    form.reset(toForm(profile))
-  }, [form, profile])
+    if (!editing) form.reset(toForm(profile))
+  }, [editing, form, profile])
 
   const watched = useWatch({ control: form.control }) as ProfileValues
   const hasChanges = editing && form.formState.isDirty
@@ -159,6 +160,7 @@ export default function PatientProfilePage() {
       <section className="mt-4 rounded-lg border border-hairline bg-card p-5">
         {editing ? (
           <Form {...form}>
+            <RecordEditors kind="users" record={profile} active={editing} />
             <form className="grid gap-4 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
               <div className="flex items-center gap-4 sm:col-span-2">
                 <Avatar picture={watched.profilePicture} fallback={avatarInitials} />
