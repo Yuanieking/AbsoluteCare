@@ -3,7 +3,7 @@ import { test } from "node:test";
 import mongoose from "mongoose";
 import express from "express";
 import { once } from "node:events";
-import { recordConcurrencyPlugin, recordWriteContext, recordTarget } from "../src/services/recordConcurrency.js";
+import { recordConcurrencyPlugin, recordWriteContext, recordTarget, editorHolder } from "../src/services/recordConcurrency.js";
 import { errorHandler } from "../src/middleware/errorHandler.js";
 import { visibleEditors, EDITOR_TTL_MS, updateRecordEditors } from "../src/services/recordEditorsService.js";
 import User from "../src/models/userModel.js";
@@ -36,8 +36,10 @@ test("Presence endpoints require authentication and keep editor array separate f
     return { lean: async () => ({ activeEditors: [{ userId: id, name: "Alice Example", lastSeenAt: new Date() }] }) };
   });
   const sessionId = crypto.randomUUID();
-  const editors = await updateRecordEditors(actor, "users", id, sessionId);
-  assert.equal(editors[0].name, "Alice Example");
+  const { activeEditors, lockedBy } = await updateRecordEditors(actor, "users", id, sessionId);
+  assert.equal(activeEditors[0].name, "Alice Example");
+  assert.equal(lockedBy?.name, "Alice Example"); // mocked entry has no sessionId, so it is another tab
+  assert.ok(captured.update[0].$set.activeEditors.$concatArrays[1][0].joinedAt.$ifNull);
   assert.equal(captured.options.updatePipeline, true);
   assert.ok(captured.update[0].$set.activeEditors.$concatArrays);
   await updateRecordEditors(actor, "users", id, sessionId, true);
@@ -85,7 +87,21 @@ test("Editor display expires abandoned sessions and deduplicates users, not sess
   assert.deepEqual(visibleEditors(entries, now).map((item) => item.name), ["Alice", "Bob"]);
 });
 
-test("Real save/query hooks atomically reject simultaneous and missing-precondition writes through HTTP", async () => {
+test("Edit lock goes to the earliest live session and hands over when it expires", () => {
+  const now = new Date();
+  const entries = [
+    { sessionId: "b", name: "Late", joinedAt: new Date(now - 1000), lastSeenAt: now },
+    { sessionId: "a", name: "First", joinedAt: new Date(now - 5000), lastSeenAt: now },
+  ];
+  assert.equal(editorHolder(entries, now).name, "First");
+  entries[1].lastSeenAt = new Date(now - EDITOR_TTL_MS);
+  assert.equal(editorHolder(entries, now).name, "Late");
+  assert.equal(editorHolder([], now), null);
+});
+
+test("Real save/query hooks atomically reject simultaneous and missing-precondition writes through HTTP", async (t) => {
+  let lockDoc = null;
+  t.mock.method(RecordEditors, "findById", () => ({ lean: async () => lockDoc }));
   const isolated = new mongoose.Mongoose();
   const schema = new isolated.Schema({ name: String }, { timestamps: true, bufferCommands: false });
   schema.plugin(recordConcurrencyPlugin);
@@ -115,6 +131,15 @@ test("Real save/query hooks atomically reject simultaneous and missing-precondit
   assert.ok(stored.updatedAt > new Date(timestamp));
   await assert.rejects(write(() => Model.findOneAndUpdate({ _id: id }, { name: "Overwrite" }, { new: true }).exec()), (error) => error.status === 409);
   await assert.rejects(write(() => Model.updateOne({ _id: id }, { name: "Unchecked" }).exec(), "*"), (error) => error.status === 428);
+  lockDoc = { activeEditors: [{ sessionId: "holder", name: "Ana", joinedAt: new Date(), lastSeenAt: new Date() }] };
+  const fresh = stored.updatedAt.toISOString();
+  await assert.rejects(write(() => Model.updateOne({ _id: id }, { name: "Locked" }).exec(), fresh),
+    (error) => error.status === 409 && error.payload.code === "RECORD_LOCKED");
+  await recordWriteContext.run({ target: `TherapyService:${id}`, ifMatch: fresh, editorSession: "holder" },
+    () => Model.updateOne({ _id: id }, { name: "Holder" }).exec());
+  assert.equal(stored.name, "Holder");
+  stored = { ...stored, name: "Alice", updatedAt: new Date(fresh) };
+  lockDoc = null;
   const app = express();
   app.use(express.json());
   app.patch("/services/:id", (req, res, next) => {

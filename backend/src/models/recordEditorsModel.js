@@ -8,6 +8,7 @@ const recordEditorsSchema = new mongoose.Schema({
     sessionId: { type: String, required: true },
     name: { type: String, required: true },
     lastSeenAt: { type: Date, required: true },
+    joinedAt: { type: Date },
   }],
   expiresAt: { type: Date, required: true, index: { expires: 0 } },
 });

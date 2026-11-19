@@ -7,8 +7,9 @@ import AppSetting from "../models/appSettingModel.js";
 import RecordEditors from "../models/recordEditorsModel.js";
 import { ForbiddenError, NotFoundError } from "../errors/AppError.js";
 import { getSettings, roleAccess } from "./settingsService.js";
+import { EDITOR_TTL_MS, editorHolder } from "./recordConcurrency.js";
 
-export const EDITOR_TTL_MS = 45_000;
+export { EDITOR_TTL_MS };
 const models = { users: User, dependents: Dependent, appointments: Appointment,
   sessions: Session, services: TherapyService, settings: AppSetting };
 
@@ -55,26 +56,33 @@ export async function updateRecordEditors(actor, kind, id, sessionId, leave = fa
     const result = await RecordEditors.findOneAndUpdate({ _id: key }, {
       $pull: { activeEditors: { userId: actor.userId, sessionId } },
     }, { new: true }).lean();
-    return visibleEditors(result?.activeEditors, now);
+    return { activeEditors: visibleEditors(result?.activeEditors, now), lockedBy: null };
   }
   const user = await User.findById(actor.userId).select("firstname lastname").lean();
-  const entry = { userId: user._id, sessionId,
-    name: `${user.firstname || ""} ${user.lastname || ""}`.trim() || "User", lastSeenAt: now };
+  const live = { $gt: ["$$editor.lastSeenAt", cutoff] };
+  const own = { $and: [{ $eq: ["$$editor.userId", user._id] }, { $eq: ["$$editor.sessionId", sessionId] }] };
+  const editors = { $ifNull: ["$activeEditors", []] };
+  const entry = { userId: { $literal: user._id }, sessionId: { $literal: sessionId },
+    name: { $literal: `${user.firstname || ""} ${user.lastname || ""}`.trim() || "User" }, lastSeenAt: now,
+    // Heartbeats keep the original join time so the first editor keeps the lock.
+    joinedAt: { $ifNull: [{ $first: { $map: {
+      input: { $filter: { input: editors, as: "editor", cond: { $and: [live, own] } } },
+      in: { $ifNull: ["$$this.joinedAt", "$$this.lastSeenAt"] },
+    } } }, now] } };
   // One pipeline keeps concurrent heartbeats from replacing another editor's entry.
   let result;
   try {
     result = await RecordEditors.findOneAndUpdate({ _id: key }, [{ $set: {
       activeEditors: { $concatArrays: [{ $filter: {
-        input: { $ifNull: ["$activeEditors", []] }, as: "editor", cond: { $and: [
-          { $gt: ["$$editor.lastSeenAt", cutoff] },
-          { $not: [{ $and: [{ $eq: ["$$editor.userId", user._id] }, { $eq: ["$$editor.sessionId", sessionId] }] }] },
-        ] },
-      } }, { $literal: [entry] }] },
+        input: editors, as: "editor", cond: { $and: [live, { $not: [own] }] },
+      } }, [entry]] },
       expiresAt: new Date(now.getTime() + EDITOR_TTL_MS),
     } }], { new: true, upsert: true, updatePipeline: true }).lean();
   } catch (error) {
     if (error.code !== 11000 || !retry) throw error;
     return updateRecordEditors(actor, kind, id, sessionId, leave, false);
   }
-  return visibleEditors(result.activeEditors, now);
+  const holder = editorHolder(result.activeEditors, now);
+  return { activeEditors: visibleEditors(result.activeEditors, now),
+    lockedBy: holder && holder.sessionId !== sessionId ? { userId: String(holder.userId), name: holder.name } : null };
 }

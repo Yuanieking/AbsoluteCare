@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react'
-import client, { pinRecordTimestamp } from '@/lib/api/client'
+import { useEffect, useRef, useState } from 'react'
+import client, { editorSessionId, pinRecordTimestamp } from '@/lib/api/client'
 
 type Editor = { userId: string; name: string; lastSeenAt: string }
 type Kind = 'users' | 'dependents' | 'appointments' | 'sessions' | 'services' | 'settings'
+type Presence = { key: string; editors: Editor[]; lockedBy: string | null; unavailable: boolean }
+
+// Several editors for one record in the same tab share the lock; only the last unmount releases it.
+const mounts = new Map<string, number>()
 
 export function RecordEditors({ kind, record, id, active = true, resetKey = 0, timestamp }: {
   kind: Kind
@@ -13,21 +17,35 @@ export function RecordEditors({ kind, record, id, active = true, resetKey = 0, t
   active?: boolean
 }) {
   const recordId = id || record?._id || record?.id
-  const [editors, setEditors] = useState<Editor[]>([])
+  const url = `/record-editors/${kind}/${recordId}`
+  const key = `${url}#${resetKey}`
+  const [presence, setPresence] = useState<Presence | null>(null)
+  const [handedOver, setHandedOver] = useState(false)
   const [stale, setStale] = useState(false)
-  const [unavailable, setUnavailable] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!active || !recordId) return
     const unpin = pinRecordTimestamp(kind === 'settings' ? 'settings' : recordId,
       timestamp || (typeof record?.updatedAt === 'string' ? record.updatedAt : undefined))
-    const sessionId = crypto.randomUUID()
-    const url = `/record-editors/${kind}/${recordId}`
+    mounts.set(url, (mounts.get(url) || 0) + 1)
     let stopped = false
+    let locked = false
+    let timer = 0
     const heartbeat = async () => {
       try {
-        const response = await client.put(url, { sessionId })
-        if (!stopped) { setEditors(response.data.activeEditors); setUnavailable(false) }
-      } catch { if (!stopped) setUnavailable(true) }
+        const response = await client.put(url, { sessionId: editorSessionId })
+        if (stopped) return
+        const lockedBy: string | null = response.data.lockedBy?.name ?? null
+        if (locked && !lockedBy) setHandedOver(true)
+        locked = Boolean(lockedBy)
+        setPresence({ key, editors: response.data.activeEditors, lockedBy, unavailable: false })
+      } catch {
+        // Presence down: unlock the UI; the server still rejects writes while another tab holds the lock.
+        if (!stopped) setPresence({ key, editors: [], lockedBy: null, unavailable: true })
+      } finally {
+        // Waiting editors poll faster so the lock hands over within seconds of the holder leaving.
+        if (!stopped) timer = window.setTimeout(() => void heartbeat(), locked ? 3_000 : 15_000)
+      }
     }
     const conflict = (event: Event) => {
       const path = String((event as CustomEvent).detail || '')
@@ -36,20 +54,54 @@ export function RecordEditors({ kind, record, id, active = true, resetKey = 0, t
     }
     window.addEventListener('record:stale', conflict)
     void heartbeat()
-    const timer = window.setInterval(() => void heartbeat(), 15_000)
     return () => {
       stopped = true
       unpin()
-      window.clearInterval(timer)
+      window.clearTimeout(timer)
       window.removeEventListener('record:stale', conflict)
-      void client.delete(url, { data: { sessionId } }).catch(() => undefined)
+      const left = (mounts.get(url) || 1) - 1
+      if (left) mounts.set(url, left)
+      else {
+        mounts.delete(url)
+        void client.delete(url, { data: { sessionId: editorSessionId } }).catch(() => undefined)
+      }
     }
     // The original snapshot must not change when background queries replace record props.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, kind, recordId, resetKey])
+
+  const current = presence?.key === key ? presence : null
+  // Locked until the first answer arrives, so a second editor can never click before the check.
+  const blocked = Boolean(active && recordId && (!current || current.lockedBy))
+  useEffect(() => {
+    const root = rootRef.current
+    const parent = root?.parentElement
+    if (!blocked || !root || !parent) return
+    // Siblings stay visible but cannot be clicked, focused or typed into; the dialog's X still closes it.
+    const touched = new Set<Element>()
+    const apply = () => {
+      for (const element of parent.children) {
+        if (element === root || element.matches('[data-slot="dialog-close"]') || element.hasAttribute('inert')) continue
+        element.setAttribute('inert', '')
+        touched.add(element)
+      }
+    }
+    apply()
+    const observer = new MutationObserver(apply)
+    observer.observe(parent, { childList: true })
+    return () => {
+      observer.disconnect()
+      for (const element of touched) element.removeAttribute('inert')
+    }
+  }, [blocked])
+
   if (!active || !recordId) return null
-  return <div className="col-span-full grid gap-1 rounded-md border border-hairline bg-sunk p-2 text-xs" aria-live="polite">
-    <p>{unavailable ? 'Editor presence is unavailable. Save protection remains active.' : `Editing: ${editors.map((editor) => editor.name).join(', ') || 'Connecting…'}`}</p>
+  const names = current?.editors.map((editor) => editor.name).join(', ')
+  return <div ref={rootRef} className="col-span-full grid gap-1 rounded-md border border-hairline bg-sunk p-2 text-xs" aria-live="polite">
+    {current?.lockedBy
+      ? <p role="status" className="font-medium text-destructive">{current.lockedBy} is editing this record. You can view it, but editing is locked until they finish.</p>
+      : <p>{current?.unavailable ? 'Editor presence is unavailable. Save protection remains active.' : current ? `Editing: ${names || 'You'}` : 'Checking who is editing…'}</p>}
+    {handedOver && !current?.lockedBy ? <p className="text-ink">The other editor finished. You can edit now; review the latest details before saving.</p> : null}
     {stale ? <p role="alert" className="text-destructive">This record changed. Your input is preserved. Copy your changes, close and reopen the editor, then review the latest record before saving.</p> : null}
   </div>
 }

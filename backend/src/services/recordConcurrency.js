@@ -1,8 +1,31 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import mongoose from "mongoose";
 import { AppError, ConflictError } from "../errors/AppError.js";
 import { parseIfMatch } from "./concurrencyService.js";
 
 export const recordWriteContext = new AsyncLocalStorage();
+export const EDITOR_TTL_MS = 45_000;
+
+// The earliest live editor session holds the edit lock; entries older than joinedAt fall back to lastSeenAt.
+export function editorHolder(entries, now = new Date()) {
+  const joined = (entry) => new Date(entry.joinedAt || entry.lastSeenAt).getTime();
+  return (entries || [])
+    .filter((entry) => new Date(entry.lastSeenAt).getTime() > now.getTime() - EDITOR_TTL_MS)
+    .sort((a, b) => joined(a) - joined(b) || String(a.sessionId).localeCompare(String(b.sessionId)))[0] || null;
+}
+
+const editorKinds = { User: "users", Dependent: "dependents", Appointment: "appointments",
+  Session: "sessions", TherapyService: "services", AppSetting: "settings" };
+
+async function assertNotLocked(model, id, context) {
+  if (context.lockChecked) return;
+  // Looked up lazily: importing the model here would compile models before this global plugin is registered.
+  const doc = await mongoose.models.RecordEditors?.findById(`${editorKinds[model]}:${model === "AppSetting" ? "singleton" : id}`).lean();
+  const holder = editorHolder(doc?.activeEditors);
+  if (holder && holder.sessionId !== context.editorSession)
+    throw new AppError(409, { code: "RECORD_LOCKED", message: `${holder.name} is editing this record. Try again when they finish.` });
+  context.lockChecked = true;
+}
 
 export function recordTarget(path, method) {
   if (!["PATCH", "PUT", "DELETE", "POST"].includes(method)) return null;
@@ -30,11 +53,12 @@ export function recordConcurrencyPlugin(schema) {
     return { context, expected: context.savedAt || requireRecordTimestamp(context.ifMatch) };
   }
   schema.post("init", function (doc) { doc.$locals.recordTimestamp = doc.updatedAt; });
-  schema.pre("save", function () {
+  schema.pre("save", async function () {
     if (this.isNew) return;
     const guard = expectedFor(this.constructor.modelName, this._id);
     if (!guard) return;
     const { context, expected } = guard;
+    await assertNotLocked(this.constructor.modelName, this._id, context);
     const original = this.$locals.recordTimestamp || this.updatedAt;
     // Existing guardFresh pins the original timestamp before Mongoose's timestamp hook runs.
     const loaded = this.$where?.updatedAt || original;
@@ -47,10 +71,11 @@ export function recordConcurrencyPlugin(schema) {
     doc.$locals.recordTimestamp = doc.updatedAt;
     if (doc.$locals.recordWriteContext) doc.$locals.recordWriteContext.savedAt = doc.updatedAt;
   });
-  schema.pre(["findOneAndUpdate", "updateOne", "deleteOne", "findOneAndDelete"], function () {
+  schema.pre(["findOneAndUpdate", "updateOne", "deleteOne", "findOneAndDelete"], async function () {
     const guard = expectedFor(this.model.modelName, this.getFilter()._id);
     if (!guard) return;
     const { context, expected } = guard;
+    await assertNotLocked(this.model.modelName, this.getFilter()._id, context);
     this.setQuery({ ...this.getFilter(), updatedAt: expected,
       ...(this.model.modelName === "AppSetting" ? context.lease
         ? { editLease: context.lease, editLeaseExpiresAt: { $gt: new Date() } }

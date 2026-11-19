@@ -61,6 +61,8 @@ const seenUpdatedAt = new Map<string, string>()
 const editSnapshots = new Map<string, Map<symbol, string>>()
 
 export function getRecordTimestamp(id: string) { return seenUpdatedAt.get(id) }
+// One editor session per tab: the server lets only the lock holder's tab write a record.
+export const editorSessionId = crypto.randomUUID()
 
 
 
@@ -100,6 +102,7 @@ axiosInstance.interceptors.request.use((config) => {
   const method = config.method?.toLowerCase()
   if (!['patch', 'delete', 'post', 'put'].includes(method || '')) return config
   if (config.url?.startsWith('/record-editors/')) return config
+  config.headers.set('X-Editor-Session', editorSessionId)
   const path = (config.url ?? '').split('?')[0] ?? ''
   const id = selfPaths.test(path) ? selfId : /^\/(?:admin\/)?settings\//.test(path) ? 'settings' : objectIdInPath.exec(path)?.[1]
   const pins = id ? editSnapshots.get(id) : undefined

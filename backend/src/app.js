@@ -74,7 +74,7 @@ const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   // ** Concurrency: browsers must be allowed to send If-Match (timestamp guard) cross-origin.
-  allowedHeaders: ["Content-Type", "Authorization", "If-Match"],
+  allowedHeaders: ["Content-Type", "Authorization", "If-Match", "X-Editor-Session"],
   optionsSuccessStatus: 204,
 };
 
@@ -95,6 +95,7 @@ app.use(sanitizeInput);
 app.use((req, res, next) => recordWriteContext.run({
   target: recordTarget(req.path, req.method),
   ifMatch: req.get("If-Match"),
+  editorSession: req.get("X-Editor-Session"),
 }, next));
 
 app.use("/record-editors", recordEditorsRoutes);
