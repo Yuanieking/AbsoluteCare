@@ -128,14 +128,14 @@
 
 | Check | Result |
 |---|---|
-| `backend: node --test tests/*.test.mjs` | ✅ 50 of 50 pass (43 existing, 4 from round 1, 3 from round 2) |
+| `backend: node --test tests/*.test.mjs` | ✅ 51 of 51 pass (43 existing, 4 from round 1, 3 from round 2, 1 reCAPTCHA invalid-key test) |
 | `frontend: npm run lint` | ✅ Clean |
 | `frontend: npm run build` | ✅ Builds |
-| `frontend: npx vitest run` | ✅ 82 of 82 pass. This includes the 3 `auditFormat` tests, the `useRecaptcha` misconfiguration test and 3 `payments` tests. |
+| `frontend: npx vitest run` | ✅ 83 of 83 pass. This includes the 3 `auditFormat` tests, the `useRecaptcha` misconfiguration and invalid-key tests, and 3 `payments` tests. |
 
 **Follow-up (CAPTCHA messages):** an uncommitted edit had changed the `RECAPTCHA_FAILED` message to an admin-facing "Invalid Key…" text, which broke `useRecaptcha.test.ts`.
 - **Failed challenge:** a failed or expired CAPTCHA now shows **"CAPTCHA verification failed. Please try again."**
-- **Configuration problem:** `backend/src/middleware/verifyRecaptcha.js` now returns a separate `RECAPTCHA_MISCONFIGURED` code (503) when the secret key is missing or Google answers `missing-input-secret` or `invalid-input-secret`. For that code only, `useRecaptcha` shows a configuration message.
+- **Configuration problem:** `backend/src/middleware/verifyRecaptcha.js` separates key problems from a wrong answer. When Google answers `invalid-input-secret`, it returns `RECAPTCHA_INVALID_KEY` (503), and `useRecaptcha` shows **"Invalid Key. Google rejected this client ID and secret pair. Copy both again from the Google Cloud console."** A missing secret, or Google answering `missing-input-secret`, returns `RECAPTCHA_MISCONFIGURED` (503) with its own configuration message.
 - **Server unavailable:** `RECAPTCHA_UNAVAILABLE` keeps its "couldn't verify you right now" message.
 
 ---

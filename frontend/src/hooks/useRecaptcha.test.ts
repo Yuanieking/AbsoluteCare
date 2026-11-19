@@ -60,6 +60,17 @@ describe('CAPTCHA state', () => {
     expect(useRecaptcha(options).error).not.toMatch(/key|set up/i)
   })
 
+  it('names the rejected key pair when Google reports invalid-input-secret', () => {
+    useRecaptcha(options).setToken('verified-token')
+    expect(useRecaptcha(options).handleError('RECAPTCHA_INVALID_KEY')).toBe(true)
+    expect(useRecaptcha(options)).toMatchObject({
+      token: null,
+      error:
+        'Invalid Key. Google rejected this client ID and secret pair. Copy both again from the Google Cloud console.',
+    })
+    expect(reset).toHaveBeenCalledOnce()
+  })
+
   it('does not reuse tokens or errors when saved keys change or CAPTCHA is disabled', () => {
     useRecaptcha(options).setToken('old-key-token')
     expect(useRecaptcha({ ...options, siteKey: 'new-key' }).token).toBeNull()

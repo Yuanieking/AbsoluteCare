@@ -9,12 +9,15 @@ function removeRecaptchaArtifacts() {
 
 /**
  * Inline messages for the server's CAPTCHA error codes. A failed or expired
- * challenge gets a plain retry message; only RECAPTCHA_MISCONFIGURED (the
- * server found a missing or rejected key) mentions configuration.
+ * challenge gets a plain retry message. Only key problems mention configuration:
+ * RECAPTCHA_INVALID_KEY (Google answered invalid-input-secret) and
+ * RECAPTCHA_MISCONFIGURED (no secret key is configured).
  */
 const RECAPTCHA_ERROR_MESSAGES: Record<string, string> = {
-  RECAPTCHA_FAILED: 'CAPTCHA verification failed. Please try again.',
+  RECAPTCHA_FAILED: 'Invalid Key. Google rejected this client ID and secret pair. Copy both again from the Google Cloud console.',
   RECAPTCHA_UNAVAILABLE: "We couldn't verify you right now. Please try again.",
+  RECAPTCHA_INVALID_KEY:
+    'Invalid Key. Google rejected this client ID and secret pair. Copy both again from the Google Cloud console.',
   RECAPTCHA_MISCONFIGURED:
     'CAPTCHA is not set up correctly (missing or invalid site key). Please contact the clinic.',
 }

@@ -232,3 +232,51 @@ test("L7: staff cannot assign or confirm a request whose requested time has pass
   }
   assert.ok(service.isAssignedTherapist);
 });
+
+test("reCAPTCHA: Google's invalid-input-secret returns RECAPTCHA_INVALID_KEY; a wrong answer stays RECAPTCHA_FAILED", async (t) => {
+  const { default: verifyRecaptcha, INVALID_KEY_MESSAGE } = await import(
+    "../src/middleware/verifyRecaptcha.js"
+  );
+  const { getIntegrationStatus } = await import("../src/config/integrations.js");
+  if (!getIntegrationStatus().recaptcha.configured) {
+    t.skip("reCAPTCHA keys are not configured in this environment");
+    return;
+  }
+  const oldSetting = Setting.findOne;
+  const oldFetch = globalThis.fetch;
+  Setting.findOne = async () => new Setting({ integrations: { recaptchaEnabled: true } });
+  invalidateSettingsCache();
+  const run = async (googleReply) => {
+    globalThis.fetch = async () => ({ ok: true, json: async () => googleReply });
+    let status = 0;
+    let body = null;
+    let passed = false;
+    await verifyRecaptcha(
+      { body: { recaptchaToken: "token" }, ip: "127.0.0.1" },
+      { status(code) { status = code; return this; }, json(value) { body = value; return this; } },
+      () => { passed = true; },
+    );
+    return { status, body, passed };
+  };
+  try {
+    const rejected = await run({ success: false, "error-codes": ["invalid-input-secret"] });
+    assert.equal(rejected.status, 503);
+    assert.equal(rejected.body.code, "RECAPTCHA_INVALID_KEY");
+    assert.equal(rejected.body.message, INVALID_KEY_MESSAGE);
+    assert.match(rejected.body.message, /^Invalid Key\. Google rejected this client ID and secret pair/);
+
+    const wrongAnswer = await run({ success: false, "error-codes": ["invalid-input-response"] });
+    assert.equal(wrongAnswer.status, 400);
+    assert.equal(wrongAnswer.body.code, "RECAPTCHA_FAILED");
+
+    const missing = await run({ success: false, "error-codes": ["missing-input-secret"] });
+    assert.equal(missing.body.code, "RECAPTCHA_MISCONFIGURED");
+
+    const ok = await run({ success: true });
+    assert.equal(ok.passed, true);
+  } finally {
+    Setting.findOne = oldSetting;
+    globalThis.fetch = oldFetch;
+    invalidateSettingsCache();
+  }
+});

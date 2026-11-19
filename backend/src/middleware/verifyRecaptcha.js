@@ -12,6 +12,18 @@ const CONFIG_ERROR_CODES = new Set([
   "invalid-input-secret",
 ]);
 
+export const INVALID_KEY_MESSAGE =
+  "Invalid Key. Google rejected this client ID and secret pair. Copy both again from the Google Cloud console.";
+
+// Google answered `invalid-input-secret`: the configured secret was rejected.
+function invalidKey(res) {
+  console.warn("recaptcha: invalid key (invalid-input-secret)");
+  res.status(503).json({
+    code: "RECAPTCHA_INVALID_KEY",
+    message: INVALID_KEY_MESSAGE,
+  });
+}
+
 function misconfigured(res, reason) {
   console.warn(`recaptcha: misconfigured (${reason})`);
   res.status(503).json({
@@ -65,6 +77,10 @@ export default async function verifyRecaptcha(req, res, next) {
       const errorCodes = Array.isArray(result["error-codes"])
         ? result["error-codes"]
         : [];
+      if (errorCodes.includes("invalid-input-secret")) {
+        invalidKey(res);
+        return;
+      }
       if (errorCodes.some((code) => CONFIG_ERROR_CODES.has(code))) {
         misconfigured(res, errorCodes.join(", "));
         return;
