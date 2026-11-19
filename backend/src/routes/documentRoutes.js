@@ -25,11 +25,14 @@ router.use(
   requireRole("admin", "secretary", "therapist"),
   requireAccess("documents"),
 );
-router.post(
-  "/",
-  requirePermission("documents", "create"),
-  asyncRoute(createDocumentHandler),
-);
+// A clinic report PDF is governed by the Reports "create" permission; every
+// other document type by Documents "create".
+const createPermission = (req, res, next) =>
+  requirePermission(
+    req.body?.type === "clinic_report" ? "reports" : "documents",
+    "create",
+  )(req, res, next);
+router.post("/", createPermission, asyncRoute(createDocumentHandler));
 router.get("/", asyncRoute(listDocumentsHandler));
 router.get("/:id", asyncRoute(getDocumentHandler));
 router.get("/:id/file", asyncRoute(downloadDocumentHandler));

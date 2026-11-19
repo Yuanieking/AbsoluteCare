@@ -95,20 +95,61 @@ export function formatSchedule(days) {
     .join(" · ");
 }
 
-/** First failure wins, and each failure names the rule that blocked it. */
-export function therapistMismatch(therapist, service, start, end) {
-  const specializations = Array.isArray(therapist.specialization)
+function specializationsOf(therapist) {
+  return Array.isArray(therapist.specialization)
     ? therapist.specialization
     : [therapist.specialization].filter(Boolean);
-  const name = service.name.toLowerCase();
-  if (
-    specializations.length &&
-    !specializations.some(
-      (item) =>
-        name.includes(String(item).toLowerCase()) ||
-        String(item).toLowerCase().includes(name),
-    )
-  ) {
+}
+
+// "Physical Therapist (PTs)" and "Physical Therapy" both stem to [physi, thera].
+function stems(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .map((word) => word.slice(0, 5));
+}
+
+/** Every word of the shorter label appears in the longer one. */
+function labelsMatch(first, second) {
+  const a = stems(first);
+  const b = stems(second);
+  if (!a.length || !b.length) return false;
+  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+  return shorter.every((word) => longer.includes(word));
+}
+
+/** True when one of the therapist's specializations covers the service's category or name. */
+export function coversService(therapist, service) {
+  const specializations = specializationsOf(therapist);
+  if (!specializations.length) return true;
+  return specializations.some(
+    (item) =>
+      labelsMatch(item, service.category) || labelsMatch(item, service.name),
+  );
+}
+
+/**
+ * A service no specialist covers (e.g. a general consultation) stays open to
+ * every therapist instead of becoming unbookable.
+ */
+export function needsSpecialist(service, therapists) {
+  return therapists.some(
+    (therapist) =>
+      specializationsOf(therapist).length && coversService(therapist, service),
+  );
+}
+
+/** First failure wins, and each failure names the rule that blocked it. */
+export function therapistMismatch(
+  therapist,
+  service,
+  start,
+  end,
+  specialistOnly = true,
+) {
+  if (specialistOnly && !coversService(therapist, service)) {
     return `This therapist's specialization does not cover ${service.name}.`;
   }
   return availabilityError(therapist, start, end);
@@ -120,15 +161,18 @@ export async function bookingTimes(
   therapistId = null,
   options = {},
 ) {
-  const therapists = await User.find({
+  const activeTherapists = await User.find({
     role: "therapist",
     isActive: true,
     isArchived: false,
     removedAt: null,
-    ...(therapistId ? { _id: therapistId } : {}),
   }).select(
     "specialization workingDays workingHours workingHoursByDay dateOverrides",
   );
+  const specialistOnly = needsSpecialist(service, activeTherapists);
+  const therapists = therapistId
+    ? activeTherapists.filter((user) => String(user._id) === String(therapistId))
+    : activeTherapists;
   const dayStart = manilaDateTime(date, "00:00");
   const dayEnd = new Date(dayStart.getTime() + 86_400_000);
   const appointments = await Appointment.find({
@@ -154,7 +198,7 @@ export async function bookingTimes(
     if (
       therapists.some(
         (user) =>
-          !therapistMismatch(user, service, start, end) &&
+          !therapistMismatch(user, service, start, end, specialistOnly) &&
           !appointments.some(
             (visit) =>
               String(visit.therapist) === String(user._id) &&

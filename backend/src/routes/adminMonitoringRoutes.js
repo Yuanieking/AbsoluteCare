@@ -6,6 +6,7 @@ import {
   requireRole,
 } from "../middleware/authMiddleware.js";
 import { objectIdParam } from "../middleware/validateObjectId.js";
+import { therapistOwnsAppointment } from "../middleware/appointmentScope.js";
 
 import {
   recordPayment,
@@ -22,6 +23,7 @@ import {
 
 const router = Router();
 router.param("id", objectIdParam);
+router.param("id", therapistOwnsAppointment);
 router.use(protectRoute, requireRole("admin", "secretary", "therapist"));
 // ** Concurrency: PATCH routes accept If-Match: "<appointment.updatedAt>" -> 409 STALE_RECORD when stale.
 // ** PATCH /appointments/:id/complete - mark a past confirmed appointment completed.

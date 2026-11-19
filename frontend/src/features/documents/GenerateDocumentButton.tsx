@@ -1,6 +1,7 @@
 import { FileText, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { usePermission } from '@/hooks/usePermission'
 import { showError, showSuccess } from '@/lib/toast'
 import type { CreateDocumentInput } from './api'
 import { useCreateDocument } from './queries'
@@ -29,6 +30,8 @@ export function GenerateDocumentButton({
 }) {
   const create = useCreateDocument()
   const [pending, setPending] = useState(false)
+  // Same rule as POST /documents: clinic reports need Reports create, the rest Documents create.
+  const allowed = usePermission(input.type === 'clinic_report' ? 'reports' : 'documents', 'create')
 
   async function generate() {
     if (existing) {
@@ -58,6 +61,8 @@ export function GenerateDocumentButton({
       setPending(false)
     }
   }
+
+  if (!allowed) return null
 
   return (
     <Button

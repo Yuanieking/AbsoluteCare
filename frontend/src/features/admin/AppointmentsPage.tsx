@@ -8,12 +8,15 @@ import { StatusBadge } from '@/components/domain/StatusBadge'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
+import { PastDueBadge } from './PastDueBadge'
 import { GenerateDocumentButton } from '@/features/documents/GenerateDocumentButton'
 import { AppointmentDialogs, type AppointmentDialogType } from './AppointmentDialogs'
 import {
   appointmentStart,
   formatDateTime,
   hasStarted,
+  isPastDue,
+  PAST_DUE_REASON,
   patientName,
   personName,
   serviceName,
@@ -115,9 +118,16 @@ export default function AppointmentsPage() {
       return [{ label: 'View', onClick: () => setDialog({ type: 'view', appointment }) }]
     }
     if (appointment.status === 'pending') {
+      // Past-due requests can only be cancelled; scheduling them would book the past.
+      const expired = isPastDue(appointment)
+      const blocked = expired ? { disabled: true, reason: PAST_DUE_REASON } : {}
       const pending = [
         appointment.therapist
-          ? { label: 'Confirm', onClick: () => setDialog({ type: 'confirm', appointment }) }
+          ? {
+              label: 'Confirm',
+              onClick: () => setDialog({ type: 'confirm', appointment }),
+              ...blocked,
+            }
           : {
               label: 'Review request',
               onClick: () => setDialog({ type: 'requestReview', appointment }),
@@ -128,6 +138,7 @@ export default function AppointmentsPage() {
         {
           label: appointment.therapist ? 'Reassign' : 'Assign',
           onClick: () => setDialog({ type: 'assign', appointment }),
+          ...blocked,
         },
         { label: 'Cancel', onClick: () => setDialog({ type: 'cancel', appointment }) },
       ]
@@ -211,6 +222,7 @@ export default function AppointmentsPage() {
       cell: ({ row }) => (
         <div className="flex flex-wrap items-center gap-1">
           <StatusBadge status={row.original.status} />
+          {isPastDue(row.original) ? <PastDueBadge /> : null}
           {row.original.rescheduleRequest?.status === 'requested' ? (
             <span className="rounded-full bg-signal-soft px-2 py-0.5 text-[10.5px] font-medium text-signal">
               Reschedule requested

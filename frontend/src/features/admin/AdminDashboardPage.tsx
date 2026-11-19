@@ -18,10 +18,13 @@ import {
   formatDay,
   formatMoney,
   formatTime,
+  isPastDue,
+  PAST_DUE_REASON,
   patientName,
   therapistName,
 } from './format'
 import { useConfirmAppointment } from './mutations'
+import { PastDueBadge } from './PastDueBadge'
 import { useAdminAppointments, useAdminReports } from './queries'
 import type { AdminAppointment } from './types'
 import { clinicDay, clinicRange, clinicMonthRange } from '@/lib/format/clinic-time'
@@ -276,10 +279,12 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                   <StatusBadge status={appointment.status} />
+                  {isPastDue(appointment) ? <PastDueBadge /> : null}
                   <Button
                     type="button"
                     size="xs"
-                    disabled={confirm.isPending}
+                    disabled={confirm.isPending || isPastDue(appointment)}
+                    title={isPastDue(appointment) ? PAST_DUE_REASON : undefined}
                     onClick={() => confirmRequest(appointment)}
                   >
                     {confirm.isPending ? 'Confirming…' : 'Confirm'}

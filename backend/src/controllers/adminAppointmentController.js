@@ -21,7 +21,10 @@ import {
   notifyAppointmentConfirmed,
   notifyAppointmentRescheduled,
 } from "../services/notificationService.js";
-import { therapistMismatch } from "../services/availabilityService.js";
+import {
+  needsSpecialist,
+  therapistMismatch,
+} from "../services/availabilityService.js";
 import { adminNotificationSchema } from "../schemas/appointmentSchema.js";
 import { manilaDateTime } from "../utils/appointmentDates.js";
 import { guardFresh } from "../services/concurrencyService.js";
@@ -40,6 +43,25 @@ function scheduleFor(appointment, date, time) {
   return { start, end };
 }
 
+function serviceOf(appointment) {
+  return {
+    name: appointment.service?.name || appointment.serviceSnapshot?.name || "",
+    category: appointment.serviceSnapshot?.category || "",
+  };
+}
+
+// A pending request whose requested time has passed can no longer be scheduled
+// as asked; staff must cancel it or ask the patient to book a new time.
+function pastDueError(res, schedule) {
+  if (schedule.start > new Date()) return false;
+  res.status(409).json({
+    code: "REQUEST_PAST_DUE",
+    message:
+      "The requested time has already passed. Cancel this request or ask the patient to book a new time.",
+  });
+  return true;
+}
+
 function statusError(res, appointment, action, statuses) {
   if (statuses.includes(appointment.status)) return false;
   res.status(409).json({
@@ -51,11 +73,13 @@ function statusError(res, appointment, action, statuses) {
 async function assertTherapistAvailable(appointment, therapistId, start, end) {
   const therapist = await findActiveTherapistById(therapistId);
   if (!therapist) return "Choose an active therapist.";
+  const service = serviceOf(appointment);
   const mismatch = therapistMismatch(
     therapist,
-    appointment.service,
+    service,
     start,
     end,
+    needsSpecialist(service, await findActiveTherapists()),
   );
   if (mismatch) return mismatch;
   if (await hasConfirmedConflict(therapist._id, start, end, appointment._id))
@@ -119,6 +143,8 @@ export async function listAppointments(req, res) {
   }
   if (typeof req.query.therapist === "string" && req.query.therapist)
     query.therapist = req.query.therapist;
+  // Therapists only ever see their own caseload, whatever filter they send.
+  if (req.user.role === "therapist") query.therapist = req.user.userId;
   if (typeof req.query.service === "string" && req.query.service)
     query.service = req.query.service;
   const sort =
@@ -172,15 +198,19 @@ export async function listAvailableTherapists(req, res) {
     appointment.requestedDate,
     appointment.requestedTime,
   );
+  if (pastDueError(res, schedule)) return;
   const therapists = await findActiveTherapists();
+  const service = serviceOf(appointment);
+  const specialistOnly = needsSpecialist(service, therapists);
   const available = [];
   for (const therapist of therapists) {
     if (
       therapistMismatch(
         therapist,
-        appointment.service,
+        service,
         schedule.start,
         schedule.end,
+        specialistOnly,
       )
     )
       continue;
@@ -214,6 +244,7 @@ export async function assignTherapist(req, res) {
     appointment.requestedDate,
     appointment.requestedTime,
   );
+  if (pastDueError(res, schedule)) return;
   const error = await assertTherapistAvailable(
     appointment,
     therapistId,
@@ -261,6 +292,7 @@ export async function confirmAppointment(req, res) {
     appointment.requestedDate,
     appointment.requestedTime,
   );
+  if (pastDueError(res, schedule)) return;
   const error = await assertTherapistAvailable(
     appointment,
     String(appointment.therapist._id),

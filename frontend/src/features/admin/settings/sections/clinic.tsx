@@ -29,14 +29,14 @@ export function GeneralSection({
         title="Clinic profile"
         description="Shown in patient-facing pages and email templates."
       >
-        <SettingRow label="Clinic name" helper="The name patients see throughout the app.">
+        <SettingRow field="clinicName" label="Clinic name" helper="The name patients see throughout the app.">
           <TextInput
             ariaLabel="Clinic name"
             value={value.clinicName}
             onChange={(next) => update('clinicName', next)}
           />
         </SettingRow>
-        <SettingRow label="Phone" helper="The clinic number shown when booking is unavailable.">
+        <SettingRow field="phone" label="Phone" helper="The clinic number shown when booking is unavailable.">
           <TextInput
             ariaLabel="Clinic phone"
             type="tel"
@@ -44,7 +44,7 @@ export function GeneralSection({
             onChange={(next) => update('phone', next)}
           />
         </SettingRow>
-        <SettingRow label="Email" helper="The shared support email address.">
+        <SettingRow field="email" label="Email" helper="The shared support email address.">
           <TextInput
             ariaLabel="Clinic email"
             type="email"
@@ -52,7 +52,7 @@ export function GeneralSection({
             onChange={(next) => update('email', next)}
           />
         </SettingRow>
-        <SettingRow label="Address" helper="The clinic address used in contact details.">
+        <SettingRow field="address" label="Address" helper="The clinic address used in contact details.">
           <AddressInput
             aria-label="Clinic address"
             wrapperClassName="w-72"
@@ -99,7 +99,7 @@ export function ScheduleSection({
         title="Opening hours"
         description="Choose open days and the regular clinic hours."
       >
-        <SettingRow label="Open days" helper="Patients can only book on open days.">
+        <SettingRow field="openDays" label="Open days" helper="Patients can only book on open days.">
           <ChipGroup
             ariaLabel="Open days"
             options={days}
@@ -107,7 +107,7 @@ export function ScheduleSection({
             onChange={(next) => update('openDays', next)}
           />
         </SettingRow>
-        <SettingRow label="Opening hours" helper="The regular clinic hours for open days.">
+        <SettingRow field="openHours" label="Opening hours" helper="The regular clinic hours for open days.">
           <div className="flex items-center gap-2">
             <TextInput
               ariaLabel="Opening time"
@@ -150,7 +150,7 @@ export function BookingSection({
         title="Online booking"
         description="Patients won't be able to request appointments when this is off."
       >
-        <SettingRow
+        <SettingRow field="onlineBookingEnabled"
           label="Online booking"
           helper="The master switch for patient appointment requests."
         >
@@ -164,7 +164,7 @@ export function BookingSection({
 
       <div className={value.onlineBookingEnabled ? undefined : 'opacity-60'}>
         <SettingsCard title="Booking rules" description={summary}>
-          <SettingRow label="Minimum notice" helper="How soon before a slot patients may book.">
+          <SettingRow field="minNoticeHours" label="Minimum notice" helper="How soon before a slot patients may book.">
             <NumberInput
               ariaLabel="Minimum notice"
               unit="hours"
@@ -174,7 +174,7 @@ export function BookingSection({
               onChange={(next) => update('minNoticeHours', next)}
             />
           </SettingRow>
-          <SettingRow
+          <SettingRow field="maxAdvanceDays"
             label="Maximum advance"
             helper="How far into the future booking is available."
           >
@@ -187,7 +187,7 @@ export function BookingSection({
               onChange={(next) => update('maxAdvanceDays', next)}
             />
           </SettingRow>
-          <SettingRow label="Slot interval" helper="The interval used to generate available slots.">
+          <SettingRow field="slotIntervalMinutes" label="Slot interval" helper="The interval used to generate available slots.">
             <SelectInput
               ariaLabel="Slot interval"
               value={String(value.slotIntervalMinutes)}
@@ -199,7 +199,7 @@ export function BookingSection({
               ]}
             />
           </SettingRow>
-          <SettingRow label="Pending request limit" helper="Maximum pending requests per patient.">
+          <SettingRow field="maxPendingRequestsPerPatient" label="Pending request limit" helper="Maximum pending requests per patient.">
             <NumberInput
               ariaLabel="Pending request limit"
               unit="requests"
@@ -209,7 +209,7 @@ export function BookingSection({
               onChange={(next) => update('maxPendingRequestsPerPatient', next)}
             />
           </SettingRow>
-          <SettingRow label="Allow dependents" helper="Let patients book for linked dependents.">
+          <SettingRow field="allowDependents" label="Allow dependents" helper="Let patients book for linked dependents.">
             <SwitchRow
               label="Allow dependents"
               checked={value.allowDependents}
@@ -219,7 +219,7 @@ export function BookingSection({
         </SettingsCard>
 
         <SettingsCard title="Changes and cancellations" className="mt-4">
-          <SettingRow
+          <SettingRow field="patientCanCancel"
             label="Patients can cancel"
             helper="Allow patients to cancel from the portal."
           >
@@ -229,7 +229,7 @@ export function BookingSection({
               onChange={(next) => update('patientCanCancel', next)}
             />
           </SettingRow>
-          <SettingRow label="Cancellation cutoff" helper="Minimum hours before an appointment.">
+          <SettingRow field="patientCancelCutoffHours" label="Cancellation cutoff" helper="Minimum hours before an appointment.">
             <NumberInput
               ariaLabel="Cancellation cutoff"
               unit="hours"
@@ -239,7 +239,7 @@ export function BookingSection({
               onChange={(next) => update('patientCancelCutoffHours', next)}
             />
           </SettingRow>
-          <SettingRow label="Reschedule cutoff" helper="Minimum hours before an appointment.">
+          <SettingRow field="rescheduleCutoffHours" label="Reschedule cutoff" helper="Minimum hours before an appointment.">
             <NumberInput
               ariaLabel="Reschedule cutoff"
               unit="hours"

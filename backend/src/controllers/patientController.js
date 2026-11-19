@@ -235,6 +235,7 @@ export async function requestReschedule(req, res) {
   const times = await bookingTimes(
     {
       name: appointment.serviceSnapshot?.name || appointment.service.name,
+      category: appointment.serviceSnapshot?.category || appointment.service.category,
       duration:
         appointment.serviceSnapshot?.duration || appointment.service.duration,
     },

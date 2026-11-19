@@ -15,7 +15,14 @@ import {
 import { Form } from '@/components/ui/form'
 import { RecordEditors } from '@/components/form/RecordEditors'
 import { showPromise } from '@/lib/toast'
-import { appointmentFee, formatMoney, patientName, personName, serviceName } from './format'
+import {
+  appointmentFee,
+  formatMoney,
+  patientName,
+  personName,
+  serviceName,
+  unpaidReasonHelp,
+} from './format'
 import { useRecordPayment, useUpdatePayment } from './mutations'
 import { paymentSchema, type PaymentValues } from './schemas'
 import type { AdminAppointment, PersonRef } from './types'
@@ -25,7 +32,7 @@ function toForm(appointment: AdminAppointment | null): PaymentValues {
   return {
     status: payment?.status === 'unpaid' ? 'unpaid' : 'paid',
     amount: String(
-      payment?.amount || appointment?.service?.fee || appointment?.serviceSnapshot?.fee || '',
+      (appointment ? appointmentFee(appointment) : 0) || '',
     ),
     method: (payment?.method as PaymentValues['method']) || 'cash',
     referenceNumber: payment?.referenceNumber || '',
@@ -165,7 +172,7 @@ export function PaymentDialog({
                 control={form.control}
                 name="notes"
                 label="Reason"
-                description="Required — this explains why the visit is no longer marked paid."
+                description={unpaidReasonHelp(appointment?.payment?.status)}
                 rows={3}
               />
             )}

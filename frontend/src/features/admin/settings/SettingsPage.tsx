@@ -7,11 +7,13 @@ import { RecordEditors } from '@/components/form/RecordEditors'
 import { getRecordTimestamp } from '@/lib/api/client'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getApiErrorDetails } from '@/lib/api/auth'
 import { getToastError, showError, showSuccess } from '@/lib/toast'
 import * as api from './api'
 import { isSectionKey, sectionMap, sections } from './config'
 import { CredentialDialog } from './CredentialDialog'
 import { SaveBar } from './fields'
+import { SettingsFieldErrorsContext } from './fieldErrors'
 import { SuperuserVerifyDialog } from './SuperuserVerifyDialog'
 import { useSettingsBundle } from './queries'
 import { RestartBanner, type RestartPhase } from './RestartBanner'
@@ -61,6 +63,7 @@ export default function SettingsPage() {
   const [downloadingHandover, setDownloadingHandover] = useState(false)
   const [refreshingStatus, setRefreshingStatus] = useState(false)
   const [search, setSearch] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const mounted = useRef(true)
   const restartTimer = useRef<number | null>(null)
 
@@ -108,12 +111,15 @@ export default function SettingsPage() {
     if (!drafts[section]) draftTimestamps.current[section] = (settings as { updatedAt?: string } | undefined)?.updatedAt || getRecordTimestamp('settings')
     const base = drafts[section] ?? savedSection
     if (!base) return
+    if (fieldErrors[field])
+      setFieldErrors((current) => Object.fromEntries(Object.entries(current).filter(([key]) => key !== field)))
     setDrafts((current) => ({ ...current, [section]: { ...base, [field]: value } as SectionValue }))
   }
 
   function discardDraft() {
     if (!isSectionKey(section)) return
     delete draftTimestamps.current[section]
+    setFieldErrors({})
     setDrafts((current) => {
       const next = { ...current }
       delete next[section]
@@ -131,7 +137,15 @@ export default function SettingsPage() {
       setEditorEpoch((value) => value + 1)
       showSuccess(`${sectionMap[section]?.title} settings updated`)
     } catch (error) {
-      showError(getToastError(error, 'Settings could not be saved.'))
+      const { fieldErrors: errors } = getApiErrorDetails(error)
+      setFieldErrors(errors)
+      const [first] = Object.keys(errors)
+      if (first) {
+        showError('Please correct the highlighted fields.')
+        document
+          .querySelector(`[data-setting-field="${first}"]`)
+          ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      } else showError(getToastError(error, 'Settings could not be saved.'))
     } finally {
       setSaving(false)
     }
@@ -348,7 +362,7 @@ export default function SettingsPage() {
         ) : section === 'backup' ? (
           <BackupSection section={sectionMap.backup!} />
         ) : !draft || !settings ? null : (
-          <>
+          <SettingsFieldErrorsContext.Provider value={fieldErrors}>
             {section === 'general' ? (
               <GeneralSection
                 value={draft as AdminSettings['general']}
@@ -441,7 +455,7 @@ export default function SettingsPage() {
                 />
               </div>
             ) : null}
-          </>
+          </SettingsFieldErrorsContext.Provider>
         )}
       </div>
 

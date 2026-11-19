@@ -14,6 +14,7 @@ import {
   specializationList,
   workingDaysLabel,
 } from './format'
+import { usePermission } from '@/hooks/usePermission'
 import { useAdminUsers } from './queries'
 import { PersonDialog } from './PersonDialog'
 import type { UserAccount } from './types'
@@ -27,6 +28,8 @@ export default function PeoplePage({ role }: { role: 'patient' | 'therapist' }) 
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<UserAccount | null>(null)
+  const canEdit = usePermission('patients', 'update')
+  const canIssue = usePermission('documents', 'create')
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setQuery(search.trim()), 300)
@@ -120,7 +123,7 @@ export default function PeoplePage({ role }: { role: 'patient' | 'therapist' }) 
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-          {role === 'patient' ? (
+          {role === 'patient' && canIssue ? (
             <GenerateDocumentButton
               input={{ type: 'patient_summary', patientId: row.original._id, ...monthRange() }}
               label="Summary"
@@ -131,10 +134,10 @@ export default function PeoplePage({ role }: { role: 'patient' | 'therapist' }) 
           <Button
             variant="ghost"
             size="xs"
-            aria-label={`Edit ${personName(row.original)}`}
+            aria-label={`${canEdit ? 'Edit' : 'View'} ${personName(row.original)}`}
             onClick={() => setSelected(row.original)}
           >
-            <Pencil size={13} aria-hidden="true" /> Edit
+            {canEdit ? <Pencil size={13} aria-hidden="true" /> : null} {canEdit ? 'Edit' : 'View'}
           </Button>
         </div>
       ),

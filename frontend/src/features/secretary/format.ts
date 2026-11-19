@@ -1,5 +1,6 @@
 import { formatDateTimeManila, formatTimeManila } from '@/lib/format/patient'
 import { clinicDate } from '@/lib/format/clinic-time'
+import { visitAmount } from '@/lib/payments'
 import type { PersonRef, SecretaryAppointment } from './types'
 
 export function personName(person?: PersonRef | null) {
@@ -36,8 +37,9 @@ export function serviceName(appointment?: SecretaryAppointment | null) {
   return appointment?.service?.name || appointment?.serviceSnapshot?.name || 'Therapy session'
 }
 
+/** Same rule as the server and reports: collected when paid, booked fee when unpaid. */
 export function paymentAmount(appointment?: SecretaryAppointment | null) {
-  return appointment?.payment?.amount || appointment?.service?.fee || 0
+  return visitAmount(appointment)
 }
 
 export function formatMoney(value?: number | null) {
@@ -62,6 +64,13 @@ export function appointmentMoment(appointment: SecretaryAppointment) {
     return Number.isNaN(date.getTime()) ? null : date
   }
   return null
+}
+
+/** A pending request whose requested start time is already in the past. */
+export function isPastDue(appointment: SecretaryAppointment, now = new Date()) {
+  if (appointment.status !== 'pending') return false
+  const moment = appointmentMoment(appointment)
+  return Boolean(moment) && (moment as Date) <= now
 }
 
 export function scheduleLabel(appointment: SecretaryAppointment) {

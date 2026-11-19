@@ -16,6 +16,25 @@ const sessionCheckPaths = [
   '/settings/public',
 ]
 
+const statusMessages: Record<number, string> = {
+  400: 'Please check the highlighted details and try again.',
+  401: 'Please log in to continue.',
+  403: 'You do not have access to this.',
+  404: 'We could not find what you were looking for.',
+  409: 'This record changed while you were working. Refresh and try again.',
+  429: 'Too many requests right now. Please wait a moment and try again.',
+}
+
+export function friendlyErrorMessage(error: AxiosError<{ message?: string }>) {
+  const serverMessage = error.response?.data?.message
+  if (typeof serverMessage === 'string' && serverMessage.trim()) return serverMessage
+  const status = error.response?.status
+  if (!status) return 'Cannot reach the clinic server. Check your connection and try again.'
+  if (statusMessages[status]) return statusMessages[status]
+  if (status >= 500) return 'Something went wrong on our side. Please try again shortly.'
+  return 'Something went wrong. Please try again.'
+}
+
 function isAuthRequest(url = '') {
   const path = url.split('?')[0] ?? url
   return sessionCheckPaths.includes(path) || path.startsWith('/auth/google')
@@ -120,6 +139,8 @@ axiosInstance.interceptors.response.use(
       })
       window.dispatchEvent(new Event('auth:unauthorized'))
     }
+    // Pages render error.message; never let axios's "Request failed with status code N" reach users.
+    error.message = friendlyErrorMessage(error)
     return Promise.reject(error)
   },
 )

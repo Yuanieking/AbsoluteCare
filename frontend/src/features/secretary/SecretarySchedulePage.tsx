@@ -6,9 +6,11 @@ import { StatusBadge } from '@/components/domain/StatusBadge'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
+import { PastDueBadge } from '@/features/admin/PastDueBadge'
 import { AppointmentDetailDialog } from './AppointmentDetailDialog'
 import {
   formatMoney,
+  isPastDue,
   patientCaption,
   patientName,
   paymentAmount,
@@ -22,7 +24,8 @@ import { useSecretarySchedule } from './queries'
 import type { SecretaryAppointment, TherapistOption } from './types'
 
 const statusOptions = [
-  { value: 'confirmed', label: 'Upcoming confirmed' },
+  { value: 'upcoming', label: 'Upcoming confirmed' },
+  { value: 'confirmed', label: 'All confirmed' },
   { value: 'all', label: 'All statuses' },
   { value: 'pending', label: 'Pending' },
   { value: 'completed', label: 'Completed' },
@@ -62,7 +65,7 @@ function matchesSearch(appointment: SecretaryAppointment, term: string) {
 }
 
 export default function SecretarySchedulePage() {
-  const [filters, setFilters] = useState({ status: 'confirmed', date: '', therapist: '' })
+  const [filters, setFilters] = useState({ status: 'upcoming', date: '', therapist: '' })
   const [search, setSearch] = useState('')
   const [detailId, setDetailId] = useState<string | null>(null)
   const [paymentTarget, setPaymentTarget] = useState<SecretaryAppointment | null>(null)
@@ -125,7 +128,12 @@ export default function SecretarySchedulePage() {
       meta: { label: 'Status' },
       header: 'Status',
       accessorFn: (appointment) => appointment.status,
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <div className="flex flex-wrap items-center gap-1">
+          <StatusBadge status={row.original.status} />
+          {isPastDue(row.original) ? <PastDueBadge /> : null}
+        </div>
+      ),
     },
     {
       id: 'payment',

@@ -43,21 +43,29 @@ function dateRange(filters) {
 }
 
 function scheduleQuery(filters) {
-  const status = filters.status || "confirmed";
-  const query = status === "all" ? {} : { status };
-  if (!filters.status) query.scheduledStart = { $gte: new Date() };
+  // "upcoming" = confirmed visits that have not started yet; "confirmed" = every
+  // confirmed visit, including past ones still waiting to be completed.
+  const status = filters.status || "upcoming";
+  const upcoming = status === "upcoming";
+  const query =
+    status === "all" ? {} : { status: upcoming ? "confirmed" : status };
   if (filters.therapist) query.therapist = filters.therapist;
+  const now = new Date();
   const [from, to] = dateRange(filters);
-  if (from || to)
+  const start = from ? clinicDate(from) : null;
+  const earliest = upcoming && (!start || start < now) ? now : start;
+  if (earliest || to)
     query.scheduledStart = {
-      ...(from ? { $gte: clinicDate(from) } : {}),
+      ...(earliest ? { $gte: earliest } : {}),
       ...(to ? { $lte: clinicDate(to, true) } : {}),
     };
   return query;
 }
 
 export async function getProfile(userId) {
-  const user = await User.findById(userId).select("-password -accountAudit");
+  const user = await User.findById(userId).select(
+    "-password -accountAudit -resetPasswordTokenHash -resetPasswordExpiresAt -googleCalendar.refreshTokenEncrypted",
+  );
   // mongoose 9 drops instance-method typing on .select(); the doc has them.
   return user;
 }
@@ -71,7 +79,9 @@ export async function updateProfile(userId, updates, ifMatch) {
       $push: { accountAudit: { action: "profile_updated", by: userId } },
     },
     { new: true, runValidators: true },
-  ).select("-password -accountAudit");
+  ).select(
+    "-password -accountAudit -resetPasswordTokenHash -resetPasswordExpiresAt -googleCalendar.refreshTokenEncrypted",
+  );
   if (!user) await assertNotStale(ifMatch, () => User.exists({ _id: userId }));
   return user;
 }

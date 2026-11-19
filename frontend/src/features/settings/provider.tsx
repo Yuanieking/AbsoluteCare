@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- context files intentionally export provider + hook together (Phase 1 S-04) */
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { getPublicSettings } from './api'
 
 export type RoleAccess = {
@@ -101,30 +101,40 @@ const defaults: PublicSettings = {
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState(defaults)
   const [loading, setLoading] = useState(true)
+  const loaded = useRef(false)
 
   const refreshSettings = useCallback(async () => {
     try {
       const response = await getPublicSettings()
       const data = response.data as Partial<PublicSettings>
+      loaded.current = true
       setSettings((current) => ({
         ...current,
         ...data,
         recaptchaSiteKey: data.recaptchaEnabled ? data.recaptchaSiteKey || '' : '',
       }))
     } catch {
-      setSettings(defaults)
+      // A failed refresh (429, offline, 5xx) keeps the last known settings so role
+      // access and the nav never flip back to the restrictive defaults.
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    const request = window.setTimeout(refreshSettings, 0)
+    let retry: number | undefined
+    // Until a first load succeeds, keep retrying every few seconds.
+    async function load() {
+      await refreshSettings()
+      if (!loaded.current) retry = window.setTimeout(load, 5000)
+    }
+    const request = window.setTimeout(load, 0)
     const interval = window.setInterval(refreshSettings, 180000)
     window.addEventListener('focus', refreshSettings)
     return () => {
       window.clearInterval(interval)
       window.clearTimeout(request)
+      window.clearTimeout(retry)
       window.removeEventListener('focus', refreshSettings)
     }
   }, [refreshSettings])

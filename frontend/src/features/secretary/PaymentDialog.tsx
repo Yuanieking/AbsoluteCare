@@ -15,6 +15,7 @@ import {
 import { Form } from '@/components/ui/form'
 import { RecordEditors } from '@/components/form/RecordEditors'
 import { showPromise } from '@/lib/toast'
+import { unpaidReasonHelp } from '@/features/admin/format'
 import { formatMoney, patientName, paymentAmount } from './format'
 import { useRecordPayment, useUpdatePayment } from './mutations'
 import { paymentSchema, type PaymentValues } from './schemas'
@@ -25,8 +26,9 @@ export type PaymentMode = 'record' | 'edit'
 function toForm(appointment: SecretaryAppointment | null, mode: PaymentMode): PaymentValues {
   const payment = appointment?.payment
   return {
-    status: payment?.status === 'unpaid' ? 'unpaid' : 'paid',
-    amount: String(payment?.amount || appointment?.service?.fee || ''),
+    // Recording always captures a payment; only editing can move a visit back to unpaid.
+    status: mode === 'edit' && payment?.status === 'unpaid' ? 'unpaid' : 'paid',
+    amount: String(paymentAmount(appointment) || ''),
     method: payment?.method || 'cash',
     referenceNumber: payment?.referenceNumber || '',
     notes: mode === 'edit' ? payment?.notes || '' : '',
@@ -168,7 +170,7 @@ export function PaymentDialog({
               label={editing ? 'Reason or notes' : 'Notes'}
               description={
                 status === 'unpaid'
-                  ? 'Required — this explains why the visit is no longer marked paid.'
+                  ? unpaidReasonHelp(appointment?.payment?.status)
                   : editing
                     ? 'Optional note for the payment record.'
                     : 'Optional note for the payment record.'

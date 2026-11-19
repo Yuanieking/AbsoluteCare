@@ -155,3 +155,9 @@ export async function cancelAppointmentRecord(appointment, actorId, reason) {
   );
   await doc.save();
 }
+
+export async function isAssignedTherapist(appointmentId, therapistId) {
+  return Boolean(
+    await Appointment.exists({ _id: appointmentId, therapist: therapistId }),
+  );
+}

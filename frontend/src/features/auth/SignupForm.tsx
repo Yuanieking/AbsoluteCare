@@ -28,11 +28,26 @@ import { useSettings } from '@/features/settings/provider'
 import { useRecaptcha } from '@/hooks/useRecaptcha'
 import { authenticate, getApiErrorDetails, type AuthPayload } from '@/lib/api/auth'
 import { consumePostAuthRedirect } from '@/lib/dashboard-path'
-import { sanitizePhone } from '@/lib/validation'
+import { cn } from '@/lib/utils'
 import { AuthAlert, AuthHeading, NetworkAlert } from './AuthShell'
 import { GoogleButton } from './GoogleButton'
 import { PasswordField } from './PasswordField'
 import { signupSchema, type SignupValues } from './schemas'
+
+// Same field treatment as the login card.
+const inputClass = 'h-10 border-hairline bg-transparent'
+const hintClass = 'text-[11.5px] leading-relaxed'
+const legalLinkClass =
+  'rounded-sm font-semibold text-eyebrow underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none'
+
+// The input shows the local part only; the form value carries the +63 prefix.
+function toPhoneValue(input: string) {
+  let digits = input.replace(/\D/g, '')
+  if (digits.startsWith('63') && digits.length > 10) digits = digits.slice(2)
+  if (digits.startsWith('0')) digits = digits.slice(1)
+  digits = digits.slice(0, 10)
+  return digits ? `+63${digits}` : ''
+}
 
 type SignupFormProps = {
   isStaffAlias: boolean
@@ -74,11 +89,13 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
   const password = useWatch({ control: form.control, name: 'password' })
   const confirmPassword = useWatch({ control: form.control, name: 'confirmPassword' })
   const terms = useWatch({ control: form.control, name: 'terms' })
-  const strength = [
-    password.length >= minLength,
-    /[A-Z]/.test(password),
-    /\d/.test(password),
-  ].filter(Boolean).length
+  const checks = [
+    { met: password.length >= minLength, label: `${minLength}+ characters` },
+    { met: /[A-Z]/.test(password), label: 'a capital letter' },
+    { met: /\d/.test(password), label: 'a number' },
+  ]
+  const strength = checks.filter((check) => check.met).length
+  const missing = checks.filter((check) => !check.met).map((check) => check.label)
   const passwordMatch = confirmPassword.length > 0 && password === confirmPassword
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -148,9 +165,9 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
   return (
     <>
       <AuthHeading
-        eyebrow="AbsoluteCare sign-in"
+        eyebrow="AbsoluteCare sign-up"
         title="Create your account"
-        description="Set up your account to request appointments with ease."
+        description="It takes a minute, then you can request your first session."
         hint={
           isStaffAlias
             ? 'Staff portal — same sign-in for everyone; you land on your workspace automatically.'
@@ -161,6 +178,7 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
         <NetworkAlert message={networkError} onDismiss={() => setNetworkError('')} />
       ) : null}
       {error && !networkError ? <AuthAlert>{error}</AuthAlert> : null}
+
       <Dialog
         open={legal !== null}
         onOpenChange={(open) => {
@@ -177,8 +195,13 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
           <LegalContent />
         </DialogContent>
       </Dialog>
+
       <Form {...form}>
-        <form className="grid items-start gap-3.5 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
+        <form
+          className="grid gap-4 sm:grid-cols-2 sm:gap-x-4 [@media(max-height:780px)]:gap-3"
+          onSubmit={onSubmit}
+          noValidate
+        >
           <FormField
             control={form.control}
             name="firstName"
@@ -186,11 +209,7 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
               <FormItem>
                 <FormLabel>First name</FormLabel>
                 <FormControl>
-                  <Input
-                    autoComplete="given-name"
-                    className="h-10 border-hairline bg-transparent"
-                    {...field}
-                  />
+                  <Input autoComplete="given-name" className={inputClass} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -203,11 +222,7 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
               <FormItem>
                 <FormLabel>Last name</FormLabel>
                 <FormControl>
-                  <Input
-                    autoComplete="family-name"
-                    className="h-10 border-hairline bg-transparent"
-                    {...field}
-                  />
+                  <Input autoComplete="family-name" className={inputClass} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -217,19 +232,29 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
             control={form.control}
             name="phone"
             render={({ field }) => (
-              <FormItem className="sm:col-span-2">
+              <FormItem>
                 <FormLabel>Mobile number</FormLabel>
-                <FormControl>
-                  <Input
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    className="h-10 border-hairline bg-transparent"
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(event) => field.onChange(sanitizePhone(event.target.value))}
-                  />
-                </FormControl>
+                <div className="relative">
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 left-0 flex items-center border-r border-hairline pr-2 pl-2.5 text-[13px] text-ink-soft"
+                  >
+                    +63
+                  </span>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      placeholder="917 123 4567"
+                      aria-label="Mobile number, after the +63 country code"
+                      className={cn(inputClass, 'pl-[52px]')}
+                      {...field}
+                      value={(field.value ?? '').replace(/^\+63/, '')}
+                      onChange={(event) => field.onChange(toPhoneValue(event.target.value))}
+                    />
+                  </FormControl>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -238,13 +263,14 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
             control={form.control}
             name="email"
             render={({ field }) => (
-              <FormItem className="sm:col-span-2">
+              <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
                     autoComplete="email"
-                    className="h-10 border-hairline bg-transparent"
+                    placeholder="name@example.com"
+                    className={inputClass}
                     {...field}
                   />
                 </FormControl>
@@ -257,29 +283,29 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
             name="password"
             label="Password"
             autoComplete="new-password"
-            footer={
-              <div
-                className="mt-1.5 flex items-center gap-1.5 text-[11px] leading-none text-ink-faint"
-                data-strength={strength}
-              >
-                <span className="mr-1 whitespace-nowrap">Password strength</span>
-                {[1, 2, 3].map((step) => (
-                  <i
-                    key={step}
-                    aria-hidden="true"
-                    className={`h-1 w-5 shrink-0 ${
-                      strength >= step
-                        ? strength === 3
-                          ? 'bg-status-completed'
-                          : 'bg-signal'
-                        : 'bg-hairline'
-                    }`}
-                  />
-                ))}
-                <b className="ml-1 font-medium whitespace-nowrap">
-                  {strength === 3 ? 'Good' : strength === 2 ? 'Almost' : `Use ${minLength}+`}
-                </b>
-              </div>
+            hint={
+              password ? (
+                <div className="flex items-center gap-2" data-strength={strength}>
+                  <div className="flex shrink-0 gap-1" aria-hidden="true">
+                    {[1, 2, 3].map((step) => (
+                      <span
+                        key={step}
+                        className={cn(
+                          'h-1 w-5 rounded-full transition-colors',
+                          strength >= step
+                            ? strength === 3
+                              ? 'bg-status-completed'
+                              : 'bg-signal'
+                            : 'bg-hairline',
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <span className={cn(hintClass, 'text-ink-soft')}>
+                    {missing.length ? `Use ${missing.join(', ')}` : 'Strong password'}
+                  </span>
+                </div>
+              ) : null
             }
           />
           <PasswordField
@@ -287,66 +313,67 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
             name="confirmPassword"
             label="Confirm password"
             autoComplete="new-password"
-            footer={
+            hint={
               confirmPassword ? (
-                <span
-                  className={`mt-1 block text-[11px] ${
-                    passwordMatch ? 'text-status-completed' : 'text-destructive'
-                  }`}
+                <p
+                  className={cn(
+                    hintClass,
+                    passwordMatch ? 'text-status-completed' : 'text-destructive',
+                  )}
                 >
                   {passwordMatch ? 'Passwords match' : 'Passwords do not match'}
-                </span>
+                </p>
               ) : null
             }
           />
-          <FormField
-            control={form.control}
-            name="terms"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start gap-2.5 space-y-0 sm:col-span-2">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => {
-                      field.onChange(checked === true)
-                      if (checked === true) setError('')
-                    }}
-                    className="mt-0.5"
-                  />
-                </FormControl>
-                <div className="grid gap-1">
-                  <FormLabel className="text-[12px] font-normal leading-relaxed">
-                    I agree to the{' '}
-                    <button
-                      type="button"
-                      className="font-semibold underline"
-                      onClick={(event) => {
-                        event.preventDefault()
-                        setLegal('terms')
-                      }}
-                    >
-                      Terms and Conditions
-                    </button>{' '}
-                    and{' '}
-                    <button
-                      type="button"
-                      className="font-semibold underline"
-                      onClick={(event) => {
-                        event.preventDefault()
-                        setLegal('privacy')
-                      }}
-                    >
-                      Privacy Policy
-                    </button>
-                    .
-                  </FormLabel>
-                  <FormMessage />
-                </div>
-              </FormItem>
-            )}
-          />
-          {recaptcha.enabled ? (
-            <div className="sm:col-span-2">
+
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 sm:col-span-2">
+            <FormField
+              control={form.control}
+              name="terms"
+              render={({ field }) => (
+                <FormItem className="min-w-0 flex-1 basis-60">
+                  <div className="flex items-start gap-2.5">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked === true)
+                          if (checked === true) setError('')
+                        }}
+                        className="mt-px"
+                      />
+                    </FormControl>
+                    <FormLabel className="block text-[12px] leading-snug font-normal text-pretty text-ink-soft">
+                      I agree to the{' '}
+                      <button
+                        type="button"
+                        className={legalLinkClass}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          setLegal('terms')
+                        }}
+                      >
+                        Terms and Conditions
+                      </button>{' '}
+                      and{' '}
+                      <button
+                        type="button"
+                        className={legalLinkClass}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          setLegal('privacy')
+                        }}
+                      >
+                        Privacy Policy
+                      </button>
+                    </FormLabel>
+                  </div>
+                  <FormMessage className="pl-6.5" />
+                </FormItem>
+              )}
+            />
+            {recaptcha.enabled ? (
               <RecaptchaField
                 enabled={recaptcha.enabled}
                 error={recaptcha.error}
@@ -363,20 +390,19 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
                 recaptchaRef={recaptchaRef}
                 {...recaptcha.containerProps}
               />
-            </div>
-          ) : null}
+            ) : null}
+          </div>
+
           <Button
             type="submit"
             size="lg"
             className="mt-1 h-10 w-full sm:col-span-2"
-            disabled={
-              settingsLoading || loading || !terms || (recaptcha.enabled && !recaptcha.token)
-            }
+            disabled={settingsLoading || loading}
           >
             {loading ? (
               <>
                 <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-                Sending…
+                Creating account…
               </>
             ) : (
               'Create account'
@@ -384,9 +410,10 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
           </Button>
         </form>
       </Form>
+
       {settings.googleAuthEnabled ? (
         <>
-          <div className="my-4 flex items-center gap-3 text-[11px] text-ink-faint">
+          <div className="my-5 flex items-center [@media(max-height:780px)]:my-3 gap-3 text-[11px] text-ink-faint">
             <span className="h-px flex-1 bg-hairline" />
             or
             <span className="h-px flex-1 bg-hairline" />
@@ -394,11 +421,13 @@ export function SignupForm({ isStaffAlias }: SignupFormProps) {
           <GoogleButton
             from={returnTo}
             blocked={!terms}
-            onBlocked={() => setError('You must agree to continue.')}
+            onBlocked={() =>
+              setError('Agree to the Terms and Privacy Policy above before continuing with Google.')
+            }
           />
         </>
       ) : null}
-      <p className="mt-5 text-center text-[12px] text-ink-soft">
+      <p className="mt-6 text-center text-[12px] text-ink-soft [@media(max-height:780px)]:mt-4">
         Already have an account?{' '}
         <button
           type="button"

@@ -24,6 +24,8 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+const ME_RETRY_DELAYS = [1000, 3000, 8000]
+
 export default AuthContext
 
 function normalizeUser(user: AuthUser | null): SessionUser | null {
@@ -53,16 +55,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     setAuthLoading(true)
     try {
-      const response = await axiosInstance.get('/auth/me')
-      const currentUser = (response.data?.user || response.data) as AuthUser | null
-      const nextUser = normalizeUser(currentUser)
-      setAuthUser(nextUser)
-      return nextUser
-    } catch (error) {
-      const status = (error as { response?: { status?: number } } | null)?.response?.status
-      if (status !== 401) console.error(error)
-      setAuthUser(null)
-      return null
+      // Only a 401 means the session is gone. A 429, 5xx or network blip is retried
+      // briefly and never signs the user out.
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          const response = await axiosInstance.get('/auth/me')
+          const currentUser = (response.data?.user || response.data) as AuthUser | null
+          const nextUser = normalizeUser(currentUser)
+          setAuthUser(nextUser)
+          return nextUser
+        } catch (error) {
+          const status = (error as { response?: { status?: number } } | null)?.response?.status
+          if (status === 401) {
+            setAuthUser(null)
+            return null
+          }
+          if (attempt >= ME_RETRY_DELAYS.length) {
+            console.warn('Could not confirm the session; keeping the current state.', error)
+            return null
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, ME_RETRY_DELAYS[attempt]))
+        }
+      }
     } finally {
       setLoading(false)
       setAuthLoading(false)

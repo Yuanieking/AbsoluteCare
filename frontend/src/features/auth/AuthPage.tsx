@@ -43,9 +43,16 @@ export default function AuthPage() {
     return () => window.clearInterval(timer)
   }, [refreshSettings, mode])
 
+  if (mode === 'signup') {
+    return (
+      <AuthShell isStaffAlias={isStaffAlias} wide>
+        <SignupForm isStaffAlias={isStaffAlias} />
+      </AuthShell>
+    )
+  }
+
   return (
-    <AuthShell isStaffAlias={isStaffAlias} wide={mode === 'signup'}>
-      {mode === 'signup' ? <SignupForm isStaffAlias={isStaffAlias} /> : null}
+    <AuthShell isStaffAlias={isStaffAlias}>
       {mode === 'forgot' ? <ForgotPasswordForm isStaffAlias={isStaffAlias} /> : null}
       {mode === 'login' ? <LoginForm isStaffAlias={isStaffAlias} oauthError={oauthError} /> : null}
     </AuthShell>

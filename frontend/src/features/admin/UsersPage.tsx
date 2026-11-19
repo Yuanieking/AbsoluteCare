@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/features/auth/session'
 import { showPromise } from '@/lib/toast'
 import { accountStatus, personName, roleLabel } from './format'
+import { usePermission } from '@/hooks/usePermission'
 import { useArchiveUser, useRemoveUser, useSetUserActive } from './mutations'
 import { useAdminUsers } from './queries'
 import { RoleBadge } from './RoleBadge'
@@ -58,6 +59,9 @@ export default function UsersPage() {
   const archive = useArchiveUser()
   const remove = useRemoveUser()
   const currentUserId = currentUser?.id
+  const canCreate = usePermission('userManagement', 'create')
+  const canUpdate = usePermission('userManagement', 'update')
+  const canDelete = usePermission('userManagement', 'delete')
 
   const rows = useMemo(() => users.data?.users ?? [], [users.data])
   const isSelf = (user: UserAccount) => String(user._id) === String(currentUserId)
@@ -144,23 +148,31 @@ export default function UsersPage() {
                 <DropdownMenuItem onSelect={() => setDialog({ user, view: true })}>
                   View
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setDialog({ user, view: false })}>
-                  Edit
-                </DropdownMenuItem>
-                {self ? null : (
+                {canUpdate ? (
+                  <DropdownMenuItem onSelect={() => setDialog({ user, view: false })}>
+                    Edit
+                  </DropdownMenuItem>
+                ) : null}
+                {self || !(canUpdate || canDelete) ? null : (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => changeStatus(user, user.isActive ? 'deactivate' : 'activate')}
-                    >
-                      {user.isActive ? 'Deactivate' : 'Activate'}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => changeStatus(user, 'archive')}>
-                      Archive
-                    </DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive" onSelect={() => removeUser(user)}>
-                      Remove
-                    </DropdownMenuItem>
+                    {canUpdate ? (
+                      <>
+                        <DropdownMenuItem
+                          onSelect={() => changeStatus(user, user.isActive ? 'deactivate' : 'activate')}
+                        >
+                          {user.isActive ? 'Deactivate' : 'Activate'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => changeStatus(user, 'archive')}>
+                          Archive
+                        </DropdownMenuItem>
+                      </>
+                    ) : null}
+                    {canDelete ? (
+                      <DropdownMenuItem variant="destructive" onSelect={() => removeUser(user)}>
+                        Remove
+                      </DropdownMenuItem>
+                    ) : null}
                   </>
                 )}
               </DropdownMenuContent>
@@ -178,9 +190,11 @@ export default function UsersPage() {
         title="User management"
         description="Manage access without losing the history behind a clinic account."
         actions={
-          <Button type="button" onClick={() => setDialog({ user: null, view: false })}>
-            <Plus size={15} aria-hidden="true" /> Add user
-          </Button>
+          canCreate ? (
+            <Button type="button" onClick={() => setDialog({ user: null, view: false })}>
+              <Plus size={15} aria-hidden="true" /> Add user
+            </Button>
+          ) : undefined
         }
       />
 

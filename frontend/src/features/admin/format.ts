@@ -1,10 +1,12 @@
 import { formatSchedule, scheduleOf } from '@/lib/availability'
 import { clinicDate } from '@/lib/format/clinic-time'
+import { visitAmount } from '@/lib/payments'
 import type { AdminAppointment, PersonRef, UserAccount } from './types'
 
 const dateTime = new Intl.DateTimeFormat('en-PH', {
   month: 'short',
   day: 'numeric',
+  year: 'numeric',
   hour: 'numeric',
   minute: '2-digit',
   timeZone: 'Asia/Manila',
@@ -88,18 +90,24 @@ export function appointmentStart(appointment: AdminAppointment) {
   return null
 }
 
+/** Same rule as the server and reports: collected when paid, booked fee when unpaid. */
 export function appointmentFee(appointment: AdminAppointment) {
-  return Number(
-    appointment.payment?.amount ??
-      appointment.serviceSnapshot?.fee ??
-      appointment.service?.fee ??
-      0,
-  )
+  return visitAmount(appointment)
 }
 
 export function isPastConfirmed(appointment: AdminAppointment) {
   if (appointment.status !== 'confirmed' || !appointment.scheduledEnd) return false
   return new Date(appointment.scheduledEnd) <= new Date()
+}
+
+export const PAST_DUE_REASON =
+  'The requested time has already passed. Cancel this request or ask the patient to book a new time.'
+
+/** A pending request whose requested start time is already in the past. */
+export function isPastDue(appointment: AdminAppointment, now = new Date()) {
+  if (appointment.status !== 'pending') return false
+  const start = appointmentStart(appointment)
+  return Boolean(start) && clinicDate(start as string) <= now
 }
 
 /** Completed and no-show unlock at the start, for both roles. */
@@ -169,4 +177,11 @@ export function lastAvailabilityAudit(user?: UserAccount | null) {
   const by =
     typeof entry.by === 'string' ? 'a clinic admin' : personName(entry.by) || 'a clinic admin'
   return `Last updated by ${by} · ${formatDate(entry.at)}`
+}
+
+/** Helper text for the required note when a visit is (or stays) unpaid. */
+export function unpaidReasonHelp(currentStatus?: string | null) {
+  return currentStatus === 'paid'
+    ? 'Required — explain why this paid visit is being marked unpaid.'
+    : 'Required — note why payment is still outstanding.'
 }

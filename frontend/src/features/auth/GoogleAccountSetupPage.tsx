@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoaderCircle } from 'lucide-react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import RecaptchaField from '@/features/auth/RecaptchaField'
 import { Button } from '@/components/ui/button'
@@ -65,7 +65,6 @@ export default function GoogleAccountSetupPage() {
     },
   })
 
-  const terms = useWatch({ control: form.control, name: 'terms' })
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError('')
@@ -224,7 +223,7 @@ export default function GoogleAccountSetupPage() {
             type="submit"
             size="lg"
             className="mt-1 h-10 w-full"
-            disabled={loading || !profile || !terms || (recaptcha.enabled && !recaptcha.token)}
+            disabled={loading || !profile}
           >
             {loading ? (
               <>

@@ -17,10 +17,12 @@ import { RecordEditors } from '@/components/form/RecordEditors'
 import { showPromise } from '@/lib/toast'
 import { StatusBadge } from '@/components/domain/StatusBadge'
 import { AppointmentFacts, RequestCallout } from './AppointmentFacts'
+import { PastDueCallout } from './PastDueBadge'
 import {
   appointmentStatusLabel,
   formatDate,
   hasStarted,
+  isPastDue,
   patientName,
   therapistName,
 } from './format'
@@ -101,6 +103,7 @@ export function AppointmentDialogs({
 
   const target = resultingStatus(mode)
   const started = hasStarted(appointment)
+  const expired = isPastDue(appointment)
 
   return (
     <Dialog open onOpenChange={(open) => (open || busy ? undefined : onClose())}>
@@ -129,8 +132,9 @@ export function AppointmentDialogs({
 
         <RecordEditors kind="appointments" record={appointment} active={!['view', 'notify'].includes(mode)} />
         <AppointmentFacts appointment={appointment} />
+        {expired && ['assign', 'confirm', 'requestReview'].includes(mode) ? <PastDueCallout /> : null}
 
-        {mode === 'assign' ? (
+        {mode === 'assign' && !expired ? (
           <AssignForm appointment={appointment} onDone={onClose} onAssigned={onAssigned} />
         ) : null}
 
@@ -203,7 +207,7 @@ export function AppointmentDialogs({
               <Button type="button" variant="outline" onClick={onClose}>
                 Close
               </Button>
-              <Button type="button" onClick={() => setMode('assign')}>
+              <Button type="button" disabled={expired} onClick={() => setMode('assign')}>
                 Assign therapist
               </Button>
             </DialogFooter>
@@ -221,7 +225,7 @@ export function AppointmentDialogs({
               </Button>
               <Button
                 type="button"
-                disabled={busy}
+                disabled={busy || expired}
                 onClick={() =>
                   run(confirm.mutateAsync(appointment._id), {
                     loading: 'Confirming appointment...',

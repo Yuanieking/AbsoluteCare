@@ -22,6 +22,7 @@ import { formatSchedule, scheduleErrors, scheduleOf, schedulePayload } from '@/l
 import { getApiErrorDetails } from '@/lib/api/auth'
 import { showPromise } from '@/lib/toast'
 import { accountStatus, lastAvailabilityAudit, specializationList } from './format'
+import { usePermission } from '@/hooks/usePermission'
 import { useSavePerson, useSaveTherapistAvailability } from './mutations'
 import { useSpecializationCatalog } from './queries'
 import { personSchema, type PersonValues } from './schemas'
@@ -105,6 +106,7 @@ export function PersonDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const canEdit = usePermission('patients', 'update')
   const [editorEpoch, setEditorEpoch] = useState(0)
   const [savedTimestamp, setSavedTimestamp] = useState<string>()
   const save = useSavePerson(role)
@@ -115,7 +117,7 @@ export function PersonDialog({
   })
   const specialization = useWatch({ control: form.control, name: 'specialization' }) ?? []
   // Custom specializations come from the shared list and stay listed once unchecked.
-  const catalog = useSpecializationCatalog(role === 'therapist').data
+  const catalog = useSpecializationCatalog(role === 'therapist' && canEdit).data
   const [addedOptions, setAddedOptions] = useState(() => specializationList(person))
   const customOptions = useMemo(
     () => customSpecializations(catalog ?? [], addedOptions),
@@ -132,7 +134,8 @@ export function PersonDialog({
   const [savedNotice, setSavedNotice] = useState(false)
 
   const status = accountStatus(person)
-  const readOnly = status === 'archived' || status === 'removed'
+  const archived = status === 'archived' || status === 'removed'
+  const readOnly = archived || !canEdit
   const scheduleDirty = JSON.stringify(days) !== JSON.stringify(savedDays)
   const rowErrors = scheduleErrors(days)
 
@@ -227,7 +230,7 @@ export function PersonDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            Edit {role} record
+            {canEdit ? 'Edit' : 'View'} {role} record
             {person ? <span className="text-ink-soft"> · {personNameOf(person)}</span> : null}
           </DialogTitle>
           <DialogDescription>
@@ -237,7 +240,12 @@ export function PersonDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {readOnly ? (
+        {!archived && !canEdit ? (
+          <p className="rounded-md bg-sunk px-3 py-2 text-[12px] text-ink-soft">
+            You can view this record. Ask the clinic administrator to make changes.
+          </p>
+        ) : null}
+        {archived ? (
           <div className="flex flex-wrap items-center gap-2 rounded-md bg-sunk px-3 py-2">
             <StatusBadge status={status} />
             <p className="text-[12px] text-ink-soft">
@@ -386,12 +394,14 @@ export function PersonDialog({
               >
                 Close
               </Button>
-              <Button type="submit" disabled={busy || readOnly}>
-                {save.isPending ? (
-                  <LoaderCircle className="animate-spin" size={15} aria-hidden="true" />
-                ) : null}
-                {save.isPending ? 'Saving…' : 'Save profile'}
-              </Button>
+              {canEdit ? (
+                <Button type="submit" disabled={busy || readOnly}>
+                  {save.isPending ? (
+                    <LoaderCircle className="animate-spin" size={15} aria-hidden="true" />
+                  ) : null}
+                  {save.isPending ? 'Saving…' : 'Save profile'}
+                </Button>
+              ) : null}
             </DialogFooter>
           </form>
         </Form>
@@ -458,16 +468,18 @@ export function PersonDialog({
                     ? 'Schedule saved.'
                     : 'The therapist sees this schedule on their own availability page.')}
               </p>
-              <Button
-                type="button"
-                onClick={() => void submitSchedule()}
-                disabled={readOnly || !scheduleDirty || busy}
-              >
-                {saveSchedule.isPending ? (
-                  <LoaderCircle className="animate-spin" size={15} aria-hidden="true" />
-                ) : null}
-                {saveSchedule.isPending ? 'Saving…' : 'Save schedule'}
-              </Button>
+              {canEdit ? (
+                <Button
+                  type="button"
+                  onClick={() => void submitSchedule()}
+                  disabled={readOnly || !scheduleDirty || busy}
+                >
+                  {saveSchedule.isPending ? (
+                    <LoaderCircle className="animate-spin" size={15} aria-hidden="true" />
+                  ) : null}
+                  {saveSchedule.isPending ? 'Saving…' : 'Save schedule'}
+                </Button>
+              ) : null}
             </div>
           </section>
         ) : null}

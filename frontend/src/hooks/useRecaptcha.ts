@@ -7,6 +7,18 @@ function removeRecaptchaArtifacts() {
   document.querySelectorAll('.grecaptcha-badge').forEach((badge) => badge.remove())
 }
 
+/**
+ * Inline messages for the server's CAPTCHA error codes. A failed or expired
+ * challenge gets a plain retry message; only RECAPTCHA_MISCONFIGURED (the
+ * server found a missing or rejected key) mentions configuration.
+ */
+const RECAPTCHA_ERROR_MESSAGES: Record<string, string> = {
+  RECAPTCHA_FAILED: 'CAPTCHA verification failed. Please try again.',
+  RECAPTCHA_UNAVAILABLE: "We couldn't verify you right now. Please try again.",
+  RECAPTCHA_MISCONFIGURED:
+    'CAPTCHA is not set up correctly (missing or invalid site key). Please contact the clinic.',
+}
+
 export type RecaptchaOptions = {
   enabled: boolean
   siteKey: string
@@ -52,12 +64,9 @@ export function useRecaptcha({ enabled, siteKey, recaptchaRef }: RecaptchaOption
   )
 
   const handleError = (code: string) => {
-    if (code !== 'RECAPTCHA_FAILED' && code !== 'RECAPTCHA_UNAVAILABLE') return false
-    reset(
-      code === 'RECAPTCHA_FAILED'
-        ? 'Invalid CAPTCHA'
-        : "We couldn't verify you right now. Please try again.",
-    )
+    const message = RECAPTCHA_ERROR_MESSAGES[code]
+    if (!message) return false
+    reset(message)
     return true
   }
 

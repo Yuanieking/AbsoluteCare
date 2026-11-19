@@ -1,11 +1,12 @@
 import { notify } from "../services/notificationService.js";
 import * as secretaryService from "../services/secretaryService.js";
 import { guardFresh } from "../services/concurrencyService.js";
+import { visitAmount } from "../utils/payments.js";
 
 const ownId = (req) => req.user.userId;
 
 function paymentValue(appointment) {
-  return appointment.payment?.amount || appointment.service?.fee || 0;
+  return visitAmount(appointment);
 }
 
 function personName(person) {

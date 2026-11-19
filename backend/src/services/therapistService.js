@@ -94,7 +94,7 @@ export async function listPatientRecords(therapistId) {
   const sessions = await Session.find({
     therapist: therapistId,
   })
-    .select("patient sessionDate")
+    .select("patient appointment sessionDate")
     .sort({ sessionDate: -1 });
   const patientIds = [
     ...new Set(appointments.map((item) => item.patient.toString())),
@@ -147,6 +147,7 @@ export async function requestReschedule(therapistId, appointmentId, input, ifMat
     ? await bookingTimes(
         {
           name: appointment.serviceSnapshot?.name || service.name,
+          category: appointment.serviceSnapshot?.category || service.category,
           duration: appointment.serviceSnapshot?.duration || service.duration,
         },
         input.proposedDate,

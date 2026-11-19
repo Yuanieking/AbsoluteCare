@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useSettings } from '@/features/settings/provider'
 import { getGoogleAuthUrl } from '@/lib/api/auth'
 import { stashPostAuthRedirect } from '@/lib/dashboard-path'
+import { cn } from '@/lib/utils'
 
 function GoogleMark({ size = 19 }: { size?: number }) {
   return (
@@ -30,9 +31,10 @@ type GoogleButtonProps = {
   from?: unknown
   blocked?: boolean
   onBlocked?: () => void
+  className?: string
 }
 
-export function GoogleButton({ from, blocked = false, onBlocked }: GoogleButtonProps) {
+export function GoogleButton({ from, blocked = false, onBlocked, className }: GoogleButtonProps) {
   const { settings } = useSettings()
 
   if (!settings.googleAuthEnabled) return null
@@ -42,7 +44,7 @@ export function GoogleButton({ from, blocked = false, onBlocked }: GoogleButtonP
       asChild
       variant="outline"
       size="lg"
-      className="w-full border-hairline bg-panel text-ink hover:bg-sunk"
+      className={cn('w-full border-hairline bg-panel text-ink hover:bg-sunk', className)}
     >
       <a
         href={getGoogleAuthUrl()}

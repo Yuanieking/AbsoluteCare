@@ -1,29 +1,37 @@
 import type { ReactNode } from 'react'
 import { CheckCircle2, CircleAlert, WifiOff } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { cn } from '@/lib/utils'
 import Logo from '@/components/brand/Logo'
+import { cn } from '@/lib/utils'
 
 type AuthShellProps = {
   children: ReactNode
   isStaffAlias?: boolean
+  /** Wider card for two-column forms; the page scrolls instead of clipping on short screens. */
   wide?: boolean
 }
 
 export function AuthShell({ children, isStaffAlias = false, wide = false }: AuthShellProps) {
   return (
-    <main className="flex h-dvh flex-col overflow-hidden bg-canvas px-4 text-ink sm:px-6">
-      <header className="mx-auto flex w-full max-w-[1040px] shrink-0 items-center justify-between gap-4 py-4 sm:py-5">
+    <main
+      className={cn(
+        'flex flex-col bg-canvas px-4 text-ink sm:px-6',
+        wide
+          ? 'min-h-dvh'
+          : 'h-dvh overflow-hidden max-sm:h-auto max-sm:min-h-dvh max-sm:overflow-visible',
+      )}
+    >
+      <header className="mx-auto flex w-full max-w-[1040px] shrink-0 items-center justify-between gap-4 py-4 sm:py-5 [@media(max-height:780px)]:py-2.5">
         <Logo variant="full" tone="dark" size="md" to="/" />
         <span className="text-[11.5px] text-ink-soft max-sm:hidden">
           {isStaffAlias ? 'Staff portal — same sign-in' : 'Malaybalay City, Bukidnon'}
         </span>
       </header>
 
-      <div className="flex min-h-0 flex-1 items-start justify-center py-1 sm:items-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center py-1">
         <section
           className={cn(
-            'max-h-full w-full overflow-y-auto overscroll-contain rounded-xl border border-hairline bg-panel p-6 shadow-card sm:px-9 sm:py-7',
+            'w-full rounded-xl border border-hairline bg-panel p-6 shadow-card sm:px-9 sm:py-7 [@media(max-height:780px)]:py-5',
             wide ? 'max-w-[640px]' : 'max-w-[452px]',
           )}
         >
@@ -31,7 +39,7 @@ export function AuthShell({ children, isStaffAlias = false, wide = false }: Auth
         </section>
       </div>
 
-      <p className="mx-auto flex w-full max-w-[1040px] shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-3 pb-4 text-center text-[11.5px] text-ink-soft">
+      <p className="mx-auto flex w-full max-w-[1040px] shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-3 pb-4 text-center [@media(max-height:780px)]:pt-2 [@media(max-height:780px)]:pb-2.5 text-[11.5px] text-ink-soft">
         <span>Your care, held with attention.</span>
         <span aria-hidden="true" className="text-ink-faint/60">
           ·
@@ -58,7 +66,7 @@ export function AuthHeading({ eyebrow, title, description, hint }: AuthHeadingPr
       <h1 className="font-display text-[29px] leading-[1.05] font-semibold tracking-[-0.03em] text-balance text-ink sm:text-[32px]">
         {title}
       </h1>
-      <p className="mx-auto mt-2.5 mb-5 max-w-[380px] text-[12.5px] leading-relaxed text-ink-soft">
+      <p className="mx-auto mt-2.5 mb-5 max-w-[380px] text-[12.5px] leading-relaxed text-ink-soft [@media(max-height:780px)]:mt-1.5 [@media(max-height:780px)]:mb-3.5">
         {description}
       </p>
       {hint ? <p className="mb-4 text-[11.5px] leading-relaxed text-ink-faint">{hint}</p> : null}

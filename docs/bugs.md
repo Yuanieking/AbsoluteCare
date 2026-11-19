@@ -126,3 +126,5 @@ The system allowed the therapist to set a duration that isn't considered a reali
 **Status:** Open
 
 Note: The screenshot also shows the beginning of BUG-007, but its details are cut off, so it was not included.
+
+bu_vgys4qLeb7VM0S1RUbGrKKp-EdvBZGy2kMvXXscHwXE api key sa browser use cloud

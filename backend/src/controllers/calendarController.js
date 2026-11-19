@@ -34,30 +34,57 @@ export async function connectCalendar(req, res) {
   );
 }
 
+// Where each role connects its calendar: therapists on their availability page,
+// patients in account settings.
+function calendarDestination(role) {
+  return role === "therapist" ? "/staff/therapist/availability" : "/settings";
+}
+
+function calendarRedirect(res, role, result, reason) {
+  const query = new URLSearchParams({ calendar: result });
+  if (reason) query.set("reason", reason);
+  res.redirect(`${FRONTEND_URL}${calendarDestination(role)}?${query}`);
+}
+
 export async function calendarCallback(req, res) {
+  const rawState = String(req.query.state || "");
+  let state;
+  try {
+    state = jwt.verify(rawState, JWT_SECRET);
+    if (state.purpose !== "calendar") throw new Error("Invalid calendar state.");
+  } catch {
+    // Unverified decode only chooses which of the two fixed pages to return to.
+    const claimed = jwt.decode(rawState);
+    calendarRedirect(res, claimed?.role, "error", "expired");
+    return;
+  }
   try {
     if (!(await getSettings()).integrations.googleCalendarEnabled) {
-      res
-        .status(403)
-        .json({ message: "Google Calendar sync is currently disabled." });
+      calendarRedirect(res, state.role, "error", "disabled");
       return;
     }
-    const state = jwt.verify(String(req.query.state), JWT_SECRET);
-    if (state.purpose !== "calendar")
-      throw new Error("Invalid calendar state.");
+    if (req.query.error) {
+      calendarRedirect(
+        res,
+        state.role,
+        "error",
+        req.query.error === "access_denied" ? "denied" : "failed",
+      );
+      return;
+    }
     const tokens = await exchangeCalendarCode(
       String(req.query.code),
       state.redirectUri || getIntegrationConfig("GOOGLE_CALENDAR_REDIRECT_URI"),
     );
-    if (!tokens.refresh_token)
-      throw new Error("Google did not provide a refresh token.");
+    if (!tokens.refresh_token) {
+      calendarRedirect(res, state.role, "error", "no_refresh_token");
+      return;
+    }
     const user = await connectCalendarAccount(state.userId, tokens);
     await backfillCalendar(user._id, String(state.role || "patient"));
-    const destination =
-      state.role === "therapist" ? "/staff/therapist/profile" : "/settings";
-    res.redirect(`${FRONTEND_URL}${destination}?calendar=connected`);
+    calendarRedirect(res, state.role, "connected");
   } catch {
-    res.redirect(`${FRONTEND_URL}/settings?calendar=error`);
+    calendarRedirect(res, state.role, "error", "failed");
   }
 }
 

@@ -111,7 +111,11 @@ export function LoginForm({ isStaffAlias, oauthError }: LoginFormProps) {
       ) : null}
       {error && !networkError ? <AuthAlert>{error}</AuthAlert> : null}
       <Form {...form}>
-        <form className="grid gap-4" onSubmit={onSubmit} noValidate>
+        <form
+          className="grid gap-4 [@media(max-height:780px)]:gap-3"
+          onSubmit={onSubmit}
+          noValidate
+        >
           <FormField
             control={form.control}
             name="email"
@@ -166,7 +170,7 @@ export function LoginForm({ isStaffAlias, oauthError }: LoginFormProps) {
             type="submit"
             size="lg"
             className="mt-1 h-10 w-full"
-            disabled={settingsLoading || loading || (recaptcha.enabled && !recaptcha.token)}
+            disabled={settingsLoading || loading}
           >
             {loading ? (
               <>
@@ -181,7 +185,7 @@ export function LoginForm({ isStaffAlias, oauthError }: LoginFormProps) {
       </Form>
       {settings.googleAuthEnabled ? (
         <>
-          <div className="my-5 flex items-center gap-3 text-[11px] text-ink-faint">
+          <div className="my-5 flex items-center [@media(max-height:780px)]:my-3 gap-3 text-[11px] text-ink-faint">
             <span className="h-px flex-1 bg-hairline" />
             or
             <span className="h-px flex-1 bg-hairline" />
@@ -189,7 +193,7 @@ export function LoginForm({ isStaffAlias, oauthError }: LoginFormProps) {
           <GoogleButton from={from} />
         </>
       ) : null}
-      <p className="mt-6 text-center text-[12px] text-ink-soft">
+      <p className="mt-6 text-center text-[12px] text-ink-soft [@media(max-height:780px)]:mt-4">
         Don’t have an account?{' '}
         <button
           type="button"

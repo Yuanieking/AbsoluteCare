@@ -86,6 +86,7 @@ export function formatDateTimeManila(value: DateValue): string {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
@@ -94,7 +95,7 @@ export function formatDateTimeManila(value: DateValue): string {
 
   const get = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((part) => part.type === type)?.value || ''
-  return `${get('weekday')}, ${get('month')} ${get('day')} · ${get('hour')}:${get('minute')} ${get('dayPeriod')}`
+  return `${get('weekday')}, ${get('month')} ${get('day')}, ${get('year')} · ${get('hour')}:${get('minute')} ${get('dayPeriod')}`
 }
 
 export function formatRequestedDateTimeManila(

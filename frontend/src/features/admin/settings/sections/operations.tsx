@@ -25,14 +25,14 @@ export function NotificationsSection({
   return (
     <SettingsSection section={sectionMap.notifications!}>
       <SettingsCard title="Channels" description="Choose where clinic messages are delivered.">
-        <SettingRow label="Email notifications" helper="Send appointment and account emails.">
+        <SettingRow field="emailEnabled" label="Email notifications" helper="Send appointment and account emails.">
           <SwitchRow
             label="Email notifications"
             checked={value.emailEnabled}
             onChange={(next) => update('emailEnabled', next)}
           />
         </SettingRow>
-        <SettingRow
+        <SettingRow field="inAppEnabled"
           label="In-app notifications"
           helper="Show updates in the patient and staff portals."
         >
@@ -45,7 +45,7 @@ export function NotificationsSection({
       </SettingsCard>
 
       <SettingsCard title="Reminders" description="Choose when appointment reminders are sent.">
-        <SettingRow
+        <SettingRow field="remindersEnabled"
           label="Send reminders"
           helper="Reminder notifications can be changed without affecting bookings."
         >
@@ -55,7 +55,7 @@ export function NotificationsSection({
             onChange={(next) => update('remindersEnabled', next)}
           />
         </SettingRow>
-        <SettingRow label="Lead time" helper="At least one reminder time is required.">
+        <SettingRow field="reminderLeadHours" label="Lead time" helper="At least one reminder time is required.">
           <ChipGroup
             ariaLabel="Reminder lead times"
             options={['24h', '12h', '2h', '1h']}
@@ -68,7 +68,7 @@ export function NotificationsSection({
             }
           />
         </SettingRow>
-        <SettingRow label="Sender name" helper="Shown in notification emails.">
+        <SettingRow field="senderName" label="Sender name" helper="Shown in notification emails.">
           <TextInput
             ariaLabel="Sender name"
             value={value.senderName}
@@ -104,7 +104,7 @@ export function PaymentsSection({
         title="Payment methods"
         description="At least one payment method must remain enabled."
       >
-        <SettingRow
+        <SettingRow field="enabledMethods"
           label="Enabled methods"
           helper="These methods appear when staff record a payment."
         >
@@ -115,7 +115,7 @@ export function PaymentsSection({
             onChange={(next) => update('enabledMethods', next)}
           />
         </SettingRow>
-        <SettingRow
+        <SettingRow field="requireReferenceForNonCash"
           label="Reference for non-cash"
           helper="Require a reference number for GCash, card, or other payments."
         >
@@ -155,7 +155,7 @@ export function MaintenanceSection({
         title="Maintenance mode"
         description="Patients see the message while staff keep full access."
       >
-        <SettingRow
+        <SettingRow field="maintenanceMode"
           label="Maintenance mode"
           helper="Use this while the clinic app is unavailable to patients."
         >
@@ -165,7 +165,7 @@ export function MaintenanceSection({
             onChange={(next) => update('maintenanceMode', next)}
           />
         </SettingRow>
-        <SettingRow label="Patient message" helper="Shown on the patient maintenance screen.">
+        <SettingRow field="maintenanceMessage" label="Patient message" helper="Shown on the patient maintenance screen.">
           <TextInput
             ariaLabel="Maintenance message"
             value={value.maintenanceMessage}
@@ -185,7 +185,7 @@ export function MaintenanceSection({
         title="Announcement banner"
         description="Show a short message at the top of the patient portal."
       >
-        <SettingRow
+        <SettingRow field="announcement"
           label="Announcement enabled"
           helper="Patients see this banner until it expires."
         >
@@ -195,14 +195,14 @@ export function MaintenanceSection({
             onChange={(next) => update('announcement', { ...announcement, enabled: next })}
           />
         </SettingRow>
-        <SettingRow label="Message" helper="Keep the message concise and useful.">
+        <SettingRow field="announcement" label="Message" helper="Keep the message concise and useful.">
           <TextInput
             ariaLabel="Announcement message"
             value={announcement.message}
             onChange={(next) => update('announcement', { ...announcement, message: next })}
           />
         </SettingRow>
-        <SettingRow label="Type" helper="Choose the tone of the announcement.">
+        <SettingRow field="announcement" label="Type" helper="Choose the tone of the announcement.">
           <SelectInput
             ariaLabel="Announcement type"
             value={announcement.type || 'info'}

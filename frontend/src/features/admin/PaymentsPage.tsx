@@ -117,7 +117,7 @@ export default function PaymentsPage() {
       cell: ({ row }) => (
         <div className="min-w-0">
           <span className="tabular-nums">{formatMoney(appointmentFee(row.original))}</span>
-          {row.original.payment?.amount || appointmentFee(row.original) ? null : (
+          {appointmentFee(row.original) ? null : (
             <span className="block text-[11px] text-signal">Fee not set</span>
           )}
         </div>

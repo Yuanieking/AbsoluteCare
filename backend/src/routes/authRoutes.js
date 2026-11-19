@@ -16,13 +16,13 @@ import {
 } from "../controllers/authController.js";
 import { protectRoute } from "../middleware/authMiddleware.js";
 import verifyRecaptcha from "../middleware/verifyRecaptcha.js";
-import { authRateLimit } from "../middleware/rateLimit.js";
+import { authRateLimit, loginRateLimit } from "../middleware/rateLimit.js";
 
 const router = Router();
 
 router.post("/signup", authRateLimit, verifyRecaptcha, signup);
 router.post("/register", authRateLimit, verifyRecaptcha, signup);
-router.post("/login", authRateLimit, verifyRecaptcha, login);
+router.post("/login", loginRateLimit, verifyRecaptcha, login);
 router.post("/logout", logout);
 router.post("/forgot-password", authRateLimit, verifyRecaptcha, forgotPassword);
 router.post("/reset-password", authRateLimit, resetPassword);

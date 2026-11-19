@@ -89,12 +89,12 @@ export function FilterBar({
         ) : null}
 
         {filters.map((filter) => (
-          <label key={filter.key} className="relative">
+          <label key={filter.key} className="relative min-w-0 max-w-full">
             <span className="sr-only">{filter.label}</span>
             <select
               value={filter.value}
               onChange={(event) => filter.onChange(event.target.value)}
-              className="h-9 rounded-md border border-hairline bg-panel pr-7 pl-2.5 text-[13px] text-ink transition-[border-color,box-shadow] duration-150 ease-snap hover:border-ink-faint/45 focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/15 focus-visible:outline-none"
+              className="h-9 w-full max-w-full truncate rounded-md border border-hairline bg-panel pr-7 pl-2.5 text-[13px] sm:w-auto sm:max-w-[16rem] text-ink transition-[border-color,box-shadow] duration-150 ease-snap hover:border-ink-faint/45 focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/15 focus-visible:outline-none"
             >
               {filter.options.map((option) => (
                 <option key={option.value} value={option.value}>

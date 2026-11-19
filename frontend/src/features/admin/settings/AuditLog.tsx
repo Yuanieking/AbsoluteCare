@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { keys } from '@/lib/api/keys'
 import { sectionMap, sections } from './config'
 import { getSettingsAudit } from './api'
+import { describeChange } from './auditFormat'
 import type { AuditEntry } from './types'
 
 const sectionOptions = [
@@ -48,8 +49,7 @@ export function AuditSection() {
       adminName(entry),
       sectionMap[entry.section || '']?.title,
       entry.field,
-      String(entry.oldValue),
-      String(entry.newValue),
+      ...describeChange(entry.oldValue, entry.newValue, Infinity),
     ]
       .filter(Boolean)
       .join(' ')
@@ -66,8 +66,8 @@ export function AuditSection() {
           adminName(entry),
           sectionMap[entry.section || '']?.title || entry.section || '',
           entry.field || '',
-          String(entry.oldValue ?? ''),
-          String(entry.newValue ?? ''),
+          JSON.stringify(entry.oldValue ?? ''),
+          JSON.stringify(entry.newValue ?? ''),
         ]
           .map(csvCell)
           .join(','),
@@ -112,11 +112,13 @@ export function AuditSection() {
       id: 'change',
       meta: { label: 'Change' },
       header: 'Change',
-      accessorFn: (entry) => String(entry.newValue ?? ''),
+      accessorFn: (entry) => describeChange(entry.oldValue, entry.newValue).join('; '),
       cell: ({ row }) => (
-        <span className="text-ink-soft">
-          {String(row.original.oldValue ?? '—')} → {String(row.original.newValue ?? '—')}
-        </span>
+        <ul className="grid gap-0.5 text-ink-soft">
+          {describeChange(row.original.oldValue, row.original.newValue).map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
       ),
     },
   ]

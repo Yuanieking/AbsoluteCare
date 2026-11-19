@@ -7,6 +7,7 @@ import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useCalendarResult } from '@/hooks/useCalendarResult'
 import { formatSchedule, scheduleErrors, scheduleOf, schedulePayload } from '@/lib/availability'
 import { showError } from '@/lib/toast'
 import { cn } from '@/lib/utils'
@@ -52,6 +53,7 @@ function conflictOf(error: unknown): { message: string; conflicts: Conflict[] } 
 
 export default function TherapistAvailabilityPage() {
   const profile = useTherapistProfile()
+  useCalendarResult()
 
   if (profile.isLoading) {
     return (

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import type { SettingsSectionConfig } from './config'
+import { useSettingsFieldError } from './fieldErrors'
 
 export function SettingsSection({
   section,
@@ -74,25 +75,45 @@ export function SettingRow({
   children,
   disabled = false,
   controlClassName,
+  field,
 }: {
   label: string
   helper?: ReactNode
   children: ReactNode
   disabled?: boolean
   controlClassName?: string
+  /** Settings key this row edits; a server validation error for it is shown here. */
+  field?: string
 }) {
+  const error = useSettingsFieldError(field)
   return (
     <div
+      data-invalid={error ? 'true' : undefined}
+      data-setting-field={field}
       className={cn(
         'flex flex-wrap items-center justify-between gap-3 px-5 py-3',
         disabled && 'opacity-60',
+        error && 'bg-destructive-soft/40',
       )}
     >
       <div className="min-w-0 max-w-[46ch]">
         <strong className="block text-[13px] font-medium text-ink">{label}</strong>
         {helper ? <p className="mt-0.5 text-[11.5px] text-ink-soft">{helper}</p> : null}
+        {error ? (
+          <p role="alert" className="mt-1 text-[12px] font-medium text-destructive">
+            {error}
+          </p>
+        ) : null}
       </div>
-      <div className={cn('flex flex-wrap items-center gap-2', controlClassName)}>{children}</div>
+      <div
+        className={cn(
+          'flex flex-wrap items-center gap-2',
+          error && '[&_input]:border-destructive [&_select]:border-destructive [&_textarea]:border-destructive',
+          controlClassName,
+        )}
+      >
+        {children}
+      </div>
     </div>
   )
 }

@@ -25,8 +25,7 @@ function publicRole(role) {
 }
 
 function userResponse(user) {
-  const value = user.toObject();
-  delete value.password;
+  const value = user.omitPassword();
   if (user.role === "therapist") value.workingHoursByDay = scheduleOf(user);
   return { ...value, role: publicRole(user.role) };
 }

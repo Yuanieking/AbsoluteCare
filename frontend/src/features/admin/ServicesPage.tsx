@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
 import { RecordEditors } from '@/components/form/RecordEditors'
+import { usePermission } from '@/hooks/usePermission'
 import { showPromise } from '@/lib/toast'
 import { formatDuration, formatMoney } from './format'
 import { useRetireService, useSaveService } from './mutations'
@@ -139,6 +140,9 @@ export default function ServicesPage() {
   const [dialog, setDialog] = useState<{ service: AdminService | null } | null>(null)
   const services = useAdminServices()
   const retire = useRetireService()
+  const canCreate = usePermission('services', 'create')
+  const canUpdate = usePermission('services', 'update')
+  const canDelete = usePermission('services', 'delete')
 
   const term = search.trim().toLowerCase()
   const rows = (services.data ?? []).filter((service) => {
@@ -222,15 +226,17 @@ export default function ServicesPage() {
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={() => setDialog({ service: row.original })}
-          >
-            Edit
-          </Button>
-          {row.original.isActive ? (
+          {canUpdate ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => setDialog({ service: row.original })}
+            >
+              Edit
+            </Button>
+          ) : null}
+          {canDelete && row.original.isActive ? (
             <Button
               type="button"
               variant="ghost"
@@ -245,6 +251,7 @@ export default function ServicesPage() {
       ),
     },
   ]
+  const visibleColumns = canUpdate || canDelete ? columns : columns.filter((column) => column.id !== 'actions')
 
   return (
     <PageBody>
@@ -253,9 +260,11 @@ export default function ServicesPage() {
         title="Therapy services"
         description="Keep the service catalogue and booking prices current."
         actions={
-          <Button type="button" onClick={() => setDialog({ service: null })}>
-            <Plus size={15} aria-hidden="true" /> Add service
-          </Button>
+          canCreate ? (
+            <Button type="button" onClick={() => setDialog({ service: null })}>
+              <Plus size={15} aria-hidden="true" /> Add service
+            </Button>
+          ) : undefined
         }
       />
 
@@ -269,12 +278,12 @@ export default function ServicesPage() {
 
       <DataTable
         className="mt-3"
-        columns={columns}
+        columns={visibleColumns}
         data={rows}
         isLoading={services.isLoading}
         getRowId={(service) => service._id}
         rowLabel={(service) => service.name || 'Service'}
-        onRowClick={(service) => setDialog({ service })}
+        onRowClick={canUpdate ? (service) => setDialog({ service }) : undefined}
         caption="Therapy services"
         empty={
           services.error ? (

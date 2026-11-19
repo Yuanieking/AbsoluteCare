@@ -146,7 +146,7 @@ export function ForgotPasswordForm({ isStaffAlias }: ForgotPasswordFormProps) {
             type="submit"
             size="lg"
             className="mt-1 h-10 w-full"
-            disabled={settingsLoading || loading || (recaptcha.enabled && !recaptcha.token)}
+            disabled={settingsLoading || loading}
           >
             {loading ? (
               <>

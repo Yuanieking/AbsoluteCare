@@ -1,25 +1,18 @@
 import { CalendarDays, LockKeyhole } from 'lucide-react'
-import { useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { PageBody, PageHeader } from '@/components/layout/Page'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { NotificationPreferencesCard } from '@/features/notifications/NotificationPreferencesCard'
-import { showError, showPromise, showSuccess } from '@/lib/toast'
+import { useCalendarResult } from '@/hooks/useCalendarResult'
+import { showPromise } from '@/lib/toast'
 import { getCalendarConnectUrl } from './api'
 import { useDisconnectCalendar } from './mutations'
 import { useCalendarStatus } from './queries'
 
 export default function PatientSettingsPage() {
-  const [searchParams] = useSearchParams()
   const calendar = useCalendarStatus()
   const disconnectMutation = useDisconnectCalendar()
-
-  useEffect(() => {
-    const result = searchParams.get('calendar')
-    if (result === 'connected') showSuccess('Google Calendar connected.')
-    if (result === 'error') showError('Google Calendar could not be connected. Try again.')
-  }, [searchParams])
+  useCalendarResult()
 
   async function disconnect() {
     const request = disconnectMutation.mutateAsync()

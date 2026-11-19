@@ -26,7 +26,7 @@ export function AuthSection({
         title="Patient access"
         description="Control how patients create and verify accounts."
       >
-        <SettingRow
+        <SettingRow field="patientRegistrationEnabled"
           label="Patient self-registration"
           helper="Allow new patients to create their own account."
         >
@@ -36,7 +36,7 @@ export function AuthSection({
             onChange={(next) => update('patientRegistrationEnabled', next)}
           />
         </SettingRow>
-        <SettingRow
+        <SettingRow field="emailVerificationRequired"
           label="Require email verification"
           helper="Ask new patients to verify their email address."
         >
@@ -64,7 +64,7 @@ export function AuthSection({
         title="Password and sessions"
         description="Set the minimum password and session protection rules."
       >
-        <SettingRow
+        <SettingRow field="passwordMinLength"
           label="Password minimum length"
           helper={`A valid password has at least ${value.passwordMinLength} characters.`}
         >
@@ -77,7 +77,7 @@ export function AuthSection({
             onChange={(next) => update('passwordMinLength', next)}
           />
         </SettingRow>
-        <SettingRow label="Session timeout" helper="Staff accounts always use email and password.">
+        <SettingRow field="sessionTimeoutMinutes" label="Session timeout" helper="Staff accounts always use email and password.">
           <SelectInput
             ariaLabel="Session timeout"
             value={String(value.sessionTimeoutMinutes)}
@@ -91,7 +91,7 @@ export function AuthSection({
             ]}
           />
         </SettingRow>
-        <SettingRow label="Max login attempts" helper="Attempts before temporary lockout.">
+        <SettingRow field="maxLoginAttempts" label="Max login attempts" helper="Attempts before temporary lockout.">
           <NumberInput
             ariaLabel="Max login attempts"
             unit="attempts"
@@ -101,7 +101,7 @@ export function AuthSection({
             onChange={(next) => update('maxLoginAttempts', next)}
           />
         </SettingRow>
-        <SettingRow label="Lockout duration" helper="How long a locked account must wait.">
+        <SettingRow field="lockoutMinutes" label="Lockout duration" helper="How long a locked account must wait.">
           <NumberInput
             ariaLabel="Lockout duration"
             unit="minutes"
@@ -117,7 +117,7 @@ export function AuthSection({
         title="Terms"
         description="Require patients to accept the latest terms again when this changes."
       >
-        <SettingRow label="Current version" helper="Bump this value to request re-acceptance.">
+        <SettingRow field="termsVersion" label="Current version" helper="Bump this value to request re-acceptance.">
           <TextInput
             ariaLabel="Terms version"
             value={value.termsVersion}

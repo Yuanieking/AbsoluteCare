@@ -6,6 +6,7 @@ import {
   requireRole,
 } from "../middleware/authMiddleware.js";
 import { objectIdParam } from "../middleware/validateObjectId.js";
+import { therapistOwnsAppointment } from "../middleware/appointmentScope.js";
 import {
   approveReschedule,
   assignTherapist,
@@ -21,6 +22,7 @@ import {
 
 const router = Router();
 router.param("id", objectIdParam);
+router.param("id", therapistOwnsAppointment);
 router.use(
   protectRoute,
   requireRole("admin", "secretary", "therapist"),
@@ -28,18 +30,24 @@ router.use(
 );
 router.get("/", listAppointments);
 router.get("/:id", getAppointment);
-router.get("/:id/available-therapists", listAvailableTherapists);
+router.get(
+  "/:id/available-therapists",
+  requireRole("admin", "secretary"),
+  listAvailableTherapists,
+);
 // ** Concurrency: every PATCH below accepts If-Match: "<appointment.updatedAt>".
 // ** A stale timestamp returns 409 { code: "STALE_RECORD" }; no header = unchecked.
 // ** PATCH /:id/assign-therapist - assign a therapist to a pending appointment.
 router.patch(
   "/:id/assign-therapist",
+  requireRole("admin", "secretary"),
   requirePermission("appointments", "update"),
   assignTherapist,
 );
 // ** PATCH /:id/confirm - confirm a pending appointment.
 router.patch(
   "/:id/confirm",
+  requireRole("admin", "secretary"),
   requirePermission("appointments", "update"),
   confirmAppointment,
 );

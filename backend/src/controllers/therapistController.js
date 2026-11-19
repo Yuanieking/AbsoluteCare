@@ -26,7 +26,7 @@ export async function getProfile(req, res) {
     res.status(404).json({ message: "Therapist profile not found." });
     return;
   }
-  const profile = user.toObject();
+  const profile = user.omitPassword();
   profile.workingHoursByDay = scheduleOf(user);
   res.json({ profile });
 }
@@ -54,7 +54,7 @@ export async function updateProfile(req, res) {
     updates,
     req.get("If-Match"),
   );
-  res.json({ profile: user });
+  res.json({ profile: user ? user.omitPassword() : user });
 }
 
 export async function updateAvailability(req, res) {
@@ -80,7 +80,7 @@ export async function updateAvailability(req, res) {
     byAdmin: false,
     dateOverrides,
   });
-  const profile = user.toObject();
+  const profile = user.omitPassword();
   profile.workingHoursByDay = days;
   res.json({ profile });
 }
@@ -108,26 +108,40 @@ export async function getAppointment(req, res) {
 export async function listPatients(req, res) {
   const { appointments, sessions, users } =
     await therapistService.listPatientRecords(therapistId(req));
-  const patients = users.map((patient) => {
+  // One row per person treated: the account holder for their own visits, and
+  // each dependent for theirs. An account holder who books for themselves and
+  // for a child appears twice.
+  const now = new Date();
+  const personKey = (item) => item.dependent?._id?.toString() || "self";
+  const appointmentPerson = new Map(
+    appointments.map((item) => [item._id.toString(), personKey(item)]),
+  );
+  const patients = users.flatMap((patient) => {
+    const accountId = patient._id.toString();
     const items = appointments.filter(
-      (item) => item.patient.toString() === patient._id.toString(),
+      (item) => item.patient.toString() === accountId,
     );
-    const next = items.find(
-      (item) =>
-        item.status === "confirmed" &&
-        item.scheduledStart != null &&
-        item.scheduledStart >= new Date(),
-    );
-    const lastSession = sessions.find(
-      (item) => item.patient.toString() === patient._id.toString(),
-    );
-    const dependentAppointment = items.find((item) => item.dependent);
-    return {
-      patient,
-      dependent: dependentAppointment?.dependent || null,
-      nextAppointment: next || null,
-      lastSessionDate: lastSession?.sessionDate || null,
-    };
+    const people = [...new Set(items.map(personKey))];
+    return people.map((key) => {
+      const own = items.filter((item) => personKey(item) === key);
+      const next = own.find(
+        (item) =>
+          item.status === "confirmed" &&
+          item.scheduledStart != null &&
+          item.scheduledStart >= now,
+      );
+      const lastSession = sessions.find(
+        (item) =>
+          item.patient.toString() === accountId &&
+          appointmentPerson.get(item.appointment?.toString()) === key,
+      );
+      return {
+        patient,
+        dependent: key === "self" ? null : own[0].dependent,
+        nextAppointment: next || null,
+        lastSessionDate: lastSession?.sessionDate || null,
+      };
+    });
   });
   res.json({ patients });
 }
