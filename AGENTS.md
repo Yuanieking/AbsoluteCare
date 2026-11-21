@@ -11,7 +11,7 @@
 Run commands from the package directory that owns them:
 
 - Backend development: `cd backend && npm run dev` (`tsx watch src/app.js`; `node --watch` restarts spuriously on Windows)
-- Backend validation: `cd backend && node --test tests/` (startup, signup and document tests on plain node)
+- Backend validation: `cd backend && node --test "tests/*.test.mjs"` (startup, signup and document tests on plain node)
 - Backend production: `cd backend && npm start` (`node src/app.js`)
 - Backend seed: `cd backend && npm run seed` (`npm run seed:reset -- --yes` to wipe seeded data)
 - Frontend development: `cd frontend && npm run dev`
@@ -33,7 +33,7 @@ Run commands from the package directory that owns them:
 - Ensure Express JSON parsing is enabled before handlers read `req.body`.
 - When changing authentication, keep the Zod schema, controller input handling, and Mongoose user model in agreement, including confirmation fields and required profile data.
 - Confirm new users are actually persisted and that password omission/sanitization does not mutate or expose credentials.
-- Run `node --test tests/` after backend edits, then boot the affected startup path (`npm run dev` or `npm start`).
+- Run `node --test "tests/*.test.mjs"` after backend edits, then boot the affected startup path (`npm run dev` or `npm start`).
 - Exercise the affected endpoint after backend edits; keep responses byte-identical, since the frontend consumes the whole API.
 
 ## Documentation

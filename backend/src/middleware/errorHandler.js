@@ -6,8 +6,8 @@ export function notFoundHandler(req, res) {
 }
 
 /**
- * Maps known error types to JSON responses. Anything unrecognised is passed on
- * to Express's default handler, exactly as before.
+ * Maps known error types to JSON responses. Anything unrecognised is logged and
+ * answered with a generic 500 so internal details never reach the client.
  */
 export function errorHandler(error, req, res, next) {
   if (error instanceof AppError) {
@@ -29,5 +29,18 @@ export function errorHandler(error, req, res, next) {
     });
     return;
   }
-  next(error);
+  // A response already started can't be rewritten; let Express close it.
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+  // Express/body-parser client errors (malformed JSON 400, oversized body 413)
+  // keep their status and their safe-to-expose message.
+  const status = Number(error?.status || error?.statusCode);
+  if (status >= 400 && status < 500 && error?.expose) {
+    res.status(status).json({ message: error.message });
+    return;
+  }
+  console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, error);
+  res.status(500).json({ message: "Something went wrong. Please try again." });
 }

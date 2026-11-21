@@ -4,7 +4,12 @@
  * With `failuresOnly`, a request is refunded when it finishes below 400, so only
  * failed attempts (bad password, invalid token) spend the budget.
  */
-export function createRateLimiter({ windowMs, limit, body, failuresOnly = false }) {
+export function createRateLimiter({
+  windowMs,
+  limit,
+  body,
+  failuresOnly = false,
+}) {
   const hits = new Map();
   const retryAfter = String(Math.ceil(windowMs / 1000));
 
@@ -56,7 +61,7 @@ export function createRateLimiter({ windowMs, limit, body, failuresOnly = false 
  * so the ceiling sits well above busy real use (~3 requests/second sustained).
  */
 export const globalRateLimit = createRateLimiter({
-  windowMs: 5 * 60_000,
+  windowMs: 15 * 60_000,
   limit: 1000,
   body: {
     message: "Too many requests. Please slow down and try again shortly.",
@@ -65,8 +70,8 @@ export const globalRateLimit = createRateLimiter({
 
 /** Stricter ceiling for signup and password-reset endpoints; every request counts. */
 export const authRateLimit = createRateLimiter({
-  windowMs: 5 * 60_000,
-  limit: 5,
+  windowMs: 15 * 60_000,
+  limit: 15,
   body: {
     message: "Too many attempts. Please wait a few minutes and try again.",
   },
@@ -74,8 +79,8 @@ export const authRateLimit = createRateLimiter({
 
 /** Login: only failed attempts count, so signing in and out never locks a user out. */
 export const loginRateLimit = createRateLimiter({
-  windowMs: 5 * 60_000,
-  limit: 5,
+  windowMs: 15 * 60_000,
+  limit: 15,
   failuresOnly: true,
   body: {
     message: "Too many attempts. Please wait a few minutes and try again.",
