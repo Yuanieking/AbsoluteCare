@@ -20,7 +20,6 @@ import jwt from "jsonwebtoken";
 import { FRONTEND_URL, JWT_SECRET } from "../config/env.js";
 import { getIntegrationConfig } from "../config/runtimeConfig.js";
 import { generateToken } from "../utils/jwt.js";
-import { AppError } from "../errors/AppError.js";
 import { guardFresh } from "../services/concurrencyService.js";
 import { isValidEmail, normalizeEmail } from "../utils/validators.js";
 import { passwordResetEmail, sendEmail } from "../services/mailer.js";
@@ -45,12 +44,6 @@ const NOTIFICATION_CATEGORIES = ["appointmentUpdates", "reminders", "system"];
 
 function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
-}
-
-function isZodFailure(error) {
-  return (
-    error instanceof Error && error.name === "ZodError" && "errors" in error
-  );
 }
 
 function passwordMinLength(settings) {
@@ -373,7 +366,7 @@ export async function completeGoogleSignup(req, res) {
   }
 }
 
-export const signup = async (req, res) => {
+export const signup = async (req, res, next) => {
   try {
     const settings = await getSettings();
     const body = signupSchema.parse(req.body);
@@ -435,16 +428,8 @@ export const signup = async (req, res) => {
       user: newUser.omitPassword(),
     });
   } catch (error) {
-    if (isZodFailure(error)) {
-      res.status(400).json({
-        message: "Validation failed.",
-        errors: error.errors,
-      });
-      return;
-    }
-    res.status(500).json({
-      message: errorMessage(error) || "Internal server error.",
-    });
+    // errorHandler decides the status: Zod 400, AppError's own, otherwise 500.
+    next(error);
   }
 };
 
@@ -542,7 +527,7 @@ export const resetPassword = async (req, res) => {
   res.json({ message: "Password updated successfully." });
 };
 
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const body = loginSchema.parse(req.body);
 
@@ -581,16 +566,7 @@ export const login = async (req, res) => {
       user: user.omitPassword(),
     });
   } catch (error) {
-    if (isZodFailure(error)) {
-      res.status(400).json({
-        message: "Validation failed.",
-        errors: error.errors,
-      });
-      return;
-    }
-    res.status(500).json({
-      message: errorMessage(error) || "Internal server error.",
-    });
+    next(error);
   }
 };
 
@@ -606,7 +582,7 @@ export const checkAuth = async (req, res) => {
   });
 };
 
-export const updateProfile = async (req, res) => {
+export const updateProfile = async (req, res, next) => {
   try {
     const body = profileUpdateSchema.parse(req.body);
     const user = await updateUserProfile(
@@ -621,16 +597,8 @@ export const updateProfile = async (req, res) => {
     }
     res.status(200).json({ user: user.omitPassword() });
   } catch (error) {
-    // ** Concurrency: let 409 STALE_RECORD reach the global handler instead of a 500.
-    if (error instanceof AppError) throw error;
-    if (isZodFailure(error)) {
-      res.status(400).json({
-        message: "Please correct the highlighted profile fields.",
-        errors: error.errors,
-      });
-      return;
-    }
-    res.status(500).json({ message: "Unable to update your profile." });
+    // ** Concurrency: 409 STALE_RECORD and Zod 400s go to the global handler.
+    next(error);
   }
 };
 
