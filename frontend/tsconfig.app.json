@@ -9,6 +9,7 @@
     "jsx": "react-jsx",
     "useDefineForClassFields": true,
     "strict": true,
+    "allowJs": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noFallthroughCasesInSwitch": true,

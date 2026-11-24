@@ -10,7 +10,6 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "gen:api": "tsx scripts/generate-api-types.ts",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -11,7 +11,7 @@ import { useCalendarResult } from '@/hooks/useCalendarResult'
 import { formatSchedule, scheduleErrors, scheduleOf, schedulePayload } from '@/lib/availability'
 import { showError } from '@/lib/toast'
 import { cn } from '@/lib/utils'
-import { getCalendarConnectUrl } from './api'
+import { getCalendarConnectRedirectUrl } from './api'
 import { useDisconnectCalendar, useSaveAvailability } from './mutations'
 import { useTherapistCalendarStatus, useTherapistProfile } from './queries'
 import type { CalendarStatus, TherapistProfile } from './types'
@@ -443,8 +443,17 @@ function CalendarCard({
           {disconnecting ? 'Disconnecting…' : 'Disconnect'}
         </Button>
       ) : (
-        <Button asChild variant="outline" size="sm">
-          <a href={getCalendarConnectUrl()}>Connect</a>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            void getCalendarConnectRedirectUrl()
+              .then((url) => window.location.assign(url))
+              .catch(() => showError('Unable to start Google Calendar connection.'))
+          }}
+        >
+          Connect
         </Button>
       )}
     </section>

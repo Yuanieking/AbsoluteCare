@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useSettings } from '@/features/settings/provider'
-import { getGoogleAuthUrl } from '@/lib/api/auth'
+import { getGoogleAuthRedirectUrl } from '@/lib/api/auth'
 import { stashPostAuthRedirect } from '@/lib/dashboard-path'
+import { showError } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 
 function GoogleMark({ size = 19 }: { size?: number }) {
@@ -36,30 +38,37 @@ type GoogleButtonProps = {
 
 export function GoogleButton({ from, blocked = false, onBlocked, className }: GoogleButtonProps) {
   const { settings } = useSettings()
+  const [pending, setPending] = useState(false)
 
   if (!settings.googleAuthEnabled) return null
 
+  const handleClick = async () => {
+    if (blocked) {
+      onBlocked?.()
+      return
+    }
+    stashPostAuthRedirect(from)
+    setPending(true)
+    try {
+      const redirectUrl = await getGoogleAuthRedirectUrl()
+      window.location.assign(redirectUrl)
+    } catch {
+      setPending(false)
+      showError('Unable to start Google sign-in right now.')
+    }
+  }
+
   return (
     <Button
-      asChild
+      type="button"
       variant="outline"
       size="lg"
+      disabled={pending}
       className={cn('w-full border-hairline bg-panel text-ink hover:bg-sunk', className)}
+      onClick={() => void handleClick()}
     >
-      <a
-        href={getGoogleAuthUrl()}
-        onClick={(event) => {
-          if (blocked) {
-            event.preventDefault()
-            onBlocked?.()
-            return
-          }
-          stashPostAuthRedirect(from)
-        }}
-      >
-        <GoogleMark />
-        Continue with Google
-      </a>
+      <GoogleMark />
+      Continue with Google
     </Button>
   )
 }

@@ -29,7 +29,6 @@ VITE_API_URL=http://localhost:8080
 | `npm run lint`      | ESLint (TypeScript + React Hooks + Refresh rules)                            |
 | `npm test`          | Vitest — logic tests only (formatters, validators, query keys, route config) |
 | `npm run build`     | Typecheck the project references, then produce `dist/`                       |
-| `npm run gen:api`   | Regenerate `src/types/api.ts` from the backend sources                       |
 | `npm run format`    | Prettier over the package                                                    |
 
 ## Structure

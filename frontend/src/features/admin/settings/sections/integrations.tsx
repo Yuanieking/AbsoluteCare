@@ -17,7 +17,7 @@ import {
 import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { getToastError } from '@/lib/toast'
+import { getToastError, showError } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import * as api from '../api'
 import { sectionMap } from '../config'
@@ -255,7 +255,15 @@ function DriveCard({
       switchControl={switchControl}
       footer={
         <>
-          <GhostAction icon={<ExternalLink size={13} />} href={api.driveConnectUrl()}>
+          <GhostAction
+            icon={<ExternalLink size={13} />}
+            onClick={() => {
+              void api
+                .getDriveConnectRedirectUrl()
+                .then((url) => window.location.assign(url))
+                .catch(() => showError('Unable to start Google Drive connection.'))
+            }}
+          >
             {connected ? 'Reconnect' : 'Connect Google Drive'}
           </GhostAction>
           <GhostAction

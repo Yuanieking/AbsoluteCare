@@ -1,0 +1,25 @@
+'use client'
+
+import { animate, useMotionValue } from 'motion/react'
+import { useEffect, useRef } from 'react'
+import { DEFAULT_CHART_ENTER_TRANSITION } from './animation'
+
+export function useMountProgress(enterTransition, delaySeconds, replayKey) {
+  const progress = useMotionValue(0)
+  const transitionRef = useRef(enterTransition)
+  useEffect(() => {
+    transitionRef.current = enterTransition
+  })
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: replayKey
+  useEffect(() => {
+    progress.set(0)
+    const controls = animate(progress, 1, {
+      ...(transitionRef.current ?? DEFAULT_CHART_ENTER_TRANSITION),
+      delay: delaySeconds,
+    })
+    return () => controls.stop()
+  }, [delaySeconds, replayKey, progress])
+
+  return progress
+}

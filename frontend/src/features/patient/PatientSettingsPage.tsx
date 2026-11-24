@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { NotificationPreferencesCard } from '@/features/notifications/NotificationPreferencesCard'
 import { useCalendarResult } from '@/hooks/useCalendarResult'
-import { showPromise } from '@/lib/toast'
-import { getCalendarConnectUrl } from './api'
+import { showError, showPromise } from '@/lib/toast'
+import { getCalendarConnectRedirectUrl } from './api'
 import { useDisconnectCalendar } from './mutations'
 import { useCalendarStatus } from './queries'
 
@@ -85,7 +85,11 @@ export default function PatientSettingsPage() {
                 disabled={disconnectMutation.isPending}
                 onClick={() => {
                   if (calendar.data?.connected) void disconnect()
-                  else window.location.href = getCalendarConnectUrl()
+                  else {
+                    void getCalendarConnectRedirectUrl()
+                      .then((url) => window.location.assign(url))
+                      .catch(() => showError('Unable to start Google Calendar connection.'))
+                  }
                 }}
               >
                 {calendar.data?.connected ? 'Disconnect' : 'Connect'}
