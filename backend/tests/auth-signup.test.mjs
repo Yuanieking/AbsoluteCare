@@ -118,10 +118,11 @@ test("Signup creates a patient session while preserving registration and access 
       role: "admin",
       isActive: false,
     };
-    assert.equal((await request("/auth/me")).status, 401);
-    const created = await request("/auth/signup", { body: payload });
+    assert.equal((await request("/api/v1/auth/me")).status, 401);
+    const created = await request("/api/v1/auth/signup", { body: payload });
     assert.equal(created.status, 201);
-    assert.deepEqual(Object.keys(created.body).sort(), ["message", "user"]);
+    assert.deepEqual(Object.keys(created.body).sort(), ["_links", "message", "user"]);
+    assert.equal(created.body._links.dashboard.href, "/dashboard");
     assert.equal(created.body.message, "Account created successfully.");
     assert.equal(created.body.user.role, "user");
     assert.equal(created.body.user.isActive, true);
@@ -143,20 +144,20 @@ test("Signup creates a patient session while preserving registration and access 
       JWT_SECRET,
     );
     assert.equal(identity.userId, stored._id.toString());
-    const current = await request("/auth/me", { cookie });
+    const current = await request("/api/v1/auth/me", { cookie });
     assert.equal(current.status, 200);
     assert.equal(current.body.user._id, stored._id.toString());
     assert.equal(current.body.user.password, undefined);
     assert.equal(await bcrypt.compare(payload.password, stored.password), true);
 
-    const duplicate = await request("/auth/signup", { body: payload });
+    const duplicate = await request("/api/v1/auth/signup", { body: payload });
     assert.equal(duplicate.status, 409);
     assert.equal(duplicate.headers["set-cookie"], undefined);
     assert.equal(users.size, 1);
 
     settings.auth.patientRegistrationEnabled = false;
     invalidateSettingsCache();
-    const closed = await request("/auth/signup", {
+    const closed = await request("/api/v1/auth/signup", {
       body: { ...payload, email: "closed@example.com" },
     });
     assert.equal(closed.status, 403);
@@ -165,7 +166,7 @@ test("Signup creates a patient session while preserving registration and access 
     settings.auth.patientRegistrationEnabled = true;
     invalidateSettingsCache();
 
-    const mismatch = await request("/auth/signup", {
+    const mismatch = await request("/api/v1/auth/signup", {
       body: {
         ...payload,
         email: "invalid@example.com",
@@ -177,7 +178,7 @@ test("Signup creates a patient session while preserving registration and access 
       "Mismatched passwords must reject signup",
     );
     assert.equal(mismatch.headers["set-cookie"], undefined);
-    const noTerms = await request("/auth/signup", {
+    const noTerms = await request("/api/v1/auth/signup", {
       body: { ...payload, email: "terms@example.com", acceptedTerms: false },
     });
     assert.ok(
@@ -188,15 +189,15 @@ test("Signup creates a patient session while preserving registration and access 
     assert.equal(users.size, 1);
 
     stored.isActive = false;
-    assert.equal((await request("/auth/me", { cookie })).status, 403);
-    const inactiveLogin = await request("/auth/login", {
+    assert.equal((await request("/api/v1/auth/me", { cookie })).status, 403);
+    const inactiveLogin = await request("/api/v1/auth/login", {
       body: { email: payload.email, password: payload.password },
     });
     assert.equal(inactiveLogin.status, 403);
     assert.equal(inactiveLogin.headers["set-cookie"], undefined);
     stored.isActive = true;
     stored.removedAt = new Date();
-    assert.equal((await request("/auth/me", { cookie })).status, 403);
+    assert.equal((await request("/api/v1/auth/me", { cookie })).status, 403);
   } finally {
     globalThis.setInterval = originalInterval;
     http.Server.prototype.listen = originalListen;

@@ -32,6 +32,7 @@ import {
   effectiveIntegrationEnabled,
   getSettings,
 } from "../services/settingsService.js";
+import { apiLink, authLinks, prefersJson } from "../utils/hateoas.js";
 
 const googleScopes = "openid email profile";
 
@@ -103,12 +104,38 @@ function readCookie(request, name) {
 function setOAuthStateCookie(response, value, maxAge = 600) {
   response.setHeader(
     "Set-Cookie",
-    `google_oauth_state=${encodeURIComponent(value)}; HttpOnly; SameSite=Lax; Path=/auth/google; Max-Age=${maxAge}`,
+    `google_oauth_state=${encodeURIComponent(value)}; HttpOnly; SameSite=Lax; Path=/api/v1/auth/google; Max-Age=${maxAge}`,
   );
 }
 
 function googleRedirect(path) {
   return `${FRONTEND_URL}${path}`;
+}
+
+function sendGoogleCallbackResult(
+  req,
+  res,
+  { statusCode = 200, status, destination, message, token, setupToken },
+) {
+  if (prefersJson(req)) {
+    res.status(statusCode).json({
+      status,
+      ...(message ? { message } : {}),
+      ...(token ? { token } : {}),
+      ...(setupToken ? { setupToken } : {}),
+      redirectUrl: destination,
+      _links: {
+        self: apiLink("/auth/google/callback", "GET"),
+        redirect: { href: destination, method: "GET" },
+        ...(token ? { session: apiLink("/auth/google/session", "GET") } : {}),
+        ...(setupToken
+          ? { complete: apiLink("/auth/google/complete", "POST") }
+          : {}),
+      },
+    });
+    return;
+  }
+  res.redirect(destination);
 }
 
 const GOOGLE_PICTURE_HOST = /googleusercontent\.com\//i;
@@ -144,13 +171,27 @@ export async function googleStart(req, res) {
       access_type: "online",
       prompt: "select_account",
     });
-    res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+    const authorizationUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    res.status(200).json({
+      redirectUrl: authorizationUrl,
+      _links: {
+        self: apiLink("/auth/google", "GET"),
+        redirect: { href: authorizationUrl, method: "GET" },
+        callback: apiLink("/auth/google/callback", "GET"),
+      },
+    });
   } catch (error) {
-    res.redirect(
-      googleRedirect(
-        `/login?oauthError=${encodeURIComponent(errorMessage(error))}`,
-      ),
+    const destination = googleRedirect(
+      `/login?oauthError=${encodeURIComponent(errorMessage(error))}`,
     );
+    res.status(500).json({
+      message: errorMessage(error),
+      redirectUrl: destination,
+      _links: {
+        self: apiLink("/auth/google", "GET"),
+        redirect: { href: destination, method: "GET" },
+      },
+    });
   }
 }
 
@@ -222,9 +263,13 @@ export async function googleCallback(req, res) {
       }
       generateToken(user._id.toString(), res);
       const token = signAuthToken(user);
-      res.redirect(
-        googleRedirect(`/auth/callback?token=${encodeURIComponent(token)}`),
-      );
+      sendGoogleCallbackResult(req, res, {
+        status: "authenticated",
+        token,
+        destination: googleRedirect(
+          `/auth/callback?token=${encodeURIComponent(token)}`,
+        ),
+      });
       return;
     }
 
@@ -239,15 +284,22 @@ export async function googleCallback(req, res) {
       JWT_SECRET,
       { expiresIn: "10m" },
     );
-    res.redirect(
-      googleRedirect(`/google/setup?token=${encodeURIComponent(setupToken)}`),
-    );
+    sendGoogleCallbackResult(req, res, {
+      status: "setup_required",
+      setupToken,
+      destination: googleRedirect(
+        `/google/setup?token=${encodeURIComponent(setupToken)}`,
+      ),
+    });
   } catch (error) {
-    res.redirect(
-      googleRedirect(
+    sendGoogleCallbackResult(req, res, {
+      statusCode: 400,
+      status: "error",
+      message: errorMessage(error),
+      destination: googleRedirect(
         `/login?oauthError=${encodeURIComponent(errorMessage(error))}`,
       ),
-    );
+    });
   }
 }
 
@@ -275,7 +327,8 @@ export async function googleSession(req, res) {
       res.status(403).json({ message: inactiveMessage(user) });
       return;
     }
-    res.json({ user: user.omitPassword() });
+    const sanitized = user.omitPassword();
+    res.json({ user: sanitized, _links: authLinks(sanitized) });
   } catch {
     res.status(401).json({ message: "Google session is invalid or expired." });
   }
@@ -356,9 +409,12 @@ export async function completeGoogleSignup(req, res) {
       accountAudit: [{ action: "created" }],
     });
     generateToken(user._id.toString(), res);
-    res
-      .status(201)
-      .json({ user: user.omitPassword(), token: signAuthToken(user) });
+    const sanitized = user.omitPassword();
+    res.status(201).json({
+      user: sanitized,
+      token: signAuthToken(user),
+      _links: authLinks(sanitized),
+    });
   } catch (error) {
     res.status(400).json({
       message: errorMessage(error) || "Unable to finish Google signup.",
@@ -423,9 +479,11 @@ export const signup = async (req, res, next) => {
 
     generateToken(newUser._id.toString(), res);
 
+    const sanitized = newUser.omitPassword();
     res.status(201).json({
       message: "Account created successfully.",
-      user: newUser.omitPassword(),
+      user: sanitized,
+      _links: authLinks(sanitized),
     });
   } catch (error) {
     // errorHandler decides the status: Zod 400, AppError's own, otherwise 500.
@@ -561,9 +619,11 @@ export const login = async (req, res, next) => {
 
     generateToken(user._id.toString(), res);
 
+    const sanitized = user.omitPassword();
     res.status(200).json({
       message: "Login successful.",
-      user: user.omitPassword(),
+      user: sanitized,
+      _links: authLinks(sanitized),
     });
   } catch (error) {
     next(error);
@@ -577,8 +637,10 @@ export const checkAuth = async (req, res) => {
     return;
   }
   const hasDependents = await userHasDependents(user._id.toString());
+  const sanitized = { ...user.omitPassword(), isGuardian: hasDependents };
   res.status(200).json({
-    user: { ...user.omitPassword(), isGuardian: hasDependents },
+    user: sanitized,
+    _links: authLinks(sanitized),
   });
 };
 
@@ -627,7 +689,14 @@ export const updateNotificationPreferences = async (req, res) => {
 
 export const logout = (req, res) => {
   res.clearCookie("session");
-  res.status(204).send();
+  res.status(200).json({
+    message: "Logged out successfully.",
+    _links: {
+      self: apiLink("/auth/logout", "POST"),
+      login: apiLink("/auth/login", "POST"),
+      google: apiLink("/auth/google", "GET"),
+    },
+  });
 };
 
 export const changePassword = async (req, res) => {
