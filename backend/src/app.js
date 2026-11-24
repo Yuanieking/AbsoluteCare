@@ -83,45 +83,48 @@ app.options(/.*/, cors(corsOptions));
 const editorRateLimit = createRateLimiter({
   windowMs: 60_000, limit: 120, body: { message: "Too many editor updates." },
 });
-app.use((req, res, next) => req.path.startsWith("/record-editors/")
+const apiV1 = express.Router();
+apiV1.use((req, res, next) => req.path.startsWith("/record-editors/")
   ? editorRateLimit(req, res, next) : globalRateLimit(req, res, next));
 // Backup requests use a route-specific limit and must have parsed auth cookies.
 
 app.use(cookieParser());
-app.use("/admin/backup", backupRoutes);
-app.use(express.json());
+apiV1.use("/admin/backup", backupRoutes);
+apiV1.use(express.json());
 
-app.use(sanitizeInput);
-app.use((req, res, next) => recordWriteContext.run({
+apiV1.use(sanitizeInput);
+apiV1.use((req, res, next) => recordWriteContext.run({
   target: recordTarget(req.path, req.method),
   ifMatch: req.get("If-Match"),
   editorSession: req.get("X-Editor-Session"),
 }, next));
 
-app.use("/record-editors", recordEditorsRoutes);
-app.use("/audit", auditRoutes);
-app.use("/auth", authRoutes);
-app.use("/integrations", calendarRoutes);
-app.use("/integrations", googleDriveRoutes);
-app.use("/verify", publicVerifyRoutes);
-app.use("/documents", documentRoutes);
-app.use("/therapist", therapistRoutes);
-app.use("/secretary", secretaryRoutes);
-app.use("/admin/users", adminUserRoutes);
-app.use("/admin/appointments", adminAppointmentRoutes);
-app.use("/admin/services", adminServiceRoutes);
-app.use("/admin/specializations", adminSpecializationRoutes);
-app.use("/admin", adminRecordRoutes);
-app.use("/admin", adminMonitoringRoutes);
-app.use("/notifications", notificationRoutes);
-app.use("/settings", settingsRoutes);
-app.use("/admin/settings", settingsRoutes);
+apiV1.use("/record-editors", recordEditorsRoutes);
+apiV1.use("/audit", auditRoutes);
+apiV1.use("/auth", authRoutes);
+apiV1.use("/integrations", calendarRoutes);
+apiV1.use("/integrations", googleDriveRoutes);
+apiV1.use("/verify", publicVerifyRoutes);
+apiV1.use("/documents", documentRoutes);
+apiV1.use("/therapist", therapistRoutes);
+apiV1.use("/secretary", secretaryRoutes);
+apiV1.use("/admin/users", adminUserRoutes);
+apiV1.use("/admin/appointments", adminAppointmentRoutes);
+apiV1.use("/admin/services", adminServiceRoutes);
+apiV1.use("/admin/specializations", adminSpecializationRoutes);
+apiV1.use("/admin", adminRecordRoutes);
+apiV1.use("/admin", adminMonitoringRoutes);
+apiV1.use("/notifications", notificationRoutes);
+apiV1.use("/settings", settingsRoutes);
+apiV1.use("/admin/settings", settingsRoutes);
 if (process.env.NODE_ENV !== "production") {
   const { default: devEmailRoutes } =
     await import("./routes/devEmailRoutes.js");
-  app.use("/dev", devEmailRoutes);
+  apiV1.use("/dev", devEmailRoutes);
 }
-app.use("/", patientRoutes);
+apiV1.use("/", patientRoutes);
+
+app.use("/api/v1", apiV1);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

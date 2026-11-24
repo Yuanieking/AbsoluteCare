@@ -96,15 +96,15 @@ test("Native-ESM startup serves document authorization and public verification",
         req.end();
       });
     }
-    const unknown = await request("/verify/VIS-2026-000001");
+    const unknown = await request("/api/v1/verify/VIS-2026-000001");
     assert.equal(unknown.status, 404);
     assert.deepEqual(unknown.body, { status: "not_found" });
     assert.equal(unknown.headers["cache-control"], "no-store");
-    assert.equal((await request("/documents")).status, 401);
-    assert.equal((await request("/record-editors/users/111111111111111111111111", { "Content-Type": "application/json" }, "PUT")).status, 401);
+    assert.equal((await request("/api/v1/documents")).status, 401);
+    assert.equal((await request("/api/v1/record-editors/users/111111111111111111111111", { "Content-Type": "application/json" }, "PUT")).status, 401);
     const session = jwt.sign({ userId: issuer, role: "secretary" }, JWT_SECRET);
     const retry = await request(
-      "/documents/333333333333333333333333/retry",
+      "/api/v1/documents/333333333333333333333333/retry",
       { Cookie: `session=${session}` },
       "POST",
     );

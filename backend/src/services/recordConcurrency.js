@@ -29,6 +29,7 @@ async function assertNotLocked(model, id, context) {
 
 export function recordTarget(path, method) {
   if (!["PATCH", "PUT", "DELETE", "POST"].includes(method)) return null;
+  path = path.replace(/^\/api\/v1(?=\/|$)/, "");
   if (/^\/(?:auth\/(?:profile|notification-preferences)|therapist\/(?:profile|availability)|secretary\/profile)$/.test(path)) return "User:self";
   if (/^\/(?:admin\/)?settings\/(?:general|auth|booking|schedule|notifications|payments|system|maintenance|integrations\/[^/]+|integrations\/credentials\/(?:reset|[^/]+\/(?:clear|rollback)))$/.test(path)) return "AppSetting:singleton";
   const match = /^\/(?:admin\/|therapist\/|secretary\/)?(users|patients|therapists|dependents|appointments|sessions|services)\/([a-f\d]{24})(?:\/(.*))?$/i.exec(path);

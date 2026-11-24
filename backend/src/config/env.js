@@ -48,11 +48,11 @@ export const GOOGLE_CLIENT_SECRET = getEnv(
 );
 export const GOOGLE_REDIRECT_URI = getEnv(
   "GOOGLE_REDIRECT_URI",
-  `${API_BASE_URL}/auth/google/callback`,
+  `${API_BASE_URL}/api/v1/auth/google/callback`,
 );
 export const GOOGLE_CALENDAR_REDIRECT_URI = getEnv(
   "GOOGLE_CALENDAR_REDIRECT_URI",
-  `${API_BASE_URL}/integrations/google-calendar/callback`,
+  `${API_BASE_URL}/api/v1/integrations/google-calendar/callback`,
 );
 export const GOOGLE_CALENDAR_ENCRYPTION_KEY = getEnv(
   "GOOGLE_CALENDAR_ENCRYPTION_KEY",
@@ -60,7 +60,7 @@ export const GOOGLE_CALENDAR_ENCRYPTION_KEY = getEnv(
 );
 export const GOOGLE_DRIVE_REDIRECT_URI = getEnv(
   "GOOGLE_DRIVE_REDIRECT_URI",
-  `${API_BASE_URL}/integrations/google-drive/callback`,
+  `${API_BASE_URL}/api/v1/integrations/google-drive/callback`,
 );
 export const GOOGLE_DRIVE_ROOT_FOLDER_ID = getEnv(
   "GOOGLE_DRIVE_ROOT_FOLDER_ID",

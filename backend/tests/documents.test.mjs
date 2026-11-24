@@ -193,7 +193,9 @@ test("Secretary retry cannot expose or mutate another issuer's document", async 
 test("OAuth uses runtime redirect and pins it through a configuration change", async () => {
   const res = responseRecorder();
   await connectDrive({ user: { userId: actor.id } }, res);
-  const authorization = new URL(res.location);
+  assert.equal(res.code, 200);
+  const authorization = new URL(res.body.redirectUrl);
+  assert.equal(res.body._links.redirect.href, res.body.redirectUrl);
   assert.equal(
     authorization.searchParams.get("redirect_uri"),
     overrides.GOOGLE_DRIVE_REDIRECT_URI,
