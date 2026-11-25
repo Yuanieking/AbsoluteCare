@@ -37,7 +37,11 @@ export function friendlyErrorMessage(error) {
 
 function isAuthRequest(url = '') {
   const path = url.split('?')[0] ?? url
-  return sessionCheckPaths.includes(path) || path.startsWith('/auth/google')
+  return (
+    sessionCheckPaths.includes(path) ||
+    path.startsWith('/auth/google') ||
+    path.startsWith('/record-editors/')
+  )
 }
 
 const rawBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
@@ -66,8 +70,20 @@ const editSnapshots = new Map()
 export function getRecordTimestamp(id) {
   return seenUpdatedAt.get(id)
 }
-// One editor session per tab: the server lets only the lock holder's tab write a record.
-export const editorSessionId = crypto.randomUUID()
+// One editor session per tab: persist in sessionStorage so reloads keep the same tab's lock.
+function loadEditorSessionId() {
+  try {
+    const key = 'absolutecare:editor-session'
+    const existing = window.sessionStorage?.getItem(key)
+    if (existing) return existing
+    const next = crypto.randomUUID()
+    window.sessionStorage?.setItem(key, next)
+    return next
+  } catch {
+    return crypto.randomUUID()
+  }
+}
+export const editorSessionId = loadEditorSessionId()
 
 export function pinRecordTimestamp(id, timestamp) {
   const token = Symbol(id)

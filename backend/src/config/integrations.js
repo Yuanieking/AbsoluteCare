@@ -85,7 +85,7 @@ export function getIntegrationDetails() {
   const siteKey = getIntegrationConfig("RECAPTCHA_SITE_KEY");
   const calendarRedirect =
     getIntegrationConfig("GOOGLE_CALENDAR_REDIRECT_URI") ||
-    `${API_BASE_URL}/integrations/google-calendar/callback`;
+    `${API_BASE_URL}/api/v1/integrations/google-calendar/callback`;
   const sender = getIntegrationConfig("MAIL_FROM") || null;
   return {
     googleAuth: {
@@ -111,7 +111,7 @@ export function getIntegrationDetails() {
       siteKey: null,
       redirectUri:
         getIntegrationConfig("GOOGLE_DRIVE_REDIRECT_URI") ||
-        `${API_BASE_URL}/integrations/google-drive/callback`,
+        `${API_BASE_URL}/api/v1/integrations/google-drive/callback`,
       senderAddress: null,
     },
     googleMaps: {

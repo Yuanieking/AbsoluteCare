@@ -14,8 +14,7 @@ function removeRecaptchaArtifacts() {
  * RECAPTCHA_MISCONFIGURED (no secret key is configured).
  */
 const RECAPTCHA_ERROR_MESSAGES = {
-  RECAPTCHA_FAILED:
-    'Invalid Key. Google rejected this client ID and secret pair. Copy both again from the Google Cloud console.',
+  RECAPTCHA_FAILED: 'CAPTCHA verification failed. Please try again.',
   RECAPTCHA_UNAVAILABLE: "We couldn't verify you right now. Please try again.",
   RECAPTCHA_INVALID_KEY:
     'Invalid Key. Google rejected this client ID and secret pair. Copy both again from the Google Cloud console.',

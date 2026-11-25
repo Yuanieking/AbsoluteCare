@@ -113,7 +113,7 @@ export function AuditTrail({ admin = false }: { admin?: boolean }) {
         value={draft[key]}
         onChange={(event) => update(key, event.target.value)}
       >
-        <option value="">All {key}s</option>
+        <option value="">All {key === 'category' ? 'categories' : `${key}s`}</option>
         {choices.map((value) => (
           <option key={value} value={value}>
             {value === 'user' ? 'patient' : value}

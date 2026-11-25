@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useSettings } from '@/features/settings/provider'
 import { getGoogleAuthRedirectUrl } from '@/lib/api/auth'
@@ -39,6 +39,12 @@ type GoogleButtonProps = {
 export function GoogleButton({ from, blocked = false, onBlocked, className }: GoogleButtonProps) {
   const { settings } = useSettings()
   const [pending, setPending] = useState(false)
+
+  useEffect(() => {
+    const reset = () => setPending(false)
+    window.addEventListener('pageshow', reset)
+    return () => window.removeEventListener('pageshow', reset)
+  }, [])
 
   if (!settings.googleAuthEnabled) return null
 

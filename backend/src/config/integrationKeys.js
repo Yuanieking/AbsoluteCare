@@ -16,7 +16,7 @@ export const INTEGRATION_GROUPS = [
     title: "Google sign-in",
     purpose: "Lets patients sign in and sign up with their Google account.",
     helpUrl: "https://console.cloud.google.com/apis/credentials",
-    redirectPath: "/auth/google/callback",
+    redirectPath: "/api/v1/auth/google/callback",
   },
   {
     id: "recaptcha",
@@ -32,7 +32,7 @@ export const INTEGRATION_GROUPS = [
     purpose:
       "Adds confirmed sessions to the patient's and therapist's own calendars.",
     helpUrl: "https://console.cloud.google.com/apis/credentials",
-    redirectPath: "/integrations/google-calendar/callback",
+    redirectPath: "/api/v1/integrations/google-calendar/callback",
   },
   {
     id: "googleDrive",
@@ -41,7 +41,7 @@ export const INTEGRATION_GROUPS = [
     purpose:
       "Files every generated PDF into the clinic's Drive, sorted by type and month.",
     helpUrl: "https://console.cloud.google.com/apis/credentials",
-    redirectPath: "/integrations/google-drive/callback",
+    redirectPath: "/api/v1/integrations/google-drive/callback",
   },
 
   {

@@ -92,7 +92,7 @@ function redirectUriFor(group) {
   if (group.id === "googleCalendar")
     return (
       getIntegrationConfig("GOOGLE_CALENDAR_REDIRECT_URI") ||
-      `${API_BASE_URL}/integrations/google-calendar/callback`
+      `${API_BASE_URL}/api/v1/integrations/google-calendar/callback`
     );
   if (group.redirectPath) return `${API_BASE_URL}${group.redirectPath}`;
   return null;
