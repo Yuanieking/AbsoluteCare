@@ -38,7 +38,7 @@ test("Presence endpoints require authentication and keep editor array separate f
   const sessionId = crypto.randomUUID();
   const { activeEditors, lockedBy } = await updateRecordEditors(actor, "users", id, sessionId);
   assert.equal(activeEditors[0].name, "Alice Example");
-  assert.equal(lockedBy?.name, "Alice Example"); // mocked entry has no sessionId, so it is another tab
+  assert.equal(lockedBy, null); // edit lock is off on this branch
   assert.ok(captured.update[0].$set.activeEditors.$concatArrays[1][0].joinedAt.$ifNull);
   assert.equal(captured.options.updatePipeline, true);
   assert.ok(captured.update[0].$set.activeEditors.$concatArrays);
@@ -133,11 +133,9 @@ test("Real save/query hooks atomically reject simultaneous and missing-precondit
   await assert.rejects(write(() => Model.updateOne({ _id: id }, { name: "Unchecked" }).exec(), "*"), (error) => error.status === 428);
   lockDoc = { activeEditors: [{ sessionId: "holder", name: "Ana", joinedAt: new Date(), lastSeenAt: new Date() }] };
   const fresh = stored.updatedAt.toISOString();
-  await assert.rejects(write(() => Model.updateOne({ _id: id }, { name: "Locked" }).exec(), fresh),
-    (error) => error.status === 409 && error.payload.code === "RECORD_LOCKED");
-  await recordWriteContext.run({ target: `TherapyService:${id}`, ifMatch: fresh, editorSession: "holder" },
-    () => Model.updateOne({ _id: id }, { name: "Holder" }).exec());
-  assert.equal(stored.name, "Holder");
+  // Edit lock is off: another session's presence entry must not block a current timestamp.
+  await write(() => Model.updateOne({ _id: id }, { name: "Unlocked" }).exec(), fresh);
+  assert.equal(stored.name, "Unlocked");
   stored = { ...stored, name: "Alice", updatedAt: new Date(fresh) };
   lockDoc = null;
   const app = express();

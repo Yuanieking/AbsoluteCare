@@ -5,6 +5,8 @@ import { parseIfMatch } from "./concurrencyService.js";
 
 export const recordWriteContext = new AsyncLocalStorage();
 export const EDITOR_TTL_MS = 45_000;
+// Off on test/timestamp-only so the updatedAt check can be demonstrated alone. Do not merge.
+export const EDIT_LOCK_ENABLED = false;
 
 // The earliest live editor session holds the edit lock; entries older than joinedAt fall back to lastSeenAt.
 export function editorHolder(entries, now = new Date()) {
@@ -18,7 +20,7 @@ const editorKinds = { User: "users", Dependent: "dependents", Appointment: "appo
   Session: "sessions", TherapyService: "services", AppSetting: "settings" };
 
 async function assertNotLocked(model, id, context) {
-  if (context.lockChecked) return;
+  if (!EDIT_LOCK_ENABLED || context.lockChecked) return;
   // Looked up lazily: importing the model here would compile models before this global plugin is registered.
   const doc = await mongoose.models.RecordEditors?.findById(`${editorKinds[model]}:${model === "AppSetting" ? "singleton" : id}`).lean();
   const holder = editorHolder(doc?.activeEditors);

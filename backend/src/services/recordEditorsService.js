@@ -7,7 +7,7 @@ import AppSetting from "../models/appSettingModel.js";
 import RecordEditors from "../models/recordEditorsModel.js";
 import { ForbiddenError, NotFoundError } from "../errors/AppError.js";
 import { getSettings, roleAccess } from "./settingsService.js";
-import { EDITOR_TTL_MS, editorHolder } from "./recordConcurrency.js";
+import { EDITOR_TTL_MS, EDIT_LOCK_ENABLED, editorHolder } from "./recordConcurrency.js";
 
 export { EDITOR_TTL_MS };
 const models = { users: User, dependents: Dependent, appointments: Appointment,
@@ -82,7 +82,7 @@ export async function updateRecordEditors(actor, kind, id, sessionId, leave = fa
     if (error.code !== 11000 || !retry) throw error;
     return updateRecordEditors(actor, kind, id, sessionId, leave, false);
   }
-  const holder = editorHolder(result.activeEditors, now);
+  const holder = EDIT_LOCK_ENABLED ? editorHolder(result.activeEditors, now) : null;
   return { activeEditors: visibleEditors(result.activeEditors, now),
     lockedBy: holder && holder.sessionId !== sessionId ? { userId: String(holder.userId), name: holder.name } : null };
 }
