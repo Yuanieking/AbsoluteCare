@@ -14,7 +14,9 @@ import { objectIdParam } from "../middleware/validateObjectId.js";
 const router = Router();
 router.param("id", objectIdParam);
 router.use(protectRoute);
+// ** GET / - list notifications.
 router.get("/", listNotifications);
+// ** GET /unread-count - unread notification count.
 router.get("/unread-count", unreadNotificationCount);
 // ** PATCH /read-all and DELETE / - bulk writes, no single record to timestamp-guard.
 router.patch("/read-all", markAllNotificationsRead);

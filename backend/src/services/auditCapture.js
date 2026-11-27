@@ -145,8 +145,6 @@ export async function recordChange(model, before, after, operation, session) {
   );
 }
 
-// Registered before models compile. The plugin covers every current persistence
-// path: save/create, query writes, insertMany and bulkWrite, including jobs.
 export function auditPlugin(schema) {
   function tracked(model) {
     return Boolean(AUDIT_CATEGORIES[model.modelName]);

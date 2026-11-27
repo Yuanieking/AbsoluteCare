@@ -67,7 +67,6 @@ async function checkGoogle(clientId, clientSecret) {
 }
 
 async function checkRecaptcha(secret, siteKey) {
-  // Catches a bad site key already saved, when the Test button runs.
   const siteError = validateValue(keyDefinition("RECAPTCHA_SITE_KEY"), siteKey);
   if (siteError) {
     return {
@@ -174,7 +173,6 @@ function checkCalendar(values) {
       );
     }
   } catch {
-    /* API_BASE_URL itself is misconfigured; not the admin's problem here. */
   }
   const key = (values.GOOGLE_CALENDAR_ENCRYPTION_KEY || "").trim();
   if (key && key.length < 16) {
@@ -193,8 +191,6 @@ export async function validateGroup(group, values) {
     return { ok: true, fields: {}, warnings: [], skipped: true };
   }
 
-  // Calendar and Drive share the Google OAuth client, which is submitted from
-  // another group, so resolve it here (and include it in the cache key).
   const merged =
     group === "googleCalendar" || group === "googleDrive"
       ? {

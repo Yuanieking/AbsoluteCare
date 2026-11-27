@@ -367,7 +367,6 @@ export async function updateTherapistSpecialization(req, res) {
   });
 }
 
-/** Shared by `/admin/users` and `/admin/records` so the contract cannot drift. */
 export async function updateTherapistAvailability(req, res) {
   const parsed = availabilitySchema.parse(req.body);
   const days = normalizeAvailability(parsed, req.body.workingHours);

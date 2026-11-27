@@ -59,7 +59,6 @@ function brevoPayload(config, message) {
     subject: message.subject,
     htmlContent: message.html,
   };
-  // An empty text part would suppress Brevo's own plain-text generation.
   if (typeof message.text === "string" && message.text.trim())
     payload.textContent = message.text;
   if (message.headers && Object.keys(message.headers).length)
@@ -67,7 +66,6 @@ function brevoPayload(config, message) {
   if (message.attachments?.length)
     payload.attachment = message.attachments.map((attachment) => ({
       name: attachment.filename,
-      // Brevo takes base64 here; the .ics invite is the only attachment.
       content: Buffer.from(attachment.content, "utf8").toString("base64"),
     }));
   return payload;
@@ -158,7 +156,6 @@ export function classifyMailError(error) {
     };
   }
   if (status === 400) {
-    // Brevo exposes no stable machine code for sender verification.
     if (/sender|verified|from/i.test(message)) {
       return {
         code: "SENDER_NOT_VERIFIED",
@@ -275,9 +272,6 @@ export async function sendEmail({
   attachments = [],
   headers = {},
 }) {
-  // The admin switch is a master valve: when it is off nothing leaves the
-  // server, including password resets and invitations that bypass
-  // notification preferences.
   if (!isEmailSendingEnabled(await getSettings())) {
     const userMessage =
       "Email sending is turned off in Settings, so nothing was sent.";
@@ -356,8 +350,6 @@ export async function verifyMailer() {
     console.log("Mailer status: ok");
     return true;
   } catch (error) {
-    // A 403 from /v3/account can be a plan restriction rather than a bad key,
-    // so it must never block a key that can still send.
     if (Number(error.status || 0) === 403) {
       updateHealth({ ok: true, userMessage: "Email provider is working." });
       console.warn(

@@ -41,8 +41,6 @@ export async function connectCalendar(req, res) {
   });
 }
 
-// Where each role connects its calendar: therapists on their availability page,
-// patients in account settings.
 function calendarDestination(role) {
   return role === "therapist" ? "/staff/therapist/availability" : "/settings";
 }
@@ -73,7 +71,6 @@ export async function calendarCallback(req, res) {
     state = jwt.verify(rawState, JWT_SECRET);
     if (state.purpose !== "calendar") throw new Error("Invalid calendar state.");
   } catch {
-    // Unverified decode only chooses which of the two fixed pages to return to.
     const claimed = jwt.decode(rawState);
     calendarRedirect(req, res, claimed?.role, "error", "expired");
     return;

@@ -98,10 +98,6 @@ export const availabilitySchema = z
 
 const defaultHours = { start: "08:00", end: "17:00" };
 
-/**
- * Turns a request into the canonical per-day schedule. A body that still sends
- * only the legacy `workingHours` is expanded onto every selected day.
- */
 export function normalizeAvailability(input, legacyHours) {
   const seed = {
     start: legacyHours?.start || defaultHours.start,

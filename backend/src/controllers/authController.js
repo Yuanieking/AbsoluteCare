@@ -140,11 +140,6 @@ function sendGoogleCallbackResult(
 
 const GOOGLE_PICTURE_HOST = /googleusercontent\.com\//i;
 
-/**
- * Adopts the Google avatar when the account has none, and refreshes one that
- * was previously synced from Google. A picture the person uploaded themselves
- * is left untouched.
- */
 function shouldSyncGooglePicture(current, picture) {
   if (!current) return true;
   if (current === picture) return false;
@@ -241,8 +236,6 @@ export async function googleCallback(req, res) {
     }
 
     const email = profile.email.toLowerCase();
-    // Allowlisted addresses resolve to an active admin even before their first
-    // Google sign-in, and re-enforce the role on every sign-in.
     const user = isBootstrapAdminEmail(email)
       ? await ensureBootstrapAdmin(email)
       : await findUserByEmail(email);
@@ -375,7 +368,6 @@ export async function completeGoogleSignup(req, res) {
         await bcrypt.genSalt(10),
       );
     } else {
-      // Passwordless Google account: unguessable random hash; password can be set later.
       hashedPassword = await bcrypt.hash(
         crypto.randomBytes(32).toString("hex"),
         10,
@@ -401,7 +393,6 @@ export async function completeGoogleSignup(req, res) {
       password: hashedPassword,
       profilePicture: payload.profilePicture || "",
       authProvider: "google",
-      // Public signup is always a patient; only admins change roles.
       role: "user",
       isActive: true,
       acceptedTerms: true,
@@ -426,8 +417,6 @@ export const signup = async (req, res, next) => {
   try {
     const settings = await getSettings();
     const body = signupSchema.parse(req.body);
-    // Bootstrap admin addresses are Google-only, so a password signup can never
-    // claim (and later be promoted into) an allowlisted admin account.
     if (isBootstrapAdminEmail(body.email)) {
       res.status(403).json({
         message:
@@ -458,7 +447,6 @@ export const signup = async (req, res, next) => {
       return;
     }
 
-    // ENCRYPTION
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(body.password, salt);
 
@@ -469,7 +457,6 @@ export const signup = async (req, res, next) => {
       password: hashPassword,
       authProvider: "local",
       phone: body.phone,
-      // Public signup is always a patient; only admins change roles.
       role: "user",
       isActive: true,
       acceptedTerms: true,
@@ -486,7 +473,6 @@ export const signup = async (req, res, next) => {
       _links: authLinks(sanitized),
     });
   } catch (error) {
-    // errorHandler decides the status: Zod 400, AppError's own, otherwise 500.
     next(error);
   }
 };
@@ -717,8 +703,6 @@ export const changePassword = async (req, res) => {
   guardFresh(user, req.get("If-Match"));
   user.password = await bcrypt.hash(parsed.password, 10);
   user.mustChangePassword = false;
-  // First password change doubles as Terms acceptance for staff-provisioned
-  // accounts that never accepted them at signup.
   if (!user.acceptedTerms) {
     user.acceptedTerms = true;
     user.termsAcceptedAt = new Date();

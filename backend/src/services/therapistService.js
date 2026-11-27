@@ -44,7 +44,6 @@ function appointmentQuery(status) {
 
 export async function getProfile(therapistId) {
   const user = await User.findById(therapistId).select("-password");
-  // mongoose 9 drops instance-method typing on .select(); the doc has them.
   return user;
 }
 
@@ -247,7 +246,6 @@ export async function createSessionForAppointment(
       status: 400,
       message: "Enter a valid past date and duration.",
     };
-  // populate() resolves the ref at runtime; the schema still types it as an id.
   const serviceId = appointment.service._id;
   const session = await Session.create({
     appointment: appointment._id,

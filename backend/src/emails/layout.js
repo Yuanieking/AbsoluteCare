@@ -30,7 +30,6 @@ export async function getEmailBranding() {
   try {
     if (AppSetting.db.readyState !== 1)
       throw new Error("database not connected");
-    // lean() returns a plain settings object.
     settings = await AppSetting.findOne({
       key: "singleton",
     }).lean();

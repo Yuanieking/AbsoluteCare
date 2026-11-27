@@ -20,7 +20,6 @@ export async function runDocumentSyncJob() {
   if (!connection?.connected || connection.needsReconnect) return;
 
   const now = new Date();
-  // Legacy safety: a pending row with no due time becomes due immediately.
   await GeneratedDocument.updateMany(
     {
       "drive.status": "pending",

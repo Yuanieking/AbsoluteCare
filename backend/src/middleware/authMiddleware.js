@@ -111,8 +111,6 @@ export function requireRole(...roles) {
   };
 }
 
-// Runs after requireRole: admins always pass, other staff roles pass only
-// while the admin has switched the area on in Settings.
 export function requireAccess(area) {
   return requirePermission(area, "read");
 }

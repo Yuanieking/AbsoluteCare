@@ -38,6 +38,7 @@ router.patch(
   requirePermission("appointments", "update"),
   markNoShow,
 );
+// ** POST /appointments/:id/payment - record a payment.
 router.post(
   "/appointments/:id/payment",
   requirePermission("payments", "create"),
@@ -49,9 +50,13 @@ router.patch(
   requirePermission("payments", "update"),
   updatePayment,
 );
+// ** GET /sessions - list sessions.
 router.get("/sessions", requireAccess("sessions"), listSessions);
+// ** GET /payments - list payments.
 router.get("/payments", requireAccess("payments"), listPayments);
+// ** GET /reports - clinic reports.
 router.get("/reports", requireAccess("reports"), reports);
+// ** GET /reports/payments/export - export the payments report.
 router.get(
   "/reports/payments/export",
   requireAccess("reports"),

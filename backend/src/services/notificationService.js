@@ -15,8 +15,6 @@ function preferenceCategory(type) {
   return "appointmentUpdates";
 }
 
-// Callers pass ids, populated documents or the user document; all resolve to
-// the same stored ref, which Mongoose casts on write.
 function refId(ref) {
   if (!ref) return null;
   if (typeof ref === "string") return ref;
@@ -41,8 +39,6 @@ export async function notify({
   if (!recipient || String(recipient._id) === String(refId(actorId) || ""))
     return null;
 
-  // The admin settings switch each channel off clinic-wide; user preferences
-  // only narrow that further.
   const clinic = (await getSettings()).notifications;
   const inAppAllowed = clinic?.inAppEnabled !== false;
   const emailAllowed = clinic?.emailEnabled !== false;
@@ -63,7 +59,6 @@ export async function notify({
   const category = preferences[preferenceCategory(type)] || {};
   let notification = null;
   if (inAppAllowed && preferences.inApp !== false && category.inApp !== false) {
-    // Route-provided ids arrive as strings; Mongoose casts them on create.
     notification = await Notification.create({
       user: recipient._id,
       type,
@@ -92,7 +87,6 @@ export async function notify({
       recipientEmail: recipient.email,
       title,
       message,
-      // The template tolerates a populated document, a raw id or null.
       appointment: appointmentDetails || appointment,
       dependent: dependent,
       actionUrl: link,

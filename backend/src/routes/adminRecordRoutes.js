@@ -22,6 +22,7 @@ router.use(
   requireRole("admin", "secretary", "therapist"),
   requireAccess("patients"),
 );
+// ** GET /patients/:id - patient record.
 router.get("/patients/:id", getPatient);
 // ** Concurrency: every PATCH below accepts If-Match: "<user.updatedAt>" -> 409 STALE_RECORD when stale.
 // ** PATCH /patients/:id - edit a patient record.
@@ -30,6 +31,7 @@ router.patch(
   requirePermission("patients", "update"),
   updatePatient,
 );
+// ** GET /therapists/:id - therapist record.
 router.get("/therapists/:id", getTherapist);
 // ** PATCH /therapists/:id - edit a therapist record.
 router.patch(

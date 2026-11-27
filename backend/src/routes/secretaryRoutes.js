@@ -19,16 +19,21 @@ import {
 const router = Router();
 router.param("id", objectIdParam);
 router.use(protectRoute, requireRole("secretary"));
+// ** GET /profile - own profile.
 router.get("/profile", getProfile);
 // ** PATCH /profile - update own profile. If-Match: "<profile.updatedAt>" -> 409 STALE_RECORD when stale.
 router.patch("/profile", updateProfile);
+// ** GET /schedule - clinic schedule.
 router.get("/schedule", requireAccess("appointments"), listSchedule);
+// ** GET /payments - list payments.
 router.get("/payments", requireAccess("payments"), listPayments);
+// ** GET /appointments/:id - appointment details.
 router.get(
   "/appointments/:id",
   requireAccess("appointments"),
   getAppointmentDetails,
 );
+// ** POST /appointments/:id/payment - record a payment.
 router.post(
   "/appointments/:id/payment",
   requirePermission("payments", "create"),

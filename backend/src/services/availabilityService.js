@@ -19,7 +19,6 @@ const weekdayFormat = new Intl.DateTimeFormat("en-US", {
   timeZone: "Asia/Manila",
 });
 
-// h23 keeps midnight as 00:00; the legacy `hour12: false` can emit 24:00.
 const clockFormat = new Intl.DateTimeFormat("en-GB", {
   hour: "2-digit",
   minute: "2-digit",
@@ -27,20 +26,14 @@ const clockFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Asia/Manila",
 });
 
-/** Clinic-local weekday for an instant, never the server's. */
 export function manilaWeekday(date) {
   return weekdayFormat.format(date);
 }
 
-/** Clinic-local `HH:mm` for an instant, comparable to stored schedule times. */
 export function manilaClock(date) {
   return clockFormat.format(date);
 }
 
-/**
- * Reads the per-day schedule, falling back to the legacy global range for
- * documents that were never migrated.
- */
 export function scheduleOf(user) {
   const byDay = user.workingHoursByDay;
   if (byDay?.length) {
@@ -57,7 +50,6 @@ export function scheduleOf(user) {
     .map((day) => ({ day: day, start, end }));
 }
 
-/** Derived outer bounds; written on every save and never read for scheduling. */
 export function summarize(days) {
   const [first] = days;
   if (!first) return { start: "08:00", end: "17:00" };
@@ -70,7 +62,6 @@ export function summarize(days) {
   );
 }
 
-/** `Mon–Fri 08:00–17:00 · Sat 09:00–12:00`, collapsing consecutive equal days. */
 export function formatSchedule(days) {
   if (!days.length) return "No working days set";
   const order = WEEKDAYS;
@@ -101,7 +92,6 @@ function specializationsOf(therapist) {
     : [therapist.specialization].filter(Boolean);
 }
 
-// "Physical Therapist (PTs)" and "Physical Therapy" both stem to [physi, thera].
 function stems(value) {
   return String(value || "")
     .toLowerCase()
@@ -111,7 +101,6 @@ function stems(value) {
     .map((word) => word.slice(0, 5));
 }
 
-/** Every word of the shorter label appears in the longer one. */
 function labelsMatch(first, second) {
   const a = stems(first);
   const b = stems(second);
@@ -120,7 +109,6 @@ function labelsMatch(first, second) {
   return shorter.every((word) => longer.includes(word));
 }
 
-/** True when one of the therapist's specializations covers the service's category or name. */
 export function coversService(therapist, service) {
   const specializations = specializationsOf(therapist);
   if (!specializations.length) return true;
@@ -130,10 +118,6 @@ export function coversService(therapist, service) {
   );
 }
 
-/**
- * A service no specialist covers (e.g. a general consultation) stays open to
- * every therapist instead of becoming unbookable.
- */
 export function needsSpecialist(service, therapists) {
   return therapists.some(
     (therapist) =>
@@ -141,7 +125,6 @@ export function needsSpecialist(service, therapists) {
   );
 }
 
-/** First failure wins, and each failure names the rule that blocked it. */
 export function therapistMismatch(
   therapist,
   service,
@@ -212,10 +195,6 @@ export async function bookingTimes(
   return times;
 }
 
-/**
- * Why this therapist cannot take an appointment in that window, or null when
- * they can. Date overrides take priority; unset schedules use 08:00–17:00.
- */
 export function availabilityError(user, start, end) {
   if (
     !Number.isFinite(start?.getTime()) ||
@@ -245,7 +224,6 @@ export function availabilityError(user, start, end) {
   return null;
 }
 
-/** Pending or confirmed, still-upcoming appointments that fall outside the proposed schedule. */
 export async function findConflicts(therapistId, days, dateOverrides = []) {
   const appointments = await Appointment.find({
     therapist: therapistId,
@@ -310,7 +288,6 @@ export function scheduleConflictPayload(conflicts) {
   return { message: conflictMessage(conflicts.length), conflicts };
 }
 
-/** Persists availability, audits the before/after, and tells the admins. */
 export async function saveAvailability(params) {
   const { therapist, days, actorId, byAdmin } = params;
   const dateOverrides = params.dateOverrides ?? therapist.dateOverrides ?? [];
@@ -331,10 +308,6 @@ export async function saveAvailability(params) {
   return days;
 }
 
-/**
- * Notifies every active admin. `notify` already drops the actor and handles
- * in-app plus email, and an email failure never fails the save.
- */
 async function notifyAvailabilityChanged(therapist, days, actorId) {
   const admins = await User.find({
     role: "admin",

@@ -15,10 +15,6 @@ const getEnv = (key, defaultValue) => {
 
 const MONGO_SCHEME = /^mongodb(\+srv)?:\/\//i;
 
-/**
- * Mongo falls back to the "test" database when a URI carries no path, which
- * silently splits the API from the seeded data. Name the database instead.
- */
 function ensureDatabaseName(uri, fallback) {
   const scheme = MONGO_SCHEME.exec(uri);
   if (!scheme) return uri;
@@ -90,10 +86,6 @@ export const MAIL_FROM = getEnv(
   "MAIL_FROM",
   "AbsoluteCare Therapy Center <no-reply@absolutecare.local>",
 );
-// Superuser second factor for sensitive integration changes: the admin enters
-// SU_PASS, then a six-digit code sent to SU_EMAIL. Both must be set.
 export const SU_EMAIL = getEnv("SU_EMAIL", "").trim().toLowerCase();
-// SU_PASSWORD is accepted as an alias of SU_PASS.
 export const SU_PASS = getEnv("SU_PASS", getEnv("SU_PASSWORD", ""));
-// Where "Send test email" delivers. Blank falls back to the signed-in admin.
 export const TEST_EMAIL_RECIPIENT = getEnv("TEST_EMAIL_RECIPIENT", "").trim();

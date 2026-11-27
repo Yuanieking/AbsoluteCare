@@ -11,7 +11,7 @@ import { guardFresh } from "../services/concurrencyService.js";
 import { therapyServiceSchema } from "../schemas/therapyServiceSchema.js";
 
 function servicePayload(body) {
-  return therapyServiceSchema.partial().parse(body); // values are narrowed to the payload shape above
+  return therapyServiceSchema.partial().parse(body);
 }
 
 function validatePayload(payload) {

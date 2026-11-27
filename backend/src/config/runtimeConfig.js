@@ -20,7 +20,6 @@ const DEFAULTS = {
   MAIL_FROM: env.MAIL_FROM,
 };
 
-// Read aliases kept from older installs, in priority order.
 const READ_CHAIN = {
   GOOGLE_CLIENT_SECRET: ["GOOGLE_CLIENT_SECRET", "GOOGLE_SECRET_KEY"],
 };

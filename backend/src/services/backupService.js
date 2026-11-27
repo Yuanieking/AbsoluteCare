@@ -78,7 +78,6 @@ export function parseBackup(text) {
         const id = EJSON.stringify(doc._id, { relaxed: false });
         if (ids.has(id)) throw new Error("Duplicate document ID.");
         ids.add(id);
-        // Check serializability before opening a destructive transaction.
         mongoose.mongo.BSON.serialize(doc);
       }
     }
@@ -139,7 +138,6 @@ async function atomic(work) {
     });
   } catch (error) {
     if (error instanceof BackupError) throw error;
-    // Driver errors can include document values. Never return/log secret-bearing payloads.
     throw new BackupError(
       "BACKUP_FAILED",
       "The database operation failed; no partial replacement was committed.",
@@ -181,7 +179,6 @@ async function audit(db, session, adminId, field, count) {
   );
 }
 
-// ponytail: bounded in-memory logical backup (32 MiB); use mongodump beyond this ceiling.
 export async function createBackup(adminId) {
   return atomic(async (db, names, session) => {
     const data = {};
@@ -238,7 +235,6 @@ export async function restoreBackup(text, adminId) {
       "A restore requires singleton settings and at least one active administrator.",
     );
   }
-  // Restoring must not silently reopen the clinic while an operator verifies it.
   settings[0].system = { ...settings[0].system, maintenanceMode: true };
   return atomic(async (db, names, session) => {
     const current = await db
@@ -258,11 +254,9 @@ export async function restoreBackup(text, adminId) {
         409,
       );
     }
-    // Keep indexes/collection options. No drop, no sequential wipe outside a transaction.
     const allNames = [
       ...new Set([...names, ...Object.keys(backup.collections)]),
     ];
-    // Audit history is append-only, even across recovery to an earlier snapshot.
     for (const name of allNames) {
       if (name !== AuditLog.collection.name)
         await db.collection(name).deleteMany({}, { session });

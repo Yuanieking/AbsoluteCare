@@ -43,8 +43,6 @@ function dateRange(filters) {
 }
 
 function scheduleQuery(filters) {
-  // "upcoming" = confirmed visits that have not started yet; "confirmed" = every
-  // confirmed visit, including past ones still waiting to be completed.
   const status = filters.status || "upcoming";
   const upcoming = status === "upcoming";
   const query =
@@ -66,7 +64,6 @@ export async function getProfile(userId) {
   const user = await User.findById(userId).select(
     "-password -accountAudit -resetPasswordTokenHash -resetPasswordExpiresAt -googleCalendar.refreshTokenEncrypted",
   );
-  // mongoose 9 drops instance-method typing on .select(); the doc has them.
   return user;
 }
 
@@ -99,7 +96,6 @@ export async function listSchedule(filters) {
   const appointments = await Appointment.find(scheduleQuery(filters))
     .populate(appointmentPopulate)
     .sort({ scheduledStart: 1, requestedDate: 1 });
-  // populate() replaces the refs with documents at runtime; the schema types them as ids.
   return appointments;
 }
 

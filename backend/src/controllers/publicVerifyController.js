@@ -8,7 +8,6 @@ export async function verifyDocumentHandler(req, res) {
   const parsed = trackingNumberParamSchema.safeParse(raw);
   res.set("Cache-Control", "no-store");
   if (!parsed.success) {
-    // Unknown and malformed numbers answer identically: no format oracle.
     res.status(404).json({ status: "not_found" });
     return;
   }

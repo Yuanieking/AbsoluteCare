@@ -6,9 +6,6 @@ import { getSettings } from "./settingsService.js";
 import { CLINIC_ADDRESS } from "../config/env.js";
 import { getIntegrationConfig } from "../config/runtimeConfig.js";
 
-// ponytail: one cached key derivation, keyed by the material itself, so a
-// rotated GOOGLE_CALENDAR_ENCRYPTION_KEY is picked up without a restart and
-// old tokens fail to decrypt instead of silently decrypting with the new key.
 let cipherKey = {
   material: "",
   key: null,
@@ -107,8 +104,6 @@ async function accessToken(user) {
     throw new Error("Google Calendar token refresh failed. Try again later.");
   }
   const body = await response.json();
-  // A successful refresh must include an access token. Refuse malformed
-  // responses instead of sending a request with "Bearer undefined".
   if (!body.access_token)
     throw new Error("Google Calendar did not provide an access token.");
   return body.access_token;
@@ -153,7 +148,6 @@ function eventPayload(appointment) {
     location: CLINIC_ADDRESS,
     description: `Therapist: ${appointment.therapist ? `${appointment.therapist.firstname} ${appointment.therapist.lastname}` : "To be assigned"}`,
     start: {
-      // Guarded by the caller's null check on scheduledStart/scheduledEnd.
       dateTime: appointment.scheduledStart.toISOString(),
       timeZone: "Asia/Manila",
     },
@@ -180,7 +174,6 @@ export async function syncConfirmedAppointment(
     !appointment.scheduledEnd
   )
     return null;
-  // populate() replaces ObjectId refs with documents at runtime.
   const populated = appointment;
   const user = await User.findById(calendarUserId || appointment.patient);
   if (!user?.googleCalendar?.connected) return null;
@@ -219,8 +212,6 @@ export async function syncConfirmedAppointment(
   return event;
 }
 
-// Accepts both a plain Appointment doc and a populated one (patient/therapist
-// are documents at runtime); only their ids and event ids are used.
 function ownerId(value) {
   if (!value) return null;
   return typeof value === "object" && "_id" in value ? value._id : value;

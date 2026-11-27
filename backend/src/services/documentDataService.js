@@ -292,7 +292,6 @@ async function patientSummaryPayload(input, actor, general) {
     }
   }
 
-  // patientVisibleNotes is projected explicitly: clinicalNotes must never be read.
   const sessions = await Session.find({
     patient: patient._id,
     dependent: dependent ? new Types.ObjectId(input.dependentId) : null,

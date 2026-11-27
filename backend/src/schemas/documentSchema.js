@@ -13,10 +13,6 @@ const ranged = {
   to: date,
 };
 
-/**
- * The client sends ids and a range, never document content. Bodies are always
- * assembled server-side from existing collections.
- */
 export const documentCreateSchema = z
   .discriminatedUnion("type", [
     z.object({ type: z.literal("clinic_report"), ...ranged }).strict(),

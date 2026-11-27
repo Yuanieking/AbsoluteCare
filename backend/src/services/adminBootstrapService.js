@@ -26,12 +26,6 @@ function nameFromEmail(email) {
   };
 }
 
-/**
- * Makes the account for `email` an active admin, creating it when the address
- * has never signed in. The allowlist is enforced every time this runs, so a
- * manual demotion or deactivation of a bootstrap admin is reverted on the next
- * boot or Google sign-in.
- */
 export async function ensureBootstrapAdmin(email) {
   const normalized = normalizeEmail(email);
   if (!bootstrapEmails.has(normalized)) {
@@ -62,8 +56,6 @@ export async function ensureBootstrapAdmin(email) {
   const created = await UserModel.create({
     ...nameFromEmail(normalized),
     email: normalized,
-    // Passwordless by design: Google is the sign-in path, so the stored hash is
-    // unguessable. The owner can still set a password through a reset link.
     password: await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10),
     authProvider: "google",
     role: "admin",

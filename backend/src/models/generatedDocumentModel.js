@@ -41,7 +41,6 @@ const generatedDocumentSchema = new mongoose.Schema(
     mimeType: { type: String, default: "application/pdf" },
     sizeBytes: { type: Number, default: 0 },
     sha256: { type: String, default: "" },
-    // Never selected by list queries; the download route asks for it explicitly.
     pdf: { type: Buffer, select: false },
     patient: {
       type: mongoose.Schema.Types.ObjectId,

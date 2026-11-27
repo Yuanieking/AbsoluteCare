@@ -73,8 +73,6 @@ export function getIntegrationStatus() {
       configured: missingVariables(googleDrive).length === 0,
       missing: missingVariables(googleDrive),
     },
-    // Address search and maps use keyless OpenStreetMap services, so there is
-    // nothing to configure; only the on/off switch matters.
     googleMaps: { configured: true, missing: [] },
     email: { configured: emailMissing.length === 0, missing: emailMissing },
   };

@@ -12,8 +12,6 @@ import { isPrimaryInstance } from "./restartService.js";
 
 const BACKUP_PATH = path.join(PACKAGE_ROOT, ".env.bak");
 
-// Keys from the retired SMTP/Gmail mail path. They are stripped on the next
-// rewrite so old installs do not keep dead credentials in .env.
 const RETIRED_KEYS = new Set([
   "SMTP_HOST",
   "SMTP_PORT",
@@ -67,9 +65,6 @@ export function formatEnvValue(raw) {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
-/**
- * Best-effort rewrite of backend/.env from the resolved credential set.
- */
 export async function rewriteEnvFile(overrides = new Map()) {
   if (ENV_WRITE === "off" || process.env.ENV_WRITE === "off") {
     return { outcome: "skipped_readonly", reason: "ENV_WRITE=off" };
@@ -109,8 +104,6 @@ export async function rewriteEnvFile(overrides = new Map()) {
       }
     }
 
-    // Merge: DB overrides use CUSTOM_ names; original variables stay defaults.
-    // Never write an empty override. A cleared DB override removes its CUSTOM_ line.
     const merged = new Map();
     const customKeys = new Set();
     for (const key of MANAGED_KEYS) {
@@ -120,7 +113,6 @@ export async function rewriteEnvFile(overrides = new Map()) {
       const override = (overrides.get(key) ?? "").trim();
       if (override) merged.set(customKey, override);
     }
-    // Validate before touching disk: newlines are rejected per spec.
     for (const [key, value] of merged) {
       if (/[\r\n]/.test(value)) {
         console.error(`env: rewrite aborted (line break in ${key})`);
@@ -128,14 +120,12 @@ export async function rewriteEnvFile(overrides = new Map()) {
       }
     }
 
-    // Backup before writing (mode preserved).
     if (hadEnvFile) {
       try {
         await fs.promises.copyFile(ENV_PATH, BACKUP_PATH);
         try {
           await fs.promises.chmod(BACKUP_PATH, existingMode);
         } catch {
-          // Mode preservation is best-effort.
         }
       } catch (error) {
         const code = error.code;
@@ -179,8 +169,6 @@ export async function rewriteEnvFile(overrides = new Map()) {
         !RETIRED_KEYS.has(key) &&
         key in existing,
     );
-    // Include unmanaged keys that dotenv parsed but whose line shape the
-    // order scanner missed (defensive; keeps values untouched).
     for (const key of Object.keys(existing)) {
       if (
         !MANAGED_KEYS.has(key) &&
@@ -221,7 +209,6 @@ export async function rewriteEnvFile(overrides = new Map()) {
       try {
         await fs.promises.unlink(tmpPath);
       } catch {
-        // Ignore cleanup failures.
       }
       const code = error.code;
       if (code === "EROFS" || code === "EACCES") {

@@ -14,7 +14,6 @@ const dependentFields = {
   medicalNotes,
 };
 
-// Defaults belong to create only: on a PATCH an absent field must stay untouched.
 export const dependentSchema = z.object({
   ...dependentFields,
   sex: sex.optional().default(""),

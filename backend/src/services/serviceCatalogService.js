@@ -36,7 +36,6 @@ export async function removeService(service, actorId) {
 }
 
 export async function countServiceUsage(id) {
-  // filter is a plain Mongo object; cast at the mongoose boundary
   return Appointment.countDocuments({
     service: id,
   });

@@ -13,7 +13,6 @@ const populatePaths = [
 ];
 
 function raw(appointment) {
-  // populate() swaps ObjectId refs for documents at runtime; Mongoose keeps typing them as ObjectIds
   return appointment;
 }
 
@@ -53,7 +52,6 @@ export async function findActiveTherapists() {
   const therapists = await User.find({ role: "therapist", isActive: true })
     .select(userFields)
     .sort({ lastname: 1, firstname: 1 });
-  // mongoose 9 drops instance-method typing on .select(); the docs have them.
   return therapists;
 }
 
@@ -63,7 +61,6 @@ export async function findActiveTherapistById(therapistId) {
     role: "therapist",
     isActive: true,
   };
-  // filters are built as plain Mongo objects; cast at the mongoose boundary
   const user = await User.findOne(filter).select(userFields);
   return user;
 }
@@ -81,7 +78,6 @@ export async function hasConfirmedConflict(
     scheduledStart: { $lt: end },
     scheduledEnd: { $gt: start },
   };
-  // filter is a plain Mongo object; cast at the mongoose boundary
   return Boolean(await Appointment.exists(filter));
 }
 
@@ -114,10 +110,8 @@ export async function applyReschedule(
   doc.requestedTime = time;
   doc.scheduledStart = schedule.start;
   doc.scheduledEnd = schedule.end;
-  // A new time gets its own reminder windows.
   doc.remindersSentHours = [];
   doc.reminderSentAt = null;
-  // Mongoose casts the partial object into the subdocument exactly as the previous JS did
   doc.rescheduleRequest = {
     status: "none",
   };
@@ -136,7 +130,6 @@ export async function declineRescheduleRequest(appointment, actorId, reason) {
 
 export async function cancelAppointmentRecord(appointment, actorId, reason) {
   const doc = raw(appointment);
-  // A cancelled appointment must not keep surfacing under the `rescheduled` filter.
   const hadOpenRequest = doc.rescheduleRequest?.status === "requested";
   doc.status = "cancelled";
   doc.cancelReason = reason;

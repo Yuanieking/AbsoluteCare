@@ -57,7 +57,6 @@ const clean = (value) => (typeof value === "string" ? value.trim() : "");
 
 const CLIENT_ID = /^\d{6,}-[a-z0-9]+\.apps\.googleusercontent\.com$/i;
 
-// Google issues both reCAPTCHA keys as 40 characters starting with 6L.
 const RECAPTCHA_KEY = /^6L[\w-]{38}$/;
 const recaptchaKey = (value) =>
   RECAPTCHA_KEY.test(clean(value))

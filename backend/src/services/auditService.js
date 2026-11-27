@@ -50,7 +50,6 @@ export function auditFilter(query, actor) {
 export function visibleAudit(entry, role) {
   const { subjects, requestId, ...safe } = entry;
   if (role === "admin") return { ...safe, requestId };
-  // Scope is checked in the database, and all non-admin responses are metadata-only.
   return {
     _id: entry._id,
     at: entry.at,
@@ -92,7 +91,6 @@ export async function getAudit(id, actor) {
 }
 export function csvCell(value) {
   const text = String(value ?? "");
-  // CSV values are untrusted; quotes alone do not prevent spreadsheet formulas.
   return `"${(/^[\s]*[=+@\-]/.test(text) ? "'" : "") + text.replace(/"/g, '""')}"`;
 }
 export async function* exportAudit(query, actor) {
@@ -138,8 +136,6 @@ export async function* exportAudit(query, actor) {
   }
 }
 
-// Idempotent, bounded historical import: only pre-capture embedded audit entries.
-// No historical actor/status or before-values are fabricated when they were not stored.
 export async function importLegacyAudit() {
   if (mongoose.connection.readyState !== 1) return;
   const db = mongoose.connection.db;

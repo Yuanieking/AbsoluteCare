@@ -7,8 +7,6 @@ const STATIC_ACTIONS = new Set([
   "disable_recaptcha",
   "disableGoogleAuth",
   "disableRecaptcha",
-  // ** Backup holds password hashes and credential ciphertext, so both the
-  // ** download and the restore need the superuser password and emailed code.
   "exportBackup",
   "restoreBackup",
   "resetIntegrationCredentials",

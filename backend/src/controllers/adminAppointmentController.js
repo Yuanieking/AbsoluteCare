@@ -50,8 +50,6 @@ function serviceOf(appointment) {
   };
 }
 
-// A pending request whose requested time has passed can no longer be scheduled
-// as asked; staff must cancel it or ask the patient to book a new time.
 function pastDueError(res, schedule) {
   if (schedule.start > new Date()) return false;
   res.status(409).json({
@@ -143,7 +141,6 @@ export async function listAppointments(req, res) {
   }
   if (typeof req.query.therapist === "string" && req.query.therapist)
     query.therapist = req.query.therapist;
-  // Therapists only ever see their own caseload, whatever filter they send.
   if (req.user.role === "therapist") query.therapist = req.user.userId;
   if (typeof req.query.service === "string" && req.query.service)
     query.service = req.query.service;

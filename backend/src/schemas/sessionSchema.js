@@ -16,7 +16,6 @@ const sessionFields = {
   clinicalNotes: notes,
 };
 
-// Defaults belong to create only: on a PATCH an absent field must stay untouched.
 export const sessionInputSchema = z.object({
   ...sessionFields,
   patientVisibleNotes: notes.optional().default(""),

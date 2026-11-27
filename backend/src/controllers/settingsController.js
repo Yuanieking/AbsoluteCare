@@ -85,8 +85,6 @@ function hashValue(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-// ** Superuser password gate for requesting a verification code. Failed
-// ** attempts are counted per admin so SU_PASS cannot be brute-forced.
 const PASSWORD_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_MAX_FAILURES = 5;
 const passwordFailures = new Map();
@@ -127,13 +125,11 @@ function integrationKey(key) {
 function statusMap() {
   return {
     ...getIntegrationStatus(),
-    // Report generation needs no server credentials, so it is always ready.
     reportGeneration: { configured: true, missing: [] },
   };
 }
 
 function integrationsOf(settings) {
-  // Integration last-test fields are dynamic keys on the typed settings object.
   return settings.integrations;
 }
 
@@ -252,8 +248,6 @@ export async function patchSettings(req, res) {
   const body = req.body ?? {};
   const { verificationToken, ...sectionBody } = body;
   const next = validateSettingsSection(section, sectionBody);
-  // ** Turning Google sign-in or reCAPTCHA off through a section save needs the
-  // ** same superuser verification as the integration toggle.
   const currentSection = (await getSettings())[section];
   const disableChecks = [
     ["googleAuthEnabled", "disable_google_auth"],
@@ -344,7 +338,6 @@ export async function patchIntegration(req, res) {
     res.status(409).json({ code: "NOT_CONFIGURED", missing: status.missing });
     return;
   }
-  // ** Disabling sign-in or reCAPTCHA needs the superuser password + email code.
   const guardedAction =
     !body.enabled && key === "googleAuth"
       ? "disable_google_auth"
@@ -393,8 +386,6 @@ export async function getAudit(req, res) {
 
 export async function testEmail(req, res) {
   const admin = await getAdminContact(req.user.userId);
-  // A configured test recipient lets you prove delivery to a mailbox you can
-  // actually open, even when that is not the admin's own address.
   if (TEST_EMAIL_RECIPIENT && !isValidEmail(TEST_EMAIL_RECIPIENT)) {
     res.status(400).json({
       message:
@@ -655,7 +646,6 @@ export async function testIntegration(req, res) {
   const key = String(req.params.key ?? "");
   const normalizedKey = key === "google" ? "googleAuth" : key;
   if (normalizedKey === "googleDrive") {
-    // The Drive test proves the whole path: token, folders and an upload.
     const result = await testDriveConnection();
     recordHealth("drive", result.ok, result.ok ? "" : result.message);
     res.status(result.ok ? 200 : 502).json({
@@ -671,7 +661,6 @@ export async function testIntegration(req, res) {
     res.status(400).json({ message: "Unknown integration." });
     return;
   }
-  // Test the resolved credentials against the provider, not just their presence.
   const result = await testGroup(target.group);
   recordHealth(target.health, result.ok, result.ok ? "" : result.message);
   res.status(result.ok ? 200 : 502).json({
@@ -751,8 +740,6 @@ export async function getIntegrationHealth(req, res) {
       integrationResponse("reportGeneration", settings),
     ]);
   res.set("Cache-Control", "no-store");
-  // Same record shape the cards render, so "Re-check status" updates every
-  // field instead of only the configured flag.
   res.json({
     google: { ...google, ...healthFor("google") },
     recaptcha: { ...recaptcha, ...healthFor("recaptcha") },

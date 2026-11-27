@@ -28,8 +28,11 @@ router.use(
   requireRole("admin", "secretary", "therapist"),
   requireAccess("appointments"),
 );
+// ** GET / - list appointments.
 router.get("/", listAppointments);
+// ** GET /:id - appointment details.
 router.get("/:id", getAppointment);
+// ** GET /:id/available-therapists - therapists free for this appointment.
 router.get(
   "/:id/available-therapists",
   requireRole("admin", "secretary"),
@@ -75,6 +78,7 @@ router.patch(
   requirePermission("appointments", "update"),
   cancelAppointment,
 );
+// ** POST /:id/notification - send an appointment notification.
 router.post(
   "/:id/notification",
   requirePermission("appointments", "update"),

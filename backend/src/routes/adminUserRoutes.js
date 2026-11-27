@@ -30,8 +30,11 @@ router.use(
   requireRole("admin", "secretary", "therapist"),
   requireAccess("userManagement"),
 );
+// ** GET / - list users.
 router.get("/", listUsers);
+// ** POST / - create a user.
 router.post("/", requirePermission("userManagement", "create"), createUser);
+// ** GET /:id - user details.
 router.get("/:id", getUser);
 // ** Concurrency: every PATCH/DELETE below accepts If-Match: "<user.updatedAt>".
 // ** A stale timestamp returns 409 { code: "STALE_RECORD" }; no header = unchecked.
@@ -61,6 +64,7 @@ router.delete(
   requirePermission("userManagement", "delete"),
   removeUser,
 );
+// ** GET /patients/:id - patient record.
 router.get("/patients/:id", getPatient);
 // ** PATCH /patients/:id - edit a patient record.
 router.patch(
@@ -68,6 +72,7 @@ router.patch(
   requirePermission("patients", "update"),
   updatePatient,
 );
+// ** GET /therapists/:id - therapist record.
 router.get("/therapists/:id", getTherapist);
 // ** PATCH /therapists/:id - edit a therapist record.
 router.patch(

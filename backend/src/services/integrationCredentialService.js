@@ -67,7 +67,6 @@ export class CredentialError extends Error {
 const hashOf = (value) =>
   crypto.createHash("sha256").update(value).digest("hex");
 
-// Credential documents hold ObjectIds; callers pass id strings from the JWT.
 const objectId = (id) => id;
 
 export function digestOf(group, values) {
@@ -144,7 +143,6 @@ function shapeKey(entry, doc, names) {
 export async function credentialGroups() {
   const settings = await getSettings();
   const restartRequired = Boolean(settings.integrations?.restartRequired);
-  // Lean credential rows mirror this shape; the model type omits timestamps.
   const docs = await IntegrationCredential.find().lean();
 
   const rows = docs ?? [];
@@ -212,7 +210,6 @@ async function markRestartPending(adminId) {
 }
 
 async function loadDecryptedOverrides() {
-  // Credential rows store the encrypted override per key.
   const docs = await IntegrationCredential.find({}).lean();
 
   const map = new Map();
@@ -360,7 +357,6 @@ export async function saveCredentials({
     candidate[entry.key] =
       values[entry.key]?.trim() || getIntegrationConfig(entry.key);
   }
-  // The legacy alias overwrites the client secret below, so check it as one.
   const alias = changes.find((change) => change.key === "GOOGLE_SECRET_KEY");
   if (alias && !values.GOOGLE_CLIENT_SECRET)
     candidate.GOOGLE_CLIENT_SECRET = alias.value;
@@ -488,7 +484,6 @@ export async function resetCredentials({ adminId, ip }) {
       { $set: { "googleCalendar.needsReconnect": true } },
     );
   }
-  // Tombstones also suppress CUSTOM_ values supplied by a read-only environment.
   await IntegrationCredential.bulkWrite(
     [...MANAGED_KEYS].map((key) => ({
       updateOne: {
@@ -655,10 +650,6 @@ export async function testGroup(groupId) {
   return { ...lastTest, fields: result.fields, warnings: result.warnings };
 }
 
-/**
- * Deletes encrypted rows for keys that are no longer in the registry, so the
- * retired SMTP/Gmail credentials do not linger in the database.
- */
 export async function pruneRetiredCredentials() {
   try {
     const stale = await IntegrationCredential.find({

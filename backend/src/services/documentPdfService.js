@@ -192,7 +192,6 @@ function drawSignatureBlock(doc, input) {
   const disclaimer =
     "Electronically issued. This document is valid without a handwritten signature; its authenticity can be checked with the tracking number at the address in the footer.";
 
-  // Measure first so the block is kept together and nothing overlaps.
   doc.font("Helvetica").fontSize(7.5);
   const issuerHeight = doc.heightOfString(input.issuerLine, {
     width: colWidth,
@@ -317,7 +316,6 @@ function drawHeader(doc, input, pageIndex) {
 
   let noteY = 68;
   if (pageIndex > 0) {
-    // The first page already carries the full title in its body.
     doc.font("Helvetica-Bold").fontSize(8.5).fillColor(PINE);
     doc.text(fitText(doc, input.payload.title, rightWidth), rightX, noteY, {
       width: rightWidth,
@@ -433,12 +431,9 @@ export async function renderDocumentPdf(input) {
   }
   drawSignatureBlock(doc, input);
 
-  // Header and footer are painted after pagination so "Page n of total" is exact
-  // and every page carries the same letterhead.
   const range = doc.bufferedPageRange();
   for (let index = range.start; index < range.start + range.count; index += 1) {
     doc.switchToPage(index);
-    // A bottom margin of zero stops the footer from triggering another page.
     doc.page.margins.bottom = 0;
     drawHeader(doc, input, index - range.start);
     drawFooter(doc, input, index - range.start + 1, range.count);

@@ -54,6 +54,7 @@ app.disable("x-powered-by");
 app.use(securityHeaders);
 app.use(auditRequest);
 
+// ** GET /static/email/logo.png - logo used in emails.
 app.get("/static/email/logo.png", (req, res) => {
   res.sendFile(path.join(ASSETS_DIR, "email/logo.png"));
 });
@@ -86,7 +87,6 @@ const editorRateLimit = createRateLimiter({
 const apiV1 = express.Router();
 apiV1.use((req, res, next) => req.path.startsWith("/record-editors/")
   ? editorRateLimit(req, res, next) : globalRateLimit(req, res, next));
-// Backup requests use a route-specific limit and must have parsed auth cookies.
 
 app.use(cookieParser());
 apiV1.use("/admin/backup", backupRoutes);

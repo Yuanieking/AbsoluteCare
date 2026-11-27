@@ -6,7 +6,6 @@ import {
 
 const VERIFY_TIMEOUT_MS = 5_000;
 
-// Google's siteverify codes that mean the server's key is wrong, not the user's answer.
 const CONFIG_ERROR_CODES = new Set([
   "missing-input-secret",
   "invalid-input-secret",
@@ -15,7 +14,6 @@ const CONFIG_ERROR_CODES = new Set([
 export const INVALID_KEY_MESSAGE =
   "Invalid Key. Google rejected this client ID and secret pair. Copy both again from the Google Cloud console.";
 
-// Google answered `invalid-input-secret`: the configured secret was rejected.
 function invalidKey(res) {
   console.warn("recaptcha: invalid key (invalid-input-secret)");
   res.status(503).json({

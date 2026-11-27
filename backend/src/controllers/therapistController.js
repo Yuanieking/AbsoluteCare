@@ -108,9 +108,6 @@ export async function getAppointment(req, res) {
 export async function listPatients(req, res) {
   const { appointments, sessions, users } =
     await therapistService.listPatientRecords(therapistId(req));
-  // One row per person treated: the account holder for their own visits, and
-  // each dependent for theirs. An account holder who books for themselves and
-  // for a child appears twice.
   const now = new Date();
   const personKey = (item) => item.dependent?._id?.toString() || "self";
   const appointmentPerson = new Map(

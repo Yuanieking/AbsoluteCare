@@ -20,8 +20,10 @@ router.use((req, res, next) => {
   res.set("Cache-Control", "no-store");
   next();
 });
+// ** GET / - list audit activity.
 router.get("/", listAuditHandler);
+// ** GET /export - export the audit log (admin).
 router.get("/export", requireRole("admin"), exportAuditHandler);
+// ** GET /:id - audit entry details.
 router.get("/:id", auditDetailHandler);
-// No edit, delete, retention toggle or arbitrary user selector.
 export default router;

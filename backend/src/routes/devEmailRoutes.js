@@ -3,6 +3,7 @@ import { templates } from "../emails/preview.js";
 
 const router = Router();
 
+// ** GET /emails/:template - preview an email template (non-production only).
 router.get("/emails/:template", async (req, res, next) => {
   try {
     const render = templates[req.params.template];

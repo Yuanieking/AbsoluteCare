@@ -165,8 +165,6 @@ export async function getDriveStatus() {
   };
 }
 
-// The callback redirect cannot carry the reason to an admin who closed the tab,
-// so keep it on the connection where the settings card can read it.
 export async function recordConnectFailure(reason) {
   await GoogleDriveConnection.findOneAndUpdate(
     { key: "clinic" },
@@ -464,7 +462,6 @@ async function ensureRootFolder(connection) {
     await connection.save();
     return configured;
   }
-  // drive.file can only see folders this app created, so it makes its own root.
   const id = await ensureFolder(connection, ROOT_FOLDER_NAME, "root");
   connection.rootFolderId = id;
   await connection.save();
@@ -515,7 +512,6 @@ async function uploadToFolder(
       !fileId
     )
       throw error;
-    // A prior attempt may have committed before its response was lost.
     const existing = await driveFetch(
       connection,
       `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,webViewLink,parents,appProperties,trashed&supportsAllDrives=true`,
@@ -585,8 +581,6 @@ export async function uploadDocumentFile(input) {
   if (!connection?.connected) {
     throw new DriveError("not_connected", NOT_CONNECTED, false);
   }
-  // One immediate recovery pass handles stale cached folders. Further failures
-  // use the persisted queue's normal backoff rather than a tight retry loop.
   for (let attempt = 0; ; attempt += 1) {
     try {
       const root = await ensureRootFolder(connection);

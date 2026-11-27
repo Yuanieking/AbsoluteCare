@@ -26,7 +26,6 @@ import {
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 const MAX_DRIVE_ATTEMPTS = 5;
-/** Retry backoff after the 1st..5th failed attempt. */
 const BACKOFF_MS = [
   60_000,
   5 * 60_000,
@@ -112,10 +111,6 @@ export function documentView(doc) {
   };
 }
 
-/**
- * One upload attempt. A failure never loses the document: the bytes, the
- * tracking number and the drive retry state all stay on the record.
- */
 export async function attemptDriveUpload(candidate, resetAttempts = false) {
   const now = new Date();
   const lockToken = crypto.randomUUID();
@@ -175,8 +170,6 @@ async function performDriveUpload(doc, lockToken) {
       throw new DriveError("rejected", "The stored PDF is missing.", false);
     if (!doc.drive.fileId) {
       const fileId = await reserveDriveFileId();
-      // Persist the remote ID before sending bytes: retries reuse it even if
-      // Google accepts an upload but its response never reaches this process.
       const reserved = await GeneratedDocument.updateOne(
         { _id: doc._id, "drive.lockToken": lockToken },
         { $set: { "drive.fileId": fileId } },
@@ -278,7 +271,6 @@ export async function createDocument(input, actor) {
     });
   }
 
-  // Same type, same source ids, identical range: the new document replaces it.
   const previous = await GeneratedDocument.findOne({
     type: payload.type,
     patient: payload.patient,
@@ -367,7 +359,6 @@ export async function listDocuments(query, actor) {
 
 export async function findDocumentForActor(id, actor) {
   const doc = await GeneratedDocument.findById(id).select("-pdf");
-  // No existence oracle: another staff member's document is a plain 404.
   if (
     !doc ||
     (actor.role !== "admin" && String(doc.generatedBy) !== actor.id)
@@ -411,7 +402,6 @@ export async function revokeDocument(id, actorId, reason) {
   return doc;
 }
 
-/** The public answer only: no patient, no amount, no issuer, no Drive link. */
 export async function verifyDocument(trackingNumber) {
   const doc = await GeneratedDocument.findOne({
     trackingNumber: trackingNumber.trim().toUpperCase(),

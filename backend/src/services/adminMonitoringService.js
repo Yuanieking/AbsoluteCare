@@ -76,7 +76,6 @@ export async function findAppointmentById(id) {
 }
 
 function raw(appointment) {
-  // populate() swaps ObjectId refs for documents at runtime; Mongoose keeps typing them as ObjectIds
   return appointment;
 }
 

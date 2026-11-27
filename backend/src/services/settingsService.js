@@ -83,7 +83,6 @@ export async function getSettings() {
       if (updated) settings = updated;
     }
   }
-  // The cached value has always been the plain object, not the document.
   const data = settings.toObject();
   cache = data;
   cacheExpires = Date.now() + 60_000;
@@ -99,24 +98,18 @@ export function effectiveIntegrationEnabled(settings, key) {
   return Boolean(integrations?.[field] && status[key]?.configured);
 }
 
-// Master mail switch. Installs written before the switch existed have no
-// stored value, so anything other than an explicit false keeps mail flowing.
 export function isEmailSendingEnabled(settings) {
   const integrations = settings?.integrations;
 
   return integrations?.emailEnabled !== false;
 }
 
-// Master PDF switch. It needs no credentials, so only an explicit false stops
-// generation; installs written before the switch existed keep working.
 export function isReportGenerationEnabled(settings) {
   const integrations = settings?.integrations;
 
   return integrations?.reportGenerationEnabled !== false;
 }
 
-// Installs written before role access existed have no stored value, so only
-// an explicit false removes access.
 export function roleAccess(settings) {
   const permissions = settings?.auth?.permissions;
   const auth = settings?.auth;
@@ -178,7 +171,6 @@ export function roleAccess(settings) {
   };
 }
 
-// Admin always has full access; patients never use staff areas.
 export function roleHasAccess(settings, role, area) {
   if (role === "admin") return true;
   const access = roleAccess(settings);
@@ -242,7 +234,6 @@ export async function googleAccountImpact() {
   return { googleUsers, withoutPassword };
 }
 
-// Audit documents store an ObjectId; callers hold the id string from the JWT.
 const objectId = (id) => id;
 
 export async function latestAudit(section, field) {
@@ -297,7 +288,6 @@ export async function updateSettingsSection({
   const current = await AppSetting.findOne({ key: "singleton" });
   // ** Concurrency: fail fast if the settings document changed since the client read it.
   if (current) guardFresh(current, ifMatch);
-  // `section` is a runtime key of the settings document.
   const currentData = current ? current.toObject() : null;
   const previous = currentData?.[section] ?? {};
   const changed = Object.keys(values).filter(
@@ -328,7 +318,6 @@ export async function updateSettingsSection({
     })),
   );
   invalidateSettingsCache();
-  // `section` is a runtime key of the settings document.
   const data = updated;
   return {
     section: data[section],

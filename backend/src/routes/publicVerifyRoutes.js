@@ -6,7 +6,7 @@ const asyncRoute = (handler) => (req, res, next) =>
   Promise.resolve(handler(req, res, next)).catch(next);
 
 const router = Router();
-// Public: no cookies, no protectRoute, only the in-memory rate limit.
+// ** GET /:trackingNumber - public document verification (rate limited, no sign-in).
 router.get(
   "/:trackingNumber",
   verifyRateLimit,

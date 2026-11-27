@@ -105,7 +105,6 @@ export async function listSessions(req, res) {
 }
 
 export async function listPayments(req, res) {
-  // Paid visits stay on the ledger after a cancellation so recorded money never disappears.
   const query = {
     $or: [
       { status: { $in: ["confirmed", "completed"] } },

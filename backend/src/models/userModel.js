@@ -125,7 +125,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-/** Plain copy safe to send to any client: no password hash, reset token, or OAuth secret. */
 userSchema.methods.omitPassword = function () {
   const user = this.toObject();
   delete user.password;

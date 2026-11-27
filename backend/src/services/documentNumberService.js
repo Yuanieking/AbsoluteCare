@@ -14,7 +14,6 @@ export const DOCUMENT_LABELS = {
   receipt: "Payment receipt",
 };
 
-/** The tracking year follows the clinic's calendar, not UTC. */
 export function clinicYear(timezone = "Asia/Manila") {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
@@ -33,7 +32,6 @@ export async function allocateTrackingNumber(type) {
     { $inc: { seq: 1 } },
     { new: true, upsert: true, setDefaultsOnInsert: true },
   );
-  // padStart widens past six digits instead of wrapping.
   return `${PREFIX[type]}-${year}-${String(counter?.seq ?? 1).padStart(6, "0")}`;
 }
 

@@ -19,7 +19,6 @@ const editorKinds = { User: "users", Dependent: "dependents", Appointment: "appo
 
 async function assertNotLocked(model, id, context) {
   if (context.lockChecked) return;
-  // Looked up lazily: importing the model here would compile models before this global plugin is registered.
   const doc = await mongoose.models.RecordEditors?.findById(`${editorKinds[model]}:${model === "AppSetting" ? "singleton" : id}`).lean();
   const holder = editorHolder(doc?.activeEditors);
   if (holder && holder.sessionId !== context.editorSession)

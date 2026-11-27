@@ -4,10 +4,6 @@ function isPlainObject(value) {
   return proto === Object.prototype || proto === null;
 }
 
-/**
- * Removes keys that can act as Mongo operators ("$...") or path selectors
- * ("a.b"), plus "__proto__", recursively. Returns true when anything was removed.
- */
 function strip(value) {
   let changed = false;
   if (Array.isArray(value)) {
@@ -26,11 +22,8 @@ function strip(value) {
   return changed;
 }
 
-/** NoSQL-injection guard for request bodies and query strings. */
 export function sanitizeInput(req, res, next) {
   strip(req.body);
-  // Express 5 re-parses req.query on every read, so a sanitized copy must be
-  // pinned onto the request or the removal would be thrown away.
   const query = req.query;
   if (strip(query)) {
     Object.defineProperty(req, "query", {

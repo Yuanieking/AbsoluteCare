@@ -20,7 +20,6 @@ const auditLogSchema = new mongoose.Schema(
         after: mongoose.Schema.Types.Mixed,
       },
     ],
-    // Readers receive metadata only on own activity. No clinical text/secret payloads.
     subjects: [{ type: mongoose.Schema.Types.ObjectId }],
     requestId: { type: String, default: "" },
     source: {
@@ -36,5 +35,4 @@ auditLogSchema.index({ at: -1, _id: -1 });
 auditLogSchema.index({ actorId: 1, at: -1 });
 auditLogSchema.index({ subjects: 1, at: -1 });
 auditLogSchema.index({ category: 1, at: -1 });
-// No TTL index or mutation API: retention is indefinite.
 export default mongoose.model("AuditLog", auditLogSchema);

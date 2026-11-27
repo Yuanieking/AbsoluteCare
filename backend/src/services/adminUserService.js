@@ -4,7 +4,6 @@ import { guardFresh } from "./concurrencyService.js";
 const selectFields = "-password";
 
 function auditEntry(action, adminId) {
-  // `by` arrives as a string JWT claim; Mongoose casts it on save.
   return {
     action,
     by: adminId,
@@ -12,7 +11,6 @@ function auditEntry(action, adminId) {
 }
 
 export async function listUsers(filters) {
-  // Query params are unvalidated today; Mongoose casts these filters.
   const query = { removedAt: null };
   const role = filters.role;
   if (role && role !== "all") query.role = role === "patient" ? "user" : role;
@@ -60,7 +58,6 @@ export async function findUserWithAudit(id) {
   const user = await User.findById(id)
     .select(selectFields)
     .populate("accountAudit.by", "firstname lastname email");
-  // mongoose 9 drops instance-method typing on .select(); the doc has them.
   return user;
 }
 
@@ -78,7 +75,6 @@ export async function emailExists(email, excludeId) {
 }
 
 export async function createUserAccount(input) {
-  // Body fields are unvalidated today; the schema validates them at runtime.
   const user = await User.create({
     ...input.fields,
     firstname: input.firstname,
