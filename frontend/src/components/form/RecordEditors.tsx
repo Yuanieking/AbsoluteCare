@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import client, { editorSessionId, pinRecordTimestamp } from '@/lib/api/client'
 
 type Editor = { userId: string; name: string; lastSeenAt: string }
@@ -22,7 +22,6 @@ export function RecordEditors({ kind, record, id, active = true, resetKey = 0, t
   const [presence, setPresence] = useState<Presence | null>(null)
   const [handedOver, setHandedOver] = useState(false)
   const [stale, setStale] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!active || !recordId) return
     const unpin = pinRecordTimestamp(kind === 'settings' ? 'settings' : recordId,
@@ -40,7 +39,7 @@ export function RecordEditors({ kind, record, id, active = true, resetKey = 0, t
         locked = Boolean(lockedBy)
         setPresence({ key, editors: response.data.activeEditors, lockedBy, unavailable: false })
       } catch {
-        // Presence down: unlock the UI; the server still rejects writes while another tab holds the lock.
+        // Presence down: clear the warning; the server still rejects writes while another tab holds the lock.
         if (!stopped) setPresence({ key, editors: [], lockedBy: null, unavailable: true })
       } finally {
         // Waiting editors poll faster so the lock hands over within seconds of the holder leaving.
@@ -71,37 +70,13 @@ export function RecordEditors({ kind, record, id, active = true, resetKey = 0, t
   }, [active, kind, recordId, resetKey])
 
   const current = presence?.key === key ? presence : null
-  // Locked until the first answer arrives, so a second editor can never click before the check.
-  const blocked = Boolean(active && recordId && (!current || current.lockedBy))
-  useEffect(() => {
-    const root = rootRef.current
-    const parent = root?.parentElement
-    if (!blocked || !root || !parent) return
-    // Siblings stay visible but cannot be clicked, focused or typed into; the dialog's X still closes it.
-    const touched = new Set<Element>()
-    const apply = () => {
-      for (const element of parent.children) {
-        if (element === root || element.matches('[data-slot="dialog-close"]') || element.hasAttribute('inert')) continue
-        element.setAttribute('inert', '')
-        touched.add(element)
-      }
-    }
-    apply()
-    const observer = new MutationObserver(apply)
-    observer.observe(parent, { childList: true })
-    return () => {
-      observer.disconnect()
-      for (const element of touched) element.removeAttribute('inert')
-    }
-  }, [blocked])
-
   if (!active || !recordId) return null
   const names = current?.editors.map((editor) => editor.name).join(', ')
-  return <div ref={rootRef} className="col-span-full grid gap-1 rounded-md border border-hairline bg-sunk p-2 text-xs" aria-live="polite">
+  return <div className="col-span-full grid gap-1 rounded-md border border-hairline bg-sunk p-2 text-xs" aria-live="polite">
     {current?.lockedBy
-      ? <p role="status" className="font-medium text-destructive">{current.lockedBy} is editing this record. You can view it, but editing is locked until they finish.</p>
+      ? <p role="status" className="font-medium text-destructive">{current.lockedBy} is editing this record. You can type, but you cannot save until they finish.</p>
       : <p>{current?.unavailable ? 'Editor presence is unavailable. Save protection remains active.' : current ? `Editing: ${names || 'You'}` : 'Checking who is editing…'}</p>}
-    {handedOver && !current?.lockedBy ? <p className="text-ink">The other editor finished. You can edit now; review the latest details before saving.</p> : null}
+    {handedOver && !current?.lockedBy ? <p className="text-ink">The other editor finished. You can save now; review the latest details before saving.</p> : null}
     {stale ? <p role="alert" className="text-destructive">This record changed. Your input is preserved. Copy your changes, close and reopen the editor, then review the latest record before saving.</p> : null}
   </div>
 }
