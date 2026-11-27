@@ -4,15 +4,8 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:documents": "node --test tests/documents.test.mjs",
     "dev": "tsx watch src/app.js",
-    "start": "node src/app.js",
-    "email:preview": "tsx scripts/email-preview.ts",
-    "email:test": "tsx scripts/email-test.ts",
-    "seed": "tsx seed.ts",
-    "seed:reset": "tsx seed.ts --reset",
-    "backfill:working-hours": "tsx scripts/backfillWorkingHours.ts"
+    "start": "node src/app.js"
   },
   "keywords": [],
   "author": "",
@@ -31,7 +24,6 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.6.0",
     "tsx": "^4.23.15"
   }
 }
