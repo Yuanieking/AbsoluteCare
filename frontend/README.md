@@ -27,7 +27,6 @@ VITE_API_URL=http://localhost:8080
 | `npm run dev`       | Vite dev server                                                              |
 | `npm run typecheck` | `tsc --noEmit` over the app project (strict)                                 |
 | `npm run lint`      | ESLint (TypeScript + React Hooks + Refresh rules)                            |
-| `npm test`          | Vitest — logic tests only (formatters, validators, query keys, route config) |
 | `npm run build`     | Typecheck the project references, then produce `dist/`                       |
 | `npm run format`    | Prettier over the package                                                    |
 
@@ -177,13 +176,3 @@ are interpreted as Asia/Manila; date ranges and charts use Manila day/month boun
 Display and CSV labels explicitly use Manila (UTC+08). Existing stored timestamps are
 not rewritten. Timestamp regressions run under UTC and America/New_York host zones.
 
-## Tests
-
-Logic is covered with Vitest; UI is verified manually per role.
-
-```bash
-npm test
-```
-
-Keep changes to formatters, validators, query keys or nav config covered by a
-test next to the module (`*.test.ts`).
