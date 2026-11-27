@@ -26,41 +26,29 @@ import { JWT_SECRET } from "../src/config/env.js";
 const id = "111111111111111111111111",
   other = "222222222222222222222222";
 
-test("Redaction is allowlist-based and never retains credentials, notes, names or arbitrary values", () => {
+test("Audit changes keep every value, including credentials, notes and names", () => {
   const changes = auditChanges(
     { status: "pending", clinicalNotes: "old clinical" },
     {
       status: "confirmed",
       clinicalNotes: "private clinical",
       password: "bcrypt",
-      refreshTokenEncrypted: "token",
       phone: "0912",
       firstName: "Patient",
-      arbitrary: "secret",
+      pdf: Buffer.from("abc"),
       auth: { permissions: { therapist: { sessions: { read: false } } } },
     },
   );
-  const text = JSON.stringify(changes);
-  for (const value of [
-    "old clinical",
-    "private clinical",
-    "bcrypt",
-    'token"',
-    "0912",
-    "Patient",
-    '"secret"',
-  ])
-    assert.ok(!text.includes(value));
-  assert.equal(
-    changes.find((item) => item.field === "status").after,
-    "confirmed",
-  );
-  assert.equal(
-    changes.find(
-      (item) => item.field === "auth.permissions.therapist.sessions.read",
-    ).after,
-    false,
-  );
+  const after = (field) => changes.find((item) => item.field === field).after;
+  assert.equal(after("status"), "confirmed");
+  assert.equal(changes.find((item) => item.field === "clinicalNotes").before, "old clinical");
+  assert.equal(after("clinicalNotes"), "private clinical");
+  assert.equal(after("password"), "bcrypt");
+  assert.equal(after("phone"), "0912");
+  assert.equal(after("firstName"), "Patient");
+  assert.equal(after("pdf"), "[binary 3 bytes]");
+  assert.equal(after("auth.permissions.therapist.sessions.read"), false);
+  assert.ok(!JSON.stringify(changes).includes("[redacted]"));
 });
 
 test("Own scope cannot be widened by search; metadata excludes all changes and actor identity", () => {

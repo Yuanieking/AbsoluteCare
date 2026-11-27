@@ -1,4 +1,3 @@
-export const MASK_DOTS = "••••••••";
 
 export const PLACEHOLDER_VALUES = new Set([
   "your-client-id",
@@ -254,9 +253,7 @@ export function isPlaceholder(value) {
 export function maskValue(value, kind) {
   const trimmed = clean(value);
   if (isPlaceholder(trimmed)) return "Not set";
-  if (kind === "public" || kind === "config") return trimmed;
-  const visible = trimmed.length < 10 ? 2 : 5;
-  return `${trimmed.slice(0, visible)}${MASK_DOTS}`;
+  return trimmed;
 }
 
 export function validateValue(entry, value) {

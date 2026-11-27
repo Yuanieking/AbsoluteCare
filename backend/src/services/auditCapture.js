@@ -20,10 +20,6 @@ export const AUDIT_CATEGORIES = {
 };
 const ignored =
   /^(?:_id|__v|createdAt|updatedAt|accountAudit|auditLog|paymentAudit|editHistory)(?:\.|$)/;
-const hidden =
-  /password|secret|token|credential|code|clinical|medical|notes|reason|message|pdf|picture|email|phone|address|birth|ip|error|description|fingerprint|hash|uri|url/i;
-const safeValue =
-  /^(?:role|isActive|isArchived|removedAt|status|duration|durationMinutes|fee|category|scheduledStart|scheduledEnd|sessionDate|requestedDate|requestedTime|patient|therapist|guardian|dependent|service|appointment|connected|needsReconnect|revokedAt|type|trackingNumber|payment\.(?:status|amount|method|recordedAt)|general\.(?:timezone|currency)|auth\.permissions\..*|integrations\.[A-Za-z]+Enabled|system\.maintenanceMode)$/;
 
 function plain(value) {
   if (value?.toObject) return value.toObject({ depopulate: true });
@@ -36,19 +32,16 @@ function normalized(value) {
   if (value && typeof value === "object" && value._id) return String(value._id);
   return value;
 }
-function safeAuditValue(field, value) {
-  const scalar = normalized(value);
-  return safeValue.test(field) &&
-    !hidden.test(field) &&
-    (scalar === null || ["string", "number", "boolean"].includes(typeof scalar))
-    ? scalar
-    : "[redacted]";
+// Audit entries keep every value; only raw binary (generated PDFs) is summarized to stay under the document size limit.
+function auditValue(value) {
+  if (Buffer.isBuffer(value)) return `[binary ${value.length} bytes]`;
+  return normalized(value);
 }
 function flatten(value, prefix = "", result = {}) {
   for (const [key, item] of Object.entries(plain(value) || {})) {
     const field = prefix ? `${prefix}.${key}` : key;
     if (ignored.test(field)) continue;
-    if (hidden.test(field) || Array.isArray(item) || Buffer.isBuffer(item))
+    if (Array.isArray(item) || Buffer.isBuffer(item))
       result[field] = item;
     else if (
       item &&
@@ -70,8 +63,8 @@ export function auditChanges(before, after) {
     )
     .map((field) => ({
       field: field.slice(0, 160),
-      before: safeAuditValue(field, old[field]),
-      after: safeAuditValue(field, next[field]),
+      before: auditValue(old[field]),
+      after: auditValue(next[field]),
     }));
 }
 function subjects(model, doc) {

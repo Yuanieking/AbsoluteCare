@@ -583,7 +583,7 @@ export async function requestVerification(req, res) {
   }
   res.json({
     message: "Verification code sent.",
-    maskedEmail: `${SU_EMAIL.slice(0, 2)}***${SU_EMAIL.slice(SU_EMAIL.indexOf("@"))}`,
+    maskedEmail: SU_EMAIL,
     expiresAt: verification.expiresAt,
     resendAfter: Date.now() + 60 * 1000,
     digest,
